@@ -1,0 +1,11 @@
+# Dependências
+node_modules/
+dist/
+build/
+
+# IDE e Sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
