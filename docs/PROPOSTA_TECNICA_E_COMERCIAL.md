@@ -70,14 +70,16 @@ flowchart TD
     I --> J[Baixa Automática no PostgreSQL < 50ms + Bip Sonoro]
 ```
 
-#### Detalhamento dos Mecanismos de Leitura:
-1. **Modo HID com Captura Global de Eventos (`Keyboard Wedge`)**:
-   - Um *listener* global intercepta eventos `keydown` no objeto `window`.
-   - **Diferenciação Algorítmica**: Leitores ópticos disparam sequências de caracteres com intervalo entre 5ms e 25ms, enquanto a digitação humana possui cadência superior a 80ms.
-   - O sufixo terminador (`CR`/Enter) é neutralizado via `e.preventDefault()`, impedindo submissões acidentais de formulários e direcionando o código capturado diretamente para o *dispatch* do PDV.
-2. **Modo Web Serial API (Comunicação Direta via Porta Serial Virtual)**:
-   - Para leitores configurados em modo CDC/Virtual COM (USB ou Bluetooth SPP), a aplicação estabelece um canal serial direto via `navigator.serial`.
-   - Garante isolamento absoluto de qualquer elemento de foco da interface gráfica, permitindo leitura em segundo plano com 100% de confiabilidade.
+#### Detalhamento dos Mecanismos de Leitura e Detecção de Hardware:
+1. **Detecção e Reconhecimento de Conexão de Hardware (WebHID & Web Serial API)**:
+   - Utilização de `navigator.hid` e `navigator.serial` para monitorar eventos de conexão (`connect`) e desconexão (`disconnect`) de dispositivos USB e Bluetooth em tempo real.
+   - **Indicador Visual de Status no PDV**: Exibição de badge dinâmico no topo do balcão: `[🟢 Leitor Conectado & Pronto]`, `[🟡 Standby / Aguardando Bip]` e `[🔴 Leitor Desconectado / Fora de Alcance]`, com identificação do modelo do leitor (ex: *Zebra DS2208*, *Elgin Flash*).
+2. **Modo HID com Captura Global de Eventos (`Keyboard Wedge`)**:
+   - Um *listener* global intercepta eventos `keydown` no objeto `window` sem exigir foco prévio em campos de texto.
+   - **Diferenciação Algorítmica por Cadência**: Leitores ópticos disparam caracteres em intervalos de 5ms a 25ms, diferenciando-se da digitação humana (> 80ms).
+   - O sufixo terminador (`CR`/Enter) é neutralizado via `e.preventDefault()`, impedindo submissões acidentais de formulários e direcionando o código diretamente para o despacho do PDV.
+3. **Feedback Auditivo e Visual Imediato**:
+   - Resposta com bip sonoro de sucesso via Web Audio API e confirmação visual em menos de 50ms após a leitura.
 
 ---
 

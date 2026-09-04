@@ -68,26 +68,55 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 
 ## 4. Arquitetura de Integração com Hardware e Telegram Voice Bot
 
-### 4.1. Leitor de Código de Barras (USB / Bluetooth HID)
-Os leitores operam no modo **HID Keyboard Emulation (Cunha de Teclado)**. O leitor decodifica o código óptico e injeta caracteres ASCII seguidos de `CR` (`Enter`).
+### 4.1. Leitor de Código de Barras (USB / Bluetooth HID & WebHID / Web Serial)
+
+#### A. Detecção e Reconhecimento de Conexão em Tempo Real
+Para que a interface web informe visualmente ao operador o estado do leitor conectado:
+1. **WebHID & Web Serial API**: O frontend registra ouvintes de eventos para monitorar a conexão e desconexão física de dispositivos USB e emparelhamentos Bluetooth:
+   ```javascript
+   // Monitoramento de conexão de hardware no navegador
+   navigator.hid?.addEventListener('connect', ({ device }) => {
+     atualizarStatusLeitor({ status: 'CONECTADO', modelo: device.productName });
+   });
+   navigator.hid?.addEventListener('disconnect', () => {
+     atualizarStatusLeitor({ status: 'DESCONECTADO' });
+   });
+   ```
+2. **Indicador Visual de Status no Balcão**:
+   - `[🟢 Leitor Conectado & Pronto]`: Exibe modelo detectado (ex: *Honeywell Voyager*, *Zebra DS2208*, *Elgin*) ou confirmação do último bip.
+   - `[🟡 Standby / Teste de Turno]`: Aguardando o primeiro bip de validação.
+   - `[🔴 Desconectado]`: Alerta caso o cabo USB seja removido ou o Bluetooth perca sinal.
+
+#### B. Protocolo de Leitura e Prevenção de Perda de Foco
+Os leitores operam no modo **HID Keyboard Emulation (Cunha de Teclado)** e/ou **Web Serial**. A aplicação intercepta os caracteres globalmente sem exigir foco prévio do mouse em campos de busca:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Operador as Operador / Balcão
     participant Leitor as Leitor (USB / Bluetooth)
+    participant Status as Badge de Status (UI)
     participant Buffer as Global Keydown Buffer (Frontend)
     participant Validador as Regex & Timing Validator
     participant API as Backend API / PostgreSQL
 
+    Note over Leitor, Status: Reconhecimento de Conexão (WebHID/Serial)
+    Leitor->>Status: Evento Connect -> Badge fica 🟢 Conectado
     Operador->>Leitor: Dispara gatilho do leitor na peça
-    Leitor->>Buffer: Emite sequência de KeyEvents (< 50ms entre chars) + Enter
-    Buffer->>Validador: Intercepta evento globalmente
+    Leitor->>Buffer: Emite sequência de KeyEvents (< 25ms entre chars) + Enter
+    Buffer->>Validador: Intercepta evento globalmente (sem foco de cursor)
     Note over Validador: Verifica cadência (<30ms/char) e tamanho (>5 chars)<br/>Diferencia leitor de digitação humana
     Validador->>API: GET /api/v1/produtos/barcode/:code
     API->>API: Baixa / Vincula produto na transação ativa
     API-->>Buffer: Retorna item adicionado + som sonoro de sucesso (Bip)
+    Buffer->>Status: Atualiza horário do último bip com sucesso
 ```
+
+#### Regras de Implementação do Listener:
+1. **Diferenciação por Delta Temporal**: A digitação humana ocorre em média a cada 80–200ms por tecla. O leitor injeta caracteres a intervalos de 5 a 25ms.
+2. **Prevenção de Submit Indevido**: O caractere `Enter` final disparado pelo leitor é capturado pelo interceptador (`e.preventDefault()`), impedindo a submissão de formulários inacabados.
+3. **Validação de Padrões**: Suporte nativo para EAN-13, EAN-8, Code 128 e QR Code interno com SKU prefixado (ex: `ELC-10492`).
+4. **Feedback Auditivo**: Emissão de tom sonoro curto (*Bip*) via Web Audio API após processamento com sucesso.
 
 ---
 

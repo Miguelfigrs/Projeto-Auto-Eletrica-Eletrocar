@@ -26,8 +26,10 @@ Tabela de requisitos funcionais (RF) e não funcionais (RNF), numerados e rastre
 | :--- | :--- | :--- | :--- |
 | **RF01** | O sistema deve permitir que o Balconista registre vendas via leitor de código de barras | Alta | Balconista |
 | **RF02** | O sistema deve permitir que o Mecânico crie OS via comando de voz no Telegram | Alta | Mecânico |
+| **RF03** | O sistema web deve detectar e exibir o status de conexão do leitor USB/Bluetooth em tempo real | Alta | Balconista / PDV |
 | **RNF01** | O tempo de resposta na leitura do código de barras e baixa deve ser < 200ms | Alta | Desempenho |
 | **RNF02** | Todas as operações de cancelamento e desconto devem gerar logs imutáveis | Alta | Segurança / Auditoria |
+| **RNF03** | A detecção de conexão via WebHID/Web Serial deve atualizar a UI em < 100ms e emitir feedback sonoro | Média | Usabilidade |
 
 * **Categorias RNF comuns**: Desempenho, Segurança, Usabilidade, Confiabilidade, Manutenibilidade, Portabilidade, Escalabilidade, Compliance/Legal.
 * *Rastreabilidade*: Cada RF vira candidato a caso de uso na Seção 2. Cada RNF vira restrição de arquitetura/design.
