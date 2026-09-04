@@ -17,8 +17,8 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 
 | Camada | Tecnologia Adotada | Justificativa Técnica e de Custo |
 | :--- | :--- | :--- |
-| **Frontend / PDV** | **React + TypeScript + TailwindCSS** | Tipagem estática reduz bugs em tempo de execução; SPA leve com renderização instantânea de componentes de balcão. |
-| **PWA / Offline Resilience** | **Service Workers + IndexedDB** | Permite registrar itens e consultas de produtos mesmo com instabilidade temporária de rede local. |
+| **Frontend / PWA** | **PWA (React + TypeScript + TailwindCSS)** | **Progressive Web App instalável nativamente** no Windows e Mobile (Web App Manifest), interface leve com renderização instantânea. |
+| **Resiliência Offline (PWA)** | **Service Workers + IndexedDB + Cache API** | Permite registrar itens, abrir rascunhos de OS e consultar catálogo de peças mesmo em caso de queda de sinal de internet, com sincronização automática (*Background Sync*). |
 | **Backend / API** | **Python 3.12 (FastAPI) + AsyncIO + SQLAlchemy 2.0** | Alto throughput assíncrono, validação estrita de tipos com Pydantic v2 e baixa latência (< 50ms). |
 | **Autenticação & Sessão** | **OAuth2 com JWT + Passlib (Bcrypt) + Refresh Tokens** | Autenticação stateless segura, cookies HTTP-Only e suporte a troca ágil de operador no balcão. |
 | **Banco de Dados** | **PostgreSQL 16** | Suporte nativo a transações ACID rigorosas (crítico para financeiro e estoque), índices otimizados B-Tree e GIN para busca rápida por cliente, veículo e código de peça. |

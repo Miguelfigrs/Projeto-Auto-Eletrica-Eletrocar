@@ -17,7 +17,7 @@ flowchart TB
         subgraph Balcao ["Terminal de Balcão (PDV)"]
             Balconista["👤 Balconista"]
             Leitor["📟 Leitor de Código de Barras<br/>(USB / Bluetooth HID & Web Serial)"]
-            Balconista -->|Opera por Teclado F1-F9| TelaPDV["💻 PDV Web SPA (React + Tailwind)"]
+            Balconista -->|Opera por Teclado F1-F9| TelaPDV["💻 PDV PWA (React + Service Workers Offline)"]
             Leitor -->|Leitura Contínua < 25ms| TelaPDV
         end
 

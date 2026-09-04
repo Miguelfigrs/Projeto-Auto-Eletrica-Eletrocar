@@ -25,8 +25,9 @@ A presente proposta estabelece os termos técnicos e comerciais para o desenvolv
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                          CAMADA CLIENTE (SPA)                          │
-│   React 18 + TypeScript + TailwindCSS + Web Serial API / Event Wedge   │
+│               CAMADA CLIENTE (PWA - PROGRESSIVE WEB APP)               │
+│   React 18 + TypeScript + TailwindCSS + Service Workers (Offline)      │
+│   Web App Manifest (Instalável no Desktop/Mobile) + WebHID / Serial    │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ HTTPS / WSS (JSON REST + WebSocket)
 ┌───────────────────────────────────▼────────────────────────────────────┐
@@ -43,7 +44,7 @@ A presente proposta estabelece os termos técnicos e comerciais para o desenvolv
 | Camada | Tecnologia Adotada | Justificativa de Engenharia |
 | :--- | :--- | :--- |
 | **Backend** | **Python (FastAPI) + AsyncIO** | Execução assíncrona de altíssimo desempenho, validação de esquemas via Pydantic v2 com zero overhead de serialização e geração automática de documentação OpenAPI. |
-| **Frontend** | **React + TypeScript + TailwindCSS** | Interface orientada a componentes tipados, renderização veloz sem gargalos de DOM e design system responsivo otimizado para telas de balcão. |
+| **Frontend / PWA** | **PWA (React + TypeScript + Tailwind)** | **Progressive Web App instalável nativamente** no Windows (balcão) e em celulares/tablets (oficina), com suporte a **modo offline via Service Workers e IndexedDB**. |
 | **Banco de Dados** | **PostgreSQL 16** | Confiabilidade relacional ACID estrita para operações financeiras e de estoque, com índices otimizados (`B-Tree` em SKUs/EANs e `GIN/Trigram` para busca textual ultrarrápida). |
 | **Autenticação** | **OAuth2 com JWT + Passlib (Bcrypt)** | Controle de sessão stateless, expiração configurável, tokens seguros e RBAC granular (Balconista vs. Administrador). |
 
