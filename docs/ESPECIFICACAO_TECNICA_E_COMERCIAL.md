@@ -20,6 +20,7 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 | **Frontend / PDV** | **React + TypeScript + TailwindCSS / Vanilla CSS** | Tipagem estática reduz bugs em tempo de execução; SPA leve com renderização instantânea de componentes de balcão. |
 | **PWA / Offline Resilience** | **Service Workers + IndexedDB** | Permite registrar itens e consultas de produtos mesmo com instabilidade temporária de rede local. |
 | **Backend / API** | **Node.js (Fastify/Express) + TypeScript** | Alto throughput de requisições concorrentes, baixo consumo de memória e fácil integração via WebSockets. |
+| **Autenticação & Sessão** | **JWT (JSON Web Tokens) + Bcrypt (Custo 12) + Refresh Tokens** | Autenticação stateless segura, cookies HTTP-Only e suporte a troca ágil de operador no balcão. |
 | **Banco de Dados** | **PostgreSQL 16** | Suporte nativo a transações ACID rigorosas (crítico para financeiro e estoque), índices para busca ágil por cliente, veículo e código de peça. |
 | **Hardware I/O** | **USB HID / Bluetooth HID (Keyboard Wedge Emulation)** | Compatibilidade universal sem necessidade de instalação de drivers proprietários em terminais Windows/Linux. |
 | **Integração Telegram & Voz** | **Telegram Bot API (Webhook) + Whisper ASR + LLM Extraction (JSON)** | Permite abertura imediata de OS via áudio gravado na baia de trabalho sem contato manual com computadores/teclados. |
@@ -31,6 +32,13 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
+│              PORTAL DE ENTRADA: TELA DE LOGIN & AUTENTICAÇÃO            │
+│         - Login por E-mail/Usuário + Senha criptografada (Bcrypt)       │
+│         - Controle de Perfis (Admin, Atendente/Balcão, Eletricista)     │
+│         - Troca Rápida de Operador no Caixa (Lock Screen / PIN)         │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────────┐
 │                      AUTO ELÉTRICA ELETROCAR                            │
 ├───────────────────┬───────────────────┬─────────────────────────────────┤
 │ 1. Balcão & PDV   │ 2. Ordens de      │ 3. Estoque & Peças              │
@@ -49,6 +57,7 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 
 | Módulo | Funcionalidades Principais | Requisitos de Desempenho / Usabilidade |
 | :--- | :--- | :--- |
+| **Módulo 0: Autenticação & Tela de Login** | • **Tela de Login Rápida e Segura**: autenticação via Usuário/E-mail e Senha criptografada.<br>• **Redirecionamento Automático por Perfil**: direciona Admin ao Dashboard financeiro, Atendente ao Balcão/PDV e Eletricista à fila de OS.<br>• **Troca Rápida de Operador**: bloqueio de terminal (Lock Screen) com PIN rápido para troca de turno no balcão sem fechar o caixa.<br>• **Gestão de Usuários**: criação, edição, ativação/desativação e redefinição segura de senhas de colaboradores. | • Login em < 200ms.<br>• Navegação por teclado (`Enter` submete o login diretamente).<br>• Rate limiting contra ataques de força bruta (máximo 5 tentativas incorretas). |
 | **Módulo 1: Balcão & PDV Rápido** | • Abertura e fechamento de venda em menos de 10 segundos.<br>• Consulta instantânea por código de barras, SKU interno, nome ou aplicação do veículo.<br>• Teclas de atalho para todas as ações (`F2` Nova Venda, `F4` Buscar Peça, `F9` Finalizar, `ESC` Cancelar). | • Operação 100% por teclado, dispensando uso de mouse na digitação de itens. |
 | **Módulo 2: Ordens de Serviço (OS) & Telegram Voice Bot** | • **Abertura Inteligente via Áudio no Telegram**: o mecânico grava um áudio e a IA transcreve, extrai o cliente, carro, sintomas, serviços e cria a OS automaticamente.<br>• Abertura manual com seleção ágil do cliente e carro vinculado (ou cadastro rápido no próprio formulário).<br>• Registro de sintomas relatados e checklist elétrico (Bateria, Alternador, Motor de Partida, Iluminação, Injeção).<br>• Discriminação de serviços (mão de obra) e peças alocadas.<br>• Status de fluxo: *Orçamento -> Aprovado -> Em Execução -> Aguardando Peça -> Testes -> Finalizado -> Entregue*. | • Processamento de áudio para OS criada em menos de 5 segundos.<br>• Impressão térmica (80mm/58mm) e envio de PDF/orçamento via WhatsApp em 1 clique. |
 | **Módulo 3: Estoque Inteligente & Hardware** | • Cadastro com Código de Barras (EAN-13, Code 128) e código original/fabricante (Bosch, Magneti Marelli, etc.).<br>• Baixa automática em tempo real na finalização da OS ou venda no balcão.<br>• Alerta de estoque mínimo e sugestão de compra baseada no giro médio. | • Prevenção de concorrência: bloqueio otimista de registro durante a adição no carrinho. |
