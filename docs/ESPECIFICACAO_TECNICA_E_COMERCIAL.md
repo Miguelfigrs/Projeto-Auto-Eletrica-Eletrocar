@@ -20,7 +20,7 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 | **Frontend / PDV** | **React + TypeScript + TailwindCSS / Vanilla CSS** | Tipagem estática reduz bugs em tempo de execução; SPA leve com renderização instantânea de componentes de balcão. |
 | **PWA / Offline Resilience** | **Service Workers + IndexedDB** | Permite registrar itens e consultas de produtos mesmo com instabilidade temporária de rede local. |
 | **Backend / API** | **Node.js (Fastify/Express) + TypeScript** | Alto throughput de requisições concorrentes, baixo consumo de memória e fácil integração via WebSockets. |
-| **Banco de Dados** | **PostgreSQL 16** | Suporte nativo a transações ACID rigorosas (crítico para financeiro e estoque), índices GIN para busca rápida por placa/chassi/código. |
+| **Banco de Dados** | **PostgreSQL 16** | Suporte nativo a transações ACID rigorosas (crítico para financeiro e estoque), índices para busca ágil por veículo, cliente e código de peça. |
 | **Hardware I/O** | **USB HID / Bluetooth HID (Keyboard Wedge Emulation)** | Compatibilidade universal sem necessidade de instalação de drivers proprietários em terminais Windows/Linux. |
 | **Integração Telegram & Voz** | **Telegram Bot API (Webhook) + Whisper ASR + LLM Extraction (JSON)** | Permite abertura imediata de OS via áudio gravado na baia de trabalho sem contato manual com computadores/teclados. |
 | **Infraestrutura** | **Docker + Nginx (Hospedagem Híbrida: VPS Cloud + Cache Local)** | Baixo custo operacional mensal, deploys automatizados e redundância de dados diária com backup automatizado. |
@@ -41,7 +41,7 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 ├───────────────────┴───────────────────┴─────────────────────────────────┤
 │ 4. Módulo Financeiro & Fluxo de Caixa (DRE, Conciliação, PIX/Cartão)   │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ 5. Cadastro de Clientes, Frotas & Histórico por Placa/Chassi            │
+│ 5. Cadastro de Clientes, Frotas & Veículos (Modelo / Marca / Ano)       │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -50,10 +50,10 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 | Módulo | Funcionalidades Principais | Requisitos de Desempenho / Usabilidade |
 | :--- | :--- | :--- |
 | **Módulo 1: Balcão & PDV Rápido** | • Abertura e fechamento de venda em menos de 10 segundos.<br>• Consulta instantânea por código de barras, SKU interno, nome ou aplicação do veículo.<br>• Teclas de atalho para todas as ações (`F2` Nova Venda, `F4` Buscar Peça, `F9` Finalizar, `ESC` Cancelar). | • Operação 100% por teclado, dispensando uso de mouse na digitação de itens. |
-| **Módulo 2: Ordens de Serviço (OS) & Telegram Voice Bot** | • **Abertura Inteligente via Áudio no Telegram**: o mecânico grava um áudio e a IA transcreve, extrai placa, sintomas, serviços e cria a OS automaticamente.<br>• Abertura manual por Placa com auto-preenchimento dos dados do cliente e histórico.<br>• Registro de sintomas relatados e checklist elétrico (Bateria, Alternador, Motor de Partida, Iluminação, Injeção).<br>• Discriminação de serviços (mão de obra) e peças alocadas.<br>• Status de fluxo: *Orçamento -> Aprovado -> Em Execução -> Aguardando Peça -> Testes -> Finalizado -> Entregue*. | • Processamento de áudio para OS criada em menos de 5 segundos.<br>• Impressão térmica (80mm/58mm) e envio de PDF/orçamento via WhatsApp em 1 clique. |
+| **Módulo 2: Ordens de Serviço (OS) & Telegram Voice Bot** | • **Abertura Inteligente via Áudio no Telegram**: o mecânico grava um áudio e a IA transcreve, extrai dados do veículo, cliente, sintomas, serviços e cria a OS automaticamente.<br>• Abertura manual com seleção rápida do veículo/cliente cadastrado.<br>• Registro de sintomas relatados e checklist elétrico (Bateria, Alternador, Motor de Partida, Iluminação, Injeção).<br>• Discriminação de serviços (mão de obra) e peças alocadas.<br>• Status de fluxo: *Orçamento -> Aprovado -> Em Execução -> Aguardando Peça -> Testes -> Finalizado -> Entregue*. | • Processamento de áudio para OS criada em menos de 5 segundos.<br>• Impressão térmica (80mm/58mm) e envio de PDF/orçamento via WhatsApp em 1 clique. |
 | **Módulo 3: Estoque Inteligente & Hardware** | • Cadastro com Código de Barras (EAN-13, Code 128) e código original/fabricante (Bosch, Magneti Marelli, etc.).<br>• Baixa automática em tempo real na finalização da OS ou venda no balcão.<br>• Alerta de estoque mínimo e sugestão de compra baseada no giro médio. | • Prevenção de concorrência: bloqueio otimista de registro durante a adição no carrinho. |
 | **Módulo 4: Gestão Financeira** | • **Fluxo de Caixa Diário**: controle de sangrias, suprimentos e fechamento de turno.<br>• **DRE Gerencial Simplificado**: Receita bruta, Custo de Mercadorias Vendidas (CMV), Custos de Mão de Obra, Despesas Fixas/Variáveis e Lucro Líquido.<br>• Multi-meios de pagamento: PIX com QR Code dinâmico, Cartão de Crédito/Débito, Boleto e Faturado (para frotas parceiras).<br>• Contas a Pagar e a Receber com controle de inadimplência. | • Auditoria total: todas as alterações de preço ou descontos exigem permissão e geram log imutável. |
-| **Módulo 5: Clientes & Veículos** | • Cadastro unificado de Pessoa Física (CPF) e Jurídica (CNPJ).<br>• Vínculo de N veículos por cliente (Placa, Renavam, Chassi, Ano/Modelo, KM atual).<br>• Linha do tempo completa de revisões e manutenções elétricas executadas. | • Busca indexada por Placa com resposta em tempo real (< 50ms). |
+| **Módulo 5: Clientes & Veículos** | • Cadastro unificado de Pessoa Física (CPF) e Jurídica (CNPJ).<br>• Cadastro simplificado de Veículos (Marca, Modelo, Ano, Versão/Motorização).<br>• Associação ágil de veículos a clientes e frotas de empresas parceiras. | • Busca instantânea por Modelo de Veículo ou Nome do Cliente (< 50ms). |
 
 ---
 
@@ -97,14 +97,14 @@ sequenceDiagram
     participant DB as PostgreSQL Database
     participant WS as WebSocket (Painel Balcão / Oficina)
 
-    Mecanico->>Telegram: Envia áudio ("Gol placa ABC-1234 cliente Seu Carlos, alternador não carrega")
+    Mecanico->>Telegram: Envia áudio ("Gol 1.6 cliente Seu Carlos, alternador não carrega")
     Telegram->>Backend: Webhook POST com voice payload (.oga/.ogg)
     Backend->>Backend: Valida autenticação (Telegram User ID autorizado)
     Backend->>ASR: Envia stream de áudio para transcrição
     ASR-->>Backend: Texto transcrito em PT-BR
     Backend->>LLM: Prompt Few-Shot com Dicionário Elétrico + JSON Schema rígido
-    LLM-->>Backend: Retorna JSON estruturado (Placa, Cliente, Sintomas, Checklist)
-    Backend->>DB: Busca veículo/cliente pela placa e cria OS (Status: Aberta / Em Triagem)
+    LLM-->>Backend: Retorna JSON estruturado (Veículo, Cliente, Sintomas, Checklist)
+    Backend->>DB: Vincula ao veículo/cliente e cria OS (Status: Aberta / Em Triagem)
     Backend->>WS: Emite evento 'OS_CRIADA_VOZ' (Painel do balcão atualiza em tempo real)
     Backend->>Telegram: Responde com Card de Resumo + Botões Inline [Confirmar] [Editar] [Ver no Sistema]
     Mecanico->>Telegram: Clica em [Confirmar] ou ajusta detalhes
@@ -113,9 +113,10 @@ sequenceDiagram
 #### Esquema de Dados Extraído do Áudio (JSON Schema Rígido):
 ```json
 {
-  "placa_veiculo": "ABC1D23",
-  "nome_cliente": "Carlos Silva",
   "veiculo_modelo": "Gol 1.6",
+  "veiculo_marca": "Volkswagen",
+  "veiculo_ano": "2018",
+  "nome_cliente": "Carlos Silva",
   "sintomas_relatados": "Bateria descarregando constantemente e luz indicadora da bateria acesa no painel.",
   "hipotese_diagnostica": "Possível defeito no alternador (regulador de voltagem ou placa de diodos).",
   "servicos_sugeridos": ["Diagnóstico de alternador", "Teste de fuga de corrente"],
