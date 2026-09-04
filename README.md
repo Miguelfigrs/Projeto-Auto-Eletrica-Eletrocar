@@ -10,8 +10,9 @@ Este projeto tem como objetivo gerenciar e divulgar os serviços de auto elétri
 - **[Especificação Técnica e Operacional Consolidada](docs/ESPECIFICACAO_TECNICA_E_COMERCIAL.md)**: Detalhamento de arquitetura, integração Telegram Voice Bot, usabilidade de balcão, módulos financeiros (Fluxo de Caixa, DRE), cadastro simplificado de clientes e matriz de riscos.
 
 ## 🛠️ Tecnologias
-- Frontend: React / TypeScript / CSS Otimizado (PDV Rápido com suporte Offline/PWA)
-- Backend: Node.js (TypeScript) / RESTful API + WebSockets
-- Banco de Dados: PostgreSQL 16 (ACID)
-- Hardware: Leitores de Código de Barras USB / Bluetooth HID
-- DevOps: Docker, Nginx, Git & GitHub
+- **Frontend**: React + TypeScript + TailwindCSS (PDV Rápido com suporte Offline/PWA)
+- **Backend**: Python 3.12 (FastAPI) + AsyncIO + SQLAlchemy 2.0 (RESTful API + WebSockets)
+- **Banco de Dados**: PostgreSQL 16 (Índices B-Tree/GIN + Transações ACID)
+- **Hardware & I/O**: Leitores de Código de Barras USB / Bluetooth (HID Keyboard Wedge + Web Serial API)
+- **Inteligência Artificial & Voz**: Telegram Bot API + Whisper ASR + LLM Entity Extraction
+- **DevOps**: Docker, Nginx, Git & GitHub

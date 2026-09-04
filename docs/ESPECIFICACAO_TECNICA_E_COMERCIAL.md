@@ -17,12 +17,12 @@ Para garantir disponibilidade operacional, tempo de resposta inferior a **150ms*
 
 | Camada | Tecnologia Adotada | Justificativa Técnica e de Custo |
 | :--- | :--- | :--- |
-| **Frontend / PDV** | **React + TypeScript + TailwindCSS / Vanilla CSS** | Tipagem estática reduz bugs em tempo de execução; SPA leve com renderização instantânea de componentes de balcão. |
+| **Frontend / PDV** | **React + TypeScript + TailwindCSS** | Tipagem estática reduz bugs em tempo de execução; SPA leve com renderização instantânea de componentes de balcão. |
 | **PWA / Offline Resilience** | **Service Workers + IndexedDB** | Permite registrar itens e consultas de produtos mesmo com instabilidade temporária de rede local. |
-| **Backend / API** | **Node.js (Fastify/Express) + TypeScript** | Alto throughput de requisições concorrentes, baixo consumo de memória e fácil integração via WebSockets. |
-| **Autenticação & Sessão** | **JWT (JSON Web Tokens) + Bcrypt (Custo 12) + Refresh Tokens** | Autenticação stateless segura, cookies HTTP-Only e suporte a troca ágil de operador no balcão. |
-| **Banco de Dados** | **PostgreSQL 16** | Suporte nativo a transações ACID rigorosas (crítico para financeiro e estoque), índices para busca ágil por cliente, veículo e código de peça. |
-| **Hardware I/O** | **USB HID / Bluetooth HID (Keyboard Wedge Emulation)** | Compatibilidade universal sem necessidade de instalação de drivers proprietários em terminais Windows/Linux. |
+| **Backend / API** | **Python 3.12 (FastAPI) + AsyncIO + SQLAlchemy 2.0** | Alto throughput assíncrono, validação estrita de tipos com Pydantic v2 e baixa latência (< 50ms). |
+| **Autenticação & Sessão** | **OAuth2 com JWT + Passlib (Bcrypt) + Refresh Tokens** | Autenticação stateless segura, cookies HTTP-Only e suporte a troca ágil de operador no balcão. |
+| **Banco de Dados** | **PostgreSQL 16** | Suporte nativo a transações ACID rigorosas (crítico para financeiro e estoque), índices otimizados B-Tree e GIN para busca rápida por cliente, veículo e código de peça. |
+| **Hardware I/O** | **USB/Bluetooth HID (Keyboard Wedge) + Web Serial API** | Suporte universal duplo: captura global de eventos via buffer temporal ou conexão direta por porta serial virtual. |
 | **Integração Telegram & Voz** | **Telegram Bot API (Webhook) + Whisper ASR + LLM Extraction (JSON)** | Permite abertura imediata de OS via áudio gravado na baia de trabalho sem contato manual com computadores/teclados. |
 | **Infraestrutura** | **Docker + Nginx (Hospedagem Híbrida: VPS Cloud + Cache Local)** | Baixo custo operacional mensal, deploys automatizados e redundância de dados diária com backup automatizado. |
 
@@ -186,12 +186,12 @@ Semana 10:    [Go-Live] Entrada em Produção, Monitoramento de Estabilidade e S
 
 ### 8.1. Estrutura de Custos
 
-| Item | Descrição | Investimento Estimado |
+| Item | Descrição | Investimento |
 | :--- | :--- | :--- |
-| **Desenvolvimento e Customização** | Engenharia de software, integração de hardware, Telegram Voice Bot, testes de balcão e homologação. | R$ 14.000,00 a R$ 20.000,00 *(ou plano SaaS mensal proporcional)* |
-| **Infraestrutura em Nuvem (VPS + Backup)** | Servidor Linux dedicado, banco de dados gerenciado, certificado SSL e backups diários. | R$ 90,00 a R$ 180,00 / mês |
-| **Consumo de API de Voz / LLM** | Transcrição de áudio (Whisper) e estruturação de OS via IA (~300 a 600 áudios/mês). | R$ 15,00 a R$ 35,00 / mês |
-| **Hardware Recomendado (Opcional)** | Leitores de código de barras 1D/2D USB/Bluetooth (ex: Honeywell / Zebra / Elgin). | R$ 250,00 a R$ 450,00 por terminal |
+| **Desenvolvimento e Customização** | Engenharia de software completa (FastAPI + React), integração de hardware (leitores de código de barras), bot do Telegram, PDV, DRE e estoque. | **R$ 14.800,00** *(4 parcelas de R$ 3.700,00)* |
+| **Infraestrutura em Nuvem (VPS + Backup)** | Servidor Linux dedicado, banco de dados gerenciado PostgreSQL, certificado SSL e rotina diária de backups automatizados. | **R$ 180,00 / mês** |
+| **Consumo de API de Voz / LLM** | Transcrição de áudio (Whisper) e estruturação de OS via IA (~300 a 600 áudios/mês). | **~R$ 25,00 a R$ 40,00 / mês** |
+| **Hardware Recomendado (Opcional)** | Leitores de código de barras 1D/2D USB/Bluetooth (ex: Honeywell / Zebra / Elgin). | **R$ 250,00 a R$ 450,00 por terminal** |
 
 ### 8.2. Análise de Retorno sobre o Investimento (ROI)
 
