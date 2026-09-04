@@ -5,8 +5,9 @@ Sistema e site para oficina mecânica e auto elétrica.
 ## 🚀 Sobre o Projeto
 Este projeto tem como objetivo gerenciar e divulgar os serviços de auto elétrica, agendamentos, orçamentos e informações da oficina Eletrocar.
 
-## 📚 Documentação Técnica e Comercial
-- **[Especificação Técnica e Proposta Comercial Consolidada](docs/ESPECIFICACAO_TECNICA_E_COMERCIAL.md)**: Detalhamento da arquitetura técnica, integração de leitores de código de barras USB/Bluetooth, usabilidade de balcão, módulos financeiros (Fluxo de Caixa, DRE), estimativa de prazos, custos, ROI e riscos mitigados.
+## 📚 Documentação do Projeto
+- **[Proposta Técnica e Comercial Completa](docs/PROPOSTA_TECNICA_E_COMERCIAL.md)**: Proposta executiva e comercial estruturada com stack FastAPI/React, arquitetura de leitor de código de barras sem perda de foco, módulos descritos, cronograma em Sprints de 2 semanas, valores de investimento, condições e SLA.
+- **[Especificação Técnica e Operacional Consolidada](docs/ESPECIFICACAO_TECNICA_E_COMERCIAL.md)**: Detalhamento de arquitetura, integração Telegram Voice Bot, usabilidade de balcão, módulos financeiros (Fluxo de Caixa, DRE), cadastro simplificado de clientes e matriz de riscos.
 
 ## 🛠️ Tecnologias
 - Frontend: React / TypeScript / CSS Otimizado (PDV Rápido com suporte Offline/PWA)
