@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> Triagem : 1. Criada (Balcão ou Voz Telegram)
+    Triagem --> OrcamentoPendente : 2. Dados Iniciais Preenchidos
+    OrcamentoPendente --> Aprovado : 3. Cliente Aprova Orçamento
+    OrcamentoPendente --> Cancelado : Orçamento Recusado
+    
+    Aprovado --> EmExecucao : 4. Eletricista Inicia Serviço
+    EmExecucao --> AguardandoPeca : 5. Falta Peça no Estoque
+    AguardandoPeca --> EmExecucao : Peça Recebida / Alocada
+    
+    EmExecucao --> TestesEletricos : 6. Montagem Concluída
+    TestesEletricos --> Finalizado : 7. Aprovado no Checklist
+    TestesEletricos --> EmExecucao : Falha no Teste de Voltagem
+    
+    Finalizado --> Entregue : 8. Pagamento Confirmado & Veículo Liberado
+    
+    Entregue --> [*]
+    Cancelado --> [*]

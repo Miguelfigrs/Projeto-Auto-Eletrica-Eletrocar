@@ -1,0 +1,83 @@
+flowchart TD
+    subgraph S1 ["👥 1. Camada de Atores e Dispositivos de Entrada"]
+        direction LR
+        Balconista["👤 Balconista<br/><b>(Terminal Balcão)</b>"]
+        Leitor["📟 Leitor de Código de Barras<br/><b>(USB HID / Web Serial)</b>"]
+        Eletricista["👤 Eletricista / Mecânico<br/><b>(Baia da Oficina)</b>"]
+        Admin["👤 Administrador / Dono<br/><b>(Gestão, Balcão e/ou Oficina)</b>"]
+    end
+
+    subgraph S2 ["💻 2. Interfaces Frontend & Canais de Atendimento"]
+        direction LR
+        PDV["💻 PDV Web PWA<br/><b>(React + Offline First)</b>"]
+        Telegram["📱 Telegram App<br/><b>(Voice Bot Oficial)</b>"]
+        Painel["📊 Painel Admin Web<br/><b>(Gestão Financeira & DRE)</b>"]
+    end
+
+    S1 ==>|Interação e Leitura de Hardware| S2
+
+    subgraph S3 ["🌐 3. Camada de Borda, Proxy Reverso e Webhooks"]
+        direction LR
+        Nginx["🛡️ Nginx Reverse Proxy<br/><b>(HTTPS / TLS 1.3 / WSS)</b>"]
+        Webhook["🤖 Telegram Webhook Receiver<br/><b>(Recepção de Áudios)</b>"]
+        WS["⚡ WebSocket Realtime Server<br/><b>(Notificação Push Instantânea)</b>"]
+    end
+
+    S2 ==>|Requisições REST & Webhooks| S3
+
+    subgraph S4 ["⚙️ 4. Backend FastAPI & Pipeline de Inteligência Artificial"]
+        direction TB
+        subgraph Pipeline_IA ["🧠 Pipeline de IA de Voz"]
+            direction LR
+            Whisper["🎙️ Whisper ASR Engine<br/><b>(Transcrição de Áudio PT-BR)</b>"]
+            LLM["🧩 LLM Entity Extractor<br/><b>(JSON Schema + Dicionário Elétrico)</b>"]
+            Whisper ==>|Áudio Transcrito| LLM
+        end
+        
+        subgraph UseCases ["📦 Casos de Uso (Application Layer)"]
+            direction LR
+            UC_Venda["🛒 Realizar Venda Balcão"]
+            UC_OS["📋 Criar OS por Voz"]
+            UC_Estoque["📦 Baixar Estoque"]
+            UC_Financeiro["💰 Fechar Caixa & DRE"]
+        end
+
+        Pipeline_IA ==>|JSON Estruturado| UC_OS
+    end
+
+    S3 ==>|Roteamento Seguro & WebSockets| S4
+
+    subgraph S5 ["🏛️ 5. Camada de Domínio Puro (DDD)"]
+        direction LR
+        Ent_Cliente["👤 Aggregate: Cliente & Carro"]
+        Ent_Peca["📦 Aggregate: Peça & SKU"]
+        Ent_OS["📋 Aggregate: Ordem de Serviço"]
+        Ent_Caixa["💵 Aggregate: Caixa & Fechamento"]
+    end
+
+    S4 ==>|Executa Regras de Negócio| S5
+
+    subgraph S6 ["🗄️ 6. Persistência, Auditoria e Armazenamento (PostgreSQL 16)"]
+        direction LR
+        Postgres[(🐘 PostgreSQL 16 ACID<br/><b>Banco Relacional Principal</b>)]
+        Audit[(📜 Logs de Auditoria Imutáveis<br/><b>Rastreabilidade Total</b>)]
+        Backup[(💾 Rotina de Backups Diários<br/><b>Segurança & Tolerância a Falhas</b>)]
+    end
+
+    S5 ==>|SQLAlchemy Async ORM| Postgres
+    S4 -.->|Auditoria Imutável Automática| Audit
+    Postgres -.-> Backup
+
+    classDef s1Style fill:#eef2ff,stroke:#6366f1,stroke-width:2.5px,color:#1e1b4b,font-weight:bold;
+    classDef s2Style fill:#f0fdf4,stroke:#22c55e,stroke-width:2.5px,color:#14532d,font-weight:bold;
+    classDef s3Style fill:#f8fafc,stroke:#475569,stroke-width:2.5px,color:#0f172a,font-weight:bold;
+    classDef s4Style fill:#faf5ff,stroke:#a855f7,stroke-width:2.5px,color:#581c87,font-weight:bold;
+    classDef s5Style fill:#fffbeb,stroke:#f59e0b,stroke-width:2.5px,color:#78350f,font-weight:bold;
+    classDef s6Style fill:#f0f9ff,stroke:#0284c7,stroke-width:2.5px,color:#0369a1,font-weight:bold;
+
+    class Balconista,Leitor,Eletricista,Admin s1Style;
+    class PDV,Telegram,Painel s2Style;
+    class Nginx,Webhook,WS s3Style;
+    class Whisper,LLM,UC_Venda,UC_OS,UC_Estoque,UC_Financeiro s4Style;
+    class Ent_Cliente,Ent_Peca,Ent_OS,Ent_Caixa s5Style;
+    class Postgres,Audit,Backup s6Style;

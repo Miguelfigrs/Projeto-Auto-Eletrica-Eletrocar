@@ -1,0 +1,101 @@
+# 3. Diagrama Entidade-Relacionamento (DER Relacional)
+
+> **Categoria**: Banco de Dados • PostgreSQL 16  
+> **Sistema**: Auto Elétrica Eletrocar  
+> **Arquivo Fonte**: [`03_diagrama_der.mmd`](./src/03_diagrama_der.mmd)
+
+---
+
+## 📌 Descrição e Contexto para Apresentação
+
+Esquema relacional no PostgreSQL 16 com suporte a RBAC multi-perfil (tabela associativa USUARIOS_PAPEIS N:N), integridade referencial e chaves estrangeiras.
+
+---
+
+## 🖼️ Foto / Slide em Alta Resolução (4K Ultra-HD)
+
+![3. Diagrama Entidade-Relacionamento (DER Relacional)](./img/03_diagrama_der.png)
+
+> 💡 *Dica de Apresentação: Você também pode usar o arquivo vetorial editável em [SVG](./img/03_diagrama_der.svg) ou inserir o PNG direto no PowerPoint / Google Slides.*
+
+---
+
+## 💻 Código Fonte Mermaid
+
+```mermaid
+erDiagram
+    CLIENTES ||--|{ CARROS : possui
+    CLIENTES ||--o{ ORDENS_SERVICO : solicita
+    ORDENS_SERVICO ||--|{ ITENS_OS : contem
+    PECAS ||--o{ ITENS_OS : referencia
+    USUARIOS ||--o{ ORDENS_SERVICO : abre
+    USUARIOS ||--|{ USUARIOS_PAPEIS : possui
+    PAPEIS ||--|{ USUARIOS_PAPEIS : atribui
+
+    CLIENTES {
+        uuid id PK "Identificador Único"
+        varchar nome "Nome do Cliente"
+        varchar cpf_cnpj "Documento Fiscal"
+        timestamp created_at "Data Cadastro"
+    }
+
+    CARROS {
+        uuid id PK "Identificador Veículo"
+        uuid cliente_id FK "Vínculo Cliente"
+        varchar modelo "Modelo do Veículo"
+        varchar marca "Fabricante"
+        varchar ano "Ano Fabricação"
+    }
+
+    ORDENS_SERVICO {
+        uuid id PK "Identificador da OS"
+        uuid cliente_id FK "Cliente"
+        uuid carro_id FK "Veículo"
+        uuid usuario_id FK "Atendente/Mecânico"
+        varchar status "Status da Máquina de Estados"
+        text sintomas "Diagnóstico / Sintomas"
+        decimal valor_total "Valor Fechado"
+        timestamp created_at "Abertura"
+    }
+
+    ITENS_OS {
+        uuid id PK "Item de Serviço"
+        uuid ordem_servico_id FK "OS Vinculada"
+        uuid peca_id FK "Peça Utilizada"
+        int quantidade "Qtd Baixada"
+        decimal preco_unitario "Preço Unitário"
+    }
+
+    PECAS {
+        uuid id PK "Código Peça"
+        varchar codigo_barras "EAN-13 / Barcode"
+        varchar sku "Código Interno / Fabricante"
+        varchar descricao "Nome do Produto"
+        decimal preco_venda "Preço no Balcão"
+        int estoque_atual "Saldo em Estoque"
+    }
+
+    USUARIOS {
+        uuid id PK "ID Operador"
+        varchar nome "Nome do Usuário"
+        varchar email "Login de Acesso"
+        varchar senha_hash "Bcrypt Hash"
+        boolean is_active "Status Ativo"
+    }
+
+    PAPEIS {
+        int id PK "ID Perfil"
+        varchar codigo "ADMIN | BALCONISTA | ELETRICISTA"
+        varchar descricao "Nome do Perfil"
+    }
+
+    USUARIOS_PAPEIS {
+        uuid usuario_id PK,FK "ID Usuário"
+        int papel_id PK,FK "ID Papel (N:N Multi-Perfil)"
+        timestamp atribuido_em "Data Atribuição"
+    }
+```
+
+---
+
+*Documentação oficial e slides de engenharia da Auto Elétrica Eletrocar.*

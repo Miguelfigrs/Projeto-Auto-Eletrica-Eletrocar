@@ -1,0 +1,68 @@
+classDiagram
+    direction TB
+    class Usuario {
+        +UUID id
+        +String nome
+        +String email
+        +String senhaHash
+        +List~Papel~ papeis
+        +autenticar(senha) bool
+        +adicionarPapel(Papel papel)
+        +possuiPapel(Papel papel) bool
+        +ehAdmin() bool
+        +podeOperarBalcao() bool
+        +podeExecutarServico() bool
+    }
+
+    class Papel {
+        <<enumeration>>
+        ADMINISTRADOR
+        BALCONISTA
+        ELETRICISTA
+    }
+
+    class Cliente {
+        +UUID id
+        +String nome
+        +String cpfCnpj
+        +adicionarCarro(carro)
+    }
+
+    class Carro {
+        +UUID id
+        +String modelo
+        +String marca
+        +String ano
+    }
+
+    class OrdemServico {
+        +UUID id
+        +String numeroOS
+        +DateTime dataAbertura
+        +StatusOS status
+        +adicionarItem(peca, qtd)
+        +finalizarOS()
+    }
+
+    class ItemOS {
+        +UUID id
+        +int quantidade
+        +Decimal precoUnitario
+        +subtotal() Decimal
+    }
+
+    class Peca {
+        +UUID id
+        +String codigoBarras
+        +String sku
+        +String descricao
+        +Decimal precoVenda
+        +int estoqueAtual
+        +baixarEstoque(qtd)
+    }
+
+    Usuario "1" --> "1..*" Papel : possui perfis
+    Cliente "1" *-- "1..*" Carro : possui
+    Cliente "1" o-- "0..*" OrdemServico : solicita
+    OrdemServico "1" *-- "1..*" ItemOS : contem
+    ItemOS "1" --> "1" Peca : referencia

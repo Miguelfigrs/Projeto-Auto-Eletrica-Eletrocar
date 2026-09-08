@@ -1,0 +1,27 @@
+flowchart TD
+    Inicio[📟 Disparo do Leitor Óptico / Barcode] --> ModoOperacao{⚙️ Modo de Conexão<br/>do Dispositivo}
+    
+    ModoOperacao -->|Modo 1: HID - Teclado Emulado| ListenerHID[⚡ Global Keydown Event Listener no Window]
+    ListenerHID --> AnaliseTiming[⏱️ Análise de Delta Temporal entre Caracteres]
+    AnaliseTiming --> ValidaCadencia{Cadência de Entrada<br/>< 25ms por Caractere?}
+    
+    ValidaCadencia -- Não (> 80ms) --> IgnoraHumano[👤 Digitação Humana Normal:<br/>Ignora Interceptador]
+    ValidaCadencia -- Sim (< 25ms) --> CapturaBuffer[🤖 Dispositivo Óptico Detectado:<br/>Captura Buffer & Cancela Enter Final com e.preventDefault]
+    
+    ModoOperacao -->|Modo 2: Serial - Web Serial API| PortaSerial[🔌 Navigator Serial Port / WebHID Nativo]
+    PortaSerial --> StreamBytes[📡 Leitura de Stream Assíncrono de Bytes na Porta COM]
+    
+    CapturaBuffer ==> DespachoPDV[🛒 Despacho Imediato ao Carrinho / API sem Depender do Cursor]
+    StreamBytes ==> DespachoPDV
+    
+    DespachoPDV --> BaixaBanco[⚡ Baixa Instantânea no PostgreSQL em < 50ms + Bip Sonoro de Sucesso]
+
+    classDef hardwareStyle fill:#e0e7ff,stroke:#4338ca,stroke-width:2.5px,color:#1e1b4b,font-weight:bold;
+    classDef decisionStyle fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f,font-weight:bold;
+    classDef actionStyle fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d,font-weight:bold;
+    classDef neutralStyle fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#334155,font-weight:bold;
+
+    class Inicio,PortaSerial hardwareStyle;
+    class ModoOperacao,ValidaCadencia decisionStyle;
+    class ListenerHID,AnaliseTiming,CapturaBuffer,StreamBytes,DespachoPDV,BaixaBanco actionStyle;
+    class IgnoraHumano neutralStyle;

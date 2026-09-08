@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor Mecanico as 👤 Eletricista (Baia)
+    participant Webhook as 📱 Telegram Webhook
+    participant ASR as 🎙️ Whisper ASR Engine
+    participant LLM as 🧩 LLM Extractor (JSON)
+    participant UseCase as ⚙️ CriarOSPorVozUseCase
+    participant DB as 🗄️ PostgreSQL 16
+    participant WS as ⚡ WebSocket Server (Balcão)
+
+    Mecanico->>Webhook: 1. Grava áudio de 15s ("Gol do Carlos, alternador em curto")
+    Webhook->>Webhook: 2. Valida User ID na Whitelist de Segurança
+    Webhook->>ASR: 3. Transmite stream de áudio (.ogg)
+    ASR-->>Webhook: 4. Retorna texto: "Gol do Carlos, alternador em curto"
+    Webhook->>LLM: 5. Prompt com Dicionário Elétrico + JSON Schema rígido
+    LLM-->>Webhook: 6. Retorna {cliente: "Carlos", carro: "Gol", sintomas: "Alternador"}
+    Webhook->>UseCase: 7. Executa caso de uso com dados estruturados
+    UseCase->>DB: 8. Localiza/Cria Cliente e Carro
+    DB-->>UseCase: 9. Retorna IDs vinculados
+    UseCase->>DB: 10. Salva Ordem de Serviço (Status: Triagem)
+    DB-->>UseCase: 11. OS gravada com sucesso (#OS-2026-0042)
+    UseCase->>WS: 12. Emite evento Realtime para painel do balcão
+    UseCase-->>Webhook: 13. Retorna confirmação estruturada
+    Webhook-->>Mecanico: 14. Exibe Card Interativo no Telegram [✅ Confirmar] [✏️ Editar]
