@@ -1,0 +1,2 @@
+# Diretório externo para arquivos de banco de dados locais (fora da pasta da API).
+# Arquivos .db ou .sqlite são ignorados pelo controle de versão.

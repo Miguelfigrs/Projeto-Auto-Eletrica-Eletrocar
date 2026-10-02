@@ -1,0 +1,2882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apresentação: Sistema Auto Elétrica Eletrocar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-cover: #0b172a;
+      --bg-slide: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --primary: #0f2b48;
+      --primary-light: #1e4976;
+      --accent: #0284c7;
+      --accent-cyan: #38bdf8;
+      --accent-gold: #f59e0b;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --border-color: #cbd5e1;
+      --card-bg: #f8fafc;
+      --card-border: #e2e8f0;
+      --table-stripe: #f8fafc;
+      --slide-width: 1400px;
+      --slide-height: 787.5px; /* 16:9 */
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #090e17;
+      color: var(--text-main);
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* Presentation Screen Wrapper */
+    .deck-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #060a12;
+    }
+
+    .slide-viewport {
+      width: min(96vw, calc(94vh * 16 / 9));
+      aspect-ratio: 16 / 9;
+      position: relative;
+      background: var(--bg-slide);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      padding: 38px 48px 24px 48px;
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
+      overflow: hidden;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Slide Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+
+    .slide-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .slide-category {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .slide-title {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.15;
+    }
+
+    .slide-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    /* Slide Body */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      overflow-y: auto;
+      gap: 14px;
+      padding-right: 4px;
+    }
+
+    /* Slide Footer */
+    .slide-footer {
+      height: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: auto;
+    }
+
+    .slide-footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-footer-right {
+      font-weight: 600;
+      color: #475569;
+    }
+
+    /* Slide 1 - Cover Slide Style */
+    .slide.cover-slide {
+      background: linear-gradient(135deg, #091524 0%, #11253e 50%, #1a365d 100%);
+      color: #ffffff;
+      padding: 60px 70px;
+      justify-content: space-between;
+    }
+
+    .cover-header-tag {
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cover-header-tag::before {
+      content: "";
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: var(--accent-gold);
+      border-radius: 2px;
+    }
+
+    .cover-main-content {
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cover-title {
+      font-size: 3.2rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #ffffff;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .cover-subtitle {
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: #93c5fd;
+      line-height: 1.4;
+      max-width: 90%;
+    }
+
+    .cover-chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    .cover-chip {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      backdrop-filter: blur(4px);
+    }
+
+    .cover-footer {
+      border-top: 2px solid var(--accent-gold);
+      padding-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    /* Grid & Layout Utilities */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .col-span-2 {
+      grid-column: span 2;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    .card.highlight {
+      border-left: 4px solid var(--accent);
+      background: #f0f9ff;
+    }
+
+    .card.alert {
+      border-left: 4px solid var(--accent-gold);
+      background: #fffbeb;
+    }
+
+    /* Tables */
+    .table-container {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--primary);
+      color: #ffffff;
+      padding: 9px 14px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      padding: 8px 14px;
+      border-top: 1px solid var(--border-color);
+      color: #334155;
+      line-height: 1.35;
+    }
+
+    tr:nth-child(even) td {
+      background: var(--table-stripe);
+    }
+
+    tr:hover td {
+      background: #e0f2fe;
+    }
+
+    .code-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: #e2e8f0;
+      color: #0f172a;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Diagram Viewer Area */
+    .diagram-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px;
+      position: relative;
+      cursor: zoom-in;
+      overflow: hidden;
+      max-height: 520px;
+    }
+
+    .diagram-stage img {
+      max-width: 100%;
+      max-height: 480px;
+      object-fit: contain;
+      border-radius: 4px;
+      transition: transform 0.2s;
+    }
+
+    .diagram-stage:hover img {
+      transform: scale(1.01);
+    }
+
+    .diagram-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Checklist Grid */
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+      padding: 10px 0;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: #334155;
+    }
+
+    .check-icon {
+      color: var(--accent-green);
+      font-weight: 900;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    /* Control Bar */
+    .nav-toolbar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 8px 18px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: var(--shadow-xl);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    .nav-btn:active {
+      transform: scale(0.97);
+    }
+
+    .slide-counter {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0 10px;
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      border-right: 1px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+    }
+
+    .slide-counter:hover {
+      color: var(--accent-cyan);
+    }
+
+    /* Modal / Lightbox */
+    .lightbox-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(4, 9, 17, 0.92);
+      backdrop-filter: blur(6px);
+      z-index: 1000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .lightbox-modal.active {
+      display: flex;
+    }
+
+    .lightbox-modal img {
+      max-width: 95vw;
+      max-height: 88vh;
+      object-fit: contain;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      font-size: 1.4rem;
+      padding: 6px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    /* Slide Grid Modal (Overview) */
+    .overview-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(11, 15, 25, 0.95);
+      z-index: 900;
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    .overview-modal.active {
+      display: block;
+    }
+
+    .overview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      color: white;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .overview-item {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 6px;
+      padding: 12px;
+      cursor: pointer;
+      color: #e2e8f0;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 120px;
+    }
+
+    .overview-item:hover, .overview-item.current {
+      border-color: var(--accent-cyan);
+      background: #0f172a;
+      transform: translateY(-2px);
+    }
+
+    .overview-num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    .overview-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.25;
+      margin-top: 4px;
+    }
+
+    /* Print Style for 16:9 PDF Export */
+    @media print {
+      @page {
+        size: 16in 9in landscape;
+        margin: 0;
+      }
+      body {
+        background: transparent;
+      }
+      .deck-container {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: transparent;
+      }
+      .nav-toolbar, .lightbox-modal, .overview-modal {
+        display: none !important;
+      }
+      .slide-viewport {
+        width: 100vw;
+        height: 100vh;
+        aspect-ratio: auto;
+        box-shadow: none;
+        border-radius: 0;
+        overflow: visible;
+      }
+      .slide {
+        display: flex !important;
+        opacity: 1 !important;
+        position: relative !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        page-break-after: always;
+        break-after: page;
+        padding: 40px 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deck-container">
+    <div class="slide-viewport" id="viewport">
+
+      <!-- ==========================================
+           SLIDE 01: CAPA
+           ========================================== -->
+      <div class="slide cover-slide active" data-slide="1" data-cat="Capa">
+        <div class="cover-header-tag">PROPOSTA DE ESPECIFICAÇÃO E ARQUITETURA DE SISTEMAS</div>
+        <div class="cover-main-content">
+          <h1 class="cover-title">Sistema Auto Elétrica Eletrocar</h1>
+          <p class="cover-subtitle">Gestão Operacional de Balcão e Oficina Mecânica — FastAPI, React/PWA, Telegram Voice Bot, Hardware I/O e Clean Architecture</p>
+          <div class="cover-chips">
+            <span class="cover-chip">⚡ FastAPI & Python 3.12</span>
+            <span class="cover-chip">📱 PWA & React 18</span>
+            <span class="cover-chip">🎙️ Telegram Voice & Whisper ASR</span>
+            <span class="cover-chip">📟 WebHID & Barcode Scanner</span>
+            <span class="cover-chip">🐘 PostgreSQL 16 ACID</span>
+            <span class="cover-chip">🏛️ Clean Architecture & DDD</span>
+          </div>
+        </div>
+        <div class="cover-footer">
+          <div>Auto Elétrica Eletrocar • Engenharia de Software e Especificação Técnica</div>
+          <div>Setembro 2026</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 02: SUMÁRIO
+           ========================================== -->
+      <div class="slide" data-slide="2" data-cat="Sumário">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SUMÁRIO</span>
+            <h2 class="slide-title">Agenda da Apresentação</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">42 Slides</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2" style="font-size: 0.88rem; line-height: 1.8; color: #334155; margin-top: 10px;">
+            <div>
+              <p><strong>› 01 ·</strong> Contexto e escopo operacional</p>
+              <p><strong>› 02 ·</strong> Stack de referência e restrições</p>
+              <p><strong>› 03 ·</strong> Requisitos funcionais e não funcionais</p>
+              <p><strong>› 04 ·</strong> Diagrama de casos de uso (RBAC Multi-Perfil)</p>
+              <p><strong>› 05 ·</strong> Diagrama de classes e persistência DDD</p>
+              <p><strong>› 06 ·</strong> Modelo entidade-relacionamento (DER) e integridade</p>
+            </div>
+            <div>
+              <p><strong>› 07 ·</strong> Diagrama de objetos e ciclo de vida da OS</p>
+              <p><strong>› 08 ·</strong> Boundary-Control-Entity (BCE)</p>
+              <p><strong>› 09 ·</strong> Diagramas de sequência (IA Voz e Balcão/Oficina)</p>
+              <p><strong>› 10 ·</strong> Diagrama de atividades e protocolo de I/O</p>
+              <p><strong>› 11 ·</strong> Diagrama de componentes (Clean Architecture)</p>
+              <p><strong>› 12 ·</strong> DDD, TDD, rastreabilidade e cronograma</p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Agenda | 02</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 03: CONTEXTO
+           ========================================== -->
+      <div class="slide" data-slide="3" data-cat="Contexto">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">CONTEXTO</span>
+            <h2 class="slide-title">Por que este sistema existe</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="card highlight" style="margin-bottom: 8px;">
+            <p style="font-size: 0.85rem; line-height: 1.5;">
+              <strong>› Problema:</strong> Lentidão nas filas de balcão, perda de foco ao bipar peças, dificuldade do eletricista digitar na oficina com luvas/graxa, perda de receita e divergências de estoque/caixa.<br>
+              <strong>› Restrição:</strong> Tempo de resposta &lt; 150ms no PDV; operação 100% por atalhos de teclado; alta tolerância a falhas offline.<br>
+              <strong>› Abordagem:</strong> PWA React + FastAPI assíncrono + PostgreSQL 16 + Hardware I/O (WebHID/Serial) + Telegram Voice Bot com Whisper ASR.<br>
+              <strong>› Método:</strong> UML + DDD + Clean Architecture + TDD (Engenharia de Software de Alta Resiliência).
+            </p>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 32%;">Decisão Arquitetural</th>
+                  <th>Resumo Executivo e Justificativa de Negócio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>RBAC com Acúmulo de Papéis</strong></td>
+                  <td>Suporta Dono da Oficina atuando como Administrador, Balconista e Mecânico simultaneamente via tabela associativa N:N.</td>
+                </tr>
+                <tr>
+                  <td><strong>Captura Global de Barcode</strong></td>
+                  <td>Diferenciação temporal por buffer (delta &lt; 25ms) para separar leitor óptico de digitação humana — dispensa foco de cursor.</td>
+                </tr>
+                <tr>
+                  <td><strong>Abertura de OS por Voz (Telegram)</strong></td>
+                  <td>Eletricista grava áudio na baia; Whisper ASR transcreve e LLM extrai JSON estruturado (Cliente, Carro, Sintomas) em &lt; 5s.</td>
+                </tr>
+                <tr>
+                  <td><strong>Integridade ACID & Fechamento Cego</strong></td>
+                  <td>Transações atômicas com bloqueio otimista de estoque e fechamento de caixa cego para auditoria sem quebra de valores.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Contexto | 03</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 04: STACK TECNOLÓGICO
+           ========================================== -->
+      <div class="slide" data-slide="4" data-cat="Arquitetura">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">ARQUITETURA DE REFERÊNCIA</span>
+            <h2 class="slide-title">Stack Tecnológico e Restrições de Engenharia</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Camada</th>
+                  <th style="width: 38%;">Escolha Tecnológica</th>
+                  <th>Observação e Justificativa</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Frontend / PWA</strong></td>
+                  <td>React 18 + TypeScript + TailwindCSS</td>
+                  <td>PWA instalável nativamente no Windows e Mobile; UI leve, atalhos de teclado (F1–F9).</td>
+                </tr>
+                <tr>
+                  <td><strong>Resiliência Local</strong></td>
+                  <td>Service Workers + IndexedDB + Cache API</td>
+                  <td>Catálogo de peças e rascunhos de OS funcionam offline com Background Sync.</td>
+                </tr>
+                <tr>
+                  <td><strong>Backend / API</strong></td>
+                  <td>Python 3.12 (FastAPI) + AsyncIO + SQLAlchemy 2.0</td>
+                  <td>Throughput assíncrono alto, tipagem estrita com Pydantic v2 e latência &lt; 50ms.</td>
+                </tr>
+                <tr>
+                  <td><strong>Autenticação</strong></td>
+                  <td>OAuth2 com JWT + Bcrypt + Refresh Tokens</td>
+                  <td>Stateless seguro, cookies HTTP-Only e Lock Screen com PIN rápido no balcão.</td>
+                </tr>
+                <tr>
+                  <td><strong>Banco de Dados</strong></td>
+                  <td>PostgreSQL 16</td>
+                  <td>Fonte da verdade ACID, índices B-Tree e GIN para busca ultra-rápida.</td>
+                </tr>
+                <tr>
+                  <td><strong>Hardware & I/O</strong></td>
+                  <td>USB/Bluetooth HID + WebHID / Web Serial API</td>
+                  <td>Detecção de conexão em tempo real e captura global sem foco de cursor.</td>
+                </tr>
+                <tr>
+                  <td><strong>IA & Voz</strong></td>
+                  <td>Telegram Bot API + Whisper ASR + LLM Extraction</td>
+                  <td>Abertura de OS "mãos livres" na baia de trabalho através de áudio gravado.</td>
+                </tr>
+                <tr>
+                  <td><strong>Notificação Realtime</strong></td>
+                  <td>WebSockets nativos (FastAPI)</td>
+                  <td>Atualização instantânea na tela do balcão quando OS é gerada por voz.</td>
+                </tr>
+                <tr>
+                  <td><strong>DevOps / Infra</strong></td>
+                  <td>Docker Compose + Nginx Reverse Proxy</td>
+                  <td>Isolamento, baixo custo mensal em VPS Linux e rotina de backup automatizado.</td>
+                </tr>
+                <tr>
+                  <td><strong>Testes</strong></td>
+                  <td>Pytest (Backend) + Vitest / Testing Library (Front)</td>
+                  <td>Pirâmide de testes completa com mocks controlados de hardware e IA.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Stack | 04</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 05: REQUISITOS FUNCIONAIS (1/2)
+           ========================================== -->
+      <div class="slide" data-slide="5" data-cat="Requisitos">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 01 · REQUISITOS</span>
+            <h2 class="slide-title">Requisitos Funcionais (1/2)</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">RF01 a RF12</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 10%;">ID</th>
+                  <th>Descrição Funcional</th>
+                  <th style="width: 14%;">Prioridade</th>
+                  <th style="width: 22%;">Ator Principal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="code-pill">RF01</span></td>
+                  <td>Autenticar usuários via usuário/senha com suporte a múltiplos papéis (RBAC flexível)</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Administrador / Todos</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF02</span></td>
+                  <td>Permitir bloqueio de tela rápido (Lock Screen) com PIN para troca ágil de operador</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF03</span></td>
+                  <td>Registrar venda rápida no balcão em menos de 10 segundos com teclas de atalho (F1–F9)</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF04</span></td>
+                  <td>Capturar código de barras de peças automaticamente sem necessidade de foco prévio</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista / Hardware</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF05</span></td>
+                  <td>Detectar status de conexão do leitor USB/Bluetooth via WebHID/Serial em tempo real</td>
+                  <td><span style="color: var(--accent); font-weight:700;">Média</span></td>
+                  <td>Sistema / Hardware</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF06</span></td>
+                  <td>Consultar peças por código original de fabricante (Bosch, Magneti Marelli, Delphi)</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista / Eletricista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF07</span></td>
+                  <td>Permitir busca ágil por aplicação veicular (Ex: "Alternador Gol G5 1.6")</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF08</span></td>
+                  <td>Aplicar desconto percentual ou em valor mediante permissão gerencial configurada</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Administrador / Balcão</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF09</span></td>
+                  <td>Emitir sinal sonoro de feedback (Bip via Web Audio) ao reconhecer item com sucesso</td>
+                  <td><span style="color: var(--accent); font-weight:700;">Média</span></td>
+                  <td>Sistema / UI</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF10</span></td>
+                  <td>Abrir Ordem de Serviço com checklist elétrico estruturado (Bateria, Alternador, Partida)</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista / Eletricista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF11</span></td>
+                  <td>Permitir abertura de OS via comando de voz gravado no Telegram Bot</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Eletricista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF12</span></td>
+                  <td>Transcrever áudio via Whisper ASR e extrair entidades (Cliente, Carro, Sintoma) via LLM</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Sistema / IA</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Requisitos | 05</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 06: REQUISITOS FUNCIONAIS (2/2)
+           ========================================== -->
+      <div class="slide" data-slide="6" data-cat="Requisitos">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 01 · REQUISITOS</span>
+            <h2 class="slide-title">Requisitos Funcionais (2/2)</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">RF13 a RF24</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 10%;">ID</th>
+                  <th>Descrição Funcional</th>
+                  <th style="width: 14%;">Prioridade</th>
+                  <th style="width: 22%;">Ator Principal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="code-pill">RF13</span></td>
+                  <td>Notificar balcão via WebSockets em tempo real quando uma nova OS for gerada por voz</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Sistema</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF14</span></td>
+                  <td>Controlar máquina de estados da OS (Orçamento → Execução → Testes → Finalizada)</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Eletricista / Balcão</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF15</span></td>
+                  <td>Alocar peças do estoque para a OS com reserva prévia e baixa automática</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Sistema</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF16</span></td>
+                  <td>Suportar múltiplos veículos vinculados ao mesmo cliente em cadastro simplificado</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF17</span></td>
+                  <td>Registrar sangrias, suprimentos e controle de turnos com fechamento de caixa</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF18</span></td>
+                  <td>Executar fechamento cego de caixa (sem exibir saldo teórico ao operador no balcão)</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista / Gestor</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF19</span></td>
+                  <td>Emitir DRE Gerencial detalhando Receita Bruta, CMV, Mão de Obra e Lucro Líquido</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Administrador</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF20</span></td>
+                  <td>Gerar QR Code PIX dinâmico com confirmação automática de liquidação bancária</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Sistema / Balconista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF21</span></td>
+                  <td>Registrar logs de auditoria imutáveis com IP, operador, payload anterior e posterior</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Sistema</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF22</span></td>
+                  <td>Emitir orçamentos térmicos (80mm/58mm) e envio de PDF direto via WhatsApp</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Balconista</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF23</span></td>
+                  <td>Alertar estoque mínimo e emitir lista inteligente de compras baseada no giro médio</td>
+                  <td><span style="color: var(--accent); font-weight:700;">Média</span></td>
+                  <td>Administrador</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF24</span></td>
+                  <td>Manter operação do balcão em modo offline com sincronização posterior via fila local</td>
+                  <td><span style="color: var(--accent-red); font-weight:700;">Alta</span></td>
+                  <td>Sistema / PWA</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Requisitos | 06</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 07: REQUISITOS NÃO FUNCIONAIS
+           ========================================== -->
+      <div class="slide" data-slide="7" data-cat="Requisitos">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 01 · REQUISITOS</span>
+            <h2 class="slide-title">Requisitos Não Funcionais</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Critérios de Qualidade</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 10%;">ID</th>
+                  <th style="width: 22%;">Categoria</th>
+                  <th>Descrição + Critério Mensurável</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="code-pill">RNF01</span></td>
+                  <td><strong>Desempenho no Balcão</strong></td>
+                  <td>Tempo de resposta da leitura óptica e adição ao carrinho &lt; <strong>150ms</strong>; busca textual em menos de <strong>50ms</strong>.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF02</span></td>
+                  <td><strong>Disponibilidade / Offline</strong></td>
+                  <td>Frontend deve operar como PWA instalável; catálogo e rascunhos funcionam offline via IndexedDB com Background Sync.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF03</span></td>
+                  <td><strong>Hardware & I/O</strong></td>
+                  <td>Buffer global deve distinguir operador humano (80–200ms) de leitor óptico (&lt; 25ms) e suprimir tecla Enter acidental.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF04</span></td>
+                  <td><strong>Inteligência Artificial</strong></td>
+                  <td>Processamento completo de áudio (Telegram → Whisper → LLM → OS criada) com latência total inferior a <strong>5 segundos</strong>.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF05</span></td>
+                  <td><strong>Integridade Transacional</strong></td>
+                  <td>Garantia estrita de isolamento ACID no PostgreSQL 16 para impedir saldo de estoque negativo e quebra de caixa.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF06</span></td>
+                  <td><strong>Segurança & Autenticação</strong></td>
+                  <td>Senhas com hash Bcrypt (custo 12), tokens JWT stateless e sanitização estrita contra SQL Injection via ORM SQLAlchemy 2.0.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF07</span></td>
+                  <td><strong>Usabilidade em Oficina</strong></td>
+                  <td>Operação "Zero Mouse" no balcão via teclas de atalho e operação "Mãos Livres" na oficina via comando de voz.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF08</span></td>
+                  <td><strong>Compatibilidade</strong></td>
+                  <td>Suporte total a navegadores modernos Chromium (Windows 10/11) com suporte a WebHID e dispositivos móveis Android.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Requisitos | 07</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 08: ATORES DO SISTEMA
+           ========================================== -->
+      <div class="slide" data-slide="8" data-cat="Casos de Uso">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 02 · CASOS DE USO</span>
+            <h2 class="slide-title">Atores do Sistema e RBAC Multi-Papel</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 26%;">Ator</th>
+                  <th style="width: 22%;">Tipo de Ator</th>
+                  <th>Papel e Responsabilidades Operacionais</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Administrador (Gestor)</strong></td>
+                  <td>Usuário Autenticado</td>
+                  <td>Gestão geral, análise de DRE, fluxo de caixa, precificação, cadastro de usuários e auditoria.</td>
+                </tr>
+                <tr>
+                  <td><strong>Balconista / Atendente</strong></td>
+                  <td>Usuário Autenticado</td>
+                  <td>Venda rápida no PDV, leitura óptica de peças, abertura manual de OS e recebimento de caixa.</td>
+                </tr>
+                <tr>
+                  <td><strong>Eletricista / Mecânico</strong></td>
+                  <td>Usuário Autenticado</td>
+                  <td>Execução de serviços na baia, gravação de áudios no Telegram, checklist técnico e requisição de peças.</td>
+                </tr>
+                <tr>
+                  <td><strong>Dono da Oficina (Multi-Perfil)</strong></td>
+                  <td>Usuário Autenticado</td>
+                  <td>Herda e acumula simultaneamente os papéis de Admin, Balcão e Eletricista sem troca de login.</td>
+                </tr>
+                <tr>
+                  <td><strong>Leitor de Barcode USB/BT</strong></td>
+                  <td>Ator Externo de Hardware</td>
+                  <td>Dispara pulsos de teclado em alta cadência (&lt; 25ms) via emulação HID ou porta serial virtual.</td>
+                </tr>
+                <tr>
+                  <td><strong>Telegram Voice Bot / Whisper</strong></td>
+                  <td>Ator Externo de IA</td>
+                  <td>Captura áudio do operador, transcreve em texto e estrutura entidades em JSON Schema rígido.</td>
+                </tr>
+                <tr>
+                  <td><strong>Gateway de Pagamento / PIX</strong></td>
+                  <td>Sistema Externo</td>
+                  <td>Gera QR Code dinâmico com webhook para confirmação em tempo real de liquidação financeira.</td>
+                </tr>
+                <tr>
+                  <td><strong>PostgreSQL 16</strong></td>
+                  <td>Sistema de Persistência</td>
+                  <td>Fonte central da verdade, integridade referencial, índices GIN/B-Tree e transações ACID.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Casos de Uso | 08</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 09: DIAGRAMA DE CASOS DE USO (GERAL)
+           ========================================== -->
+      <div class="slide" data-slide="9" data-cat="Casos de Uso">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 02 · CASOS DE USO</span>
+            <h2 class="slide-title">Diagrama de Casos de Uso (UML / RBAC)</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/01_diagrama_casos_de_uso.png')">
+            <img src="../diagramas/img/01_diagrama_casos_de_uso.png" alt="Diagrama de Casos de Uso">
+          </div>
+          <div class="diagram-hint">🔍 Clique no diagrama para ampliar em alta definição (4K). Observe a herança e o acúmulo de papéis para o dono da oficina.</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Casos de Uso | 09</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 10: CASOS DE USO - BALCÃO & LEITOR
+           ========================================== -->
+      <div class="slide" data-slide="10" data-cat="Casos de Uso">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 02 · CASOS DE USO</span>
+            <h2 class="slide-title">Foco Balcão & Leitor de Código de Barras</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card highlight">
+              <div class="card-title">🛒 UC02: Realizar Venda no Balcão</div>
+              <p class="card-desc">Operação contínua de venda com navegação estrita por teclado. Permite adição de múltiplos itens, cálculo automático de totais, seleção de forma de pagamento e emissão de recibo térmico.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">📟 &lt;&lt;include&gt;&gt; UC03: Ler Código de Barras</div>
+              <p class="card-desc">Invocado automaticamente sempre que o leitor emite um código válido. Interceptado no nível da janela, validando formato EAN/Code128 e adicionando o produto em menos de 150ms.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">🏷️ &lt;&lt;extend&gt;&gt; UC04: Aplicar Desconto</div>
+              <p class="card-desc">Ponto de extensão ativado sob demanda. Se o desconto ultrapassar a margem permitida ao balconista (ex: 5%), exige PIN de liberação do Administrador com log de auditoria.</p>
+            </div>
+            <div class="card alert">
+              <div class="card-title">🔔 Feedback I/O Imediato</div>
+              <p class="card-desc">A cada bip bem-sucedido, a aplicação emite um tom sonoro agradável via Web Audio API e atualiza o badge do leitor para verde [🟢 Leitor Conectado & Bip OK].</p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Casos de Uso | 10</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 11: CASOS DE USO - OFICINA & VOZ
+           ========================================== -->
+      <div class="slide" data-slide="11" data-cat="Casos de Uso">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 02 · CASOS DE USO</span>
+            <h2 class="slide-title">Foco Oficina & Pipeline de Voz no Telegram</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card highlight">
+              <div class="card-title">🎙️ UC06: Enviar Áudio Telegram (IA de Voz)</div>
+              <p class="card-desc">O mecânico grava áudio na baia relatando o diagnóstico ("Gol do Carlos, bateria arriando, alternador sem carregar"). Dispensado o uso de teclado ou telas sujas de graxa.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">📋 &lt;&lt;include&gt;&gt; UC05: Abrir Ordem de Serviço</div>
+              <p class="card-desc">O backend processa a transcrição com dicionário elétrico automotivo, localiza ou cadastra o cliente e veículo, e instancia a OS no status inicial com checklist preenchido.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">⚙️ &lt;&lt;extend&gt;&gt; Alocação de Peças Prévia</div>
+              <p class="card-desc">Caso o áudio mencione peças (ex: "precisa de regulador Bosch 14V"), o caso de uso reserva preventivamente o item no estoque e vincula à OS pendente.</p>
+            </div>
+            <div class="card alert">
+              <div class="card-title">⚡ Transmissão Realtime via WebSocket</div>
+              <p class="card-desc">Assim que a OS é criada pelo bot, um evento síncrono é transmitido para os computadores do balcão, abrindo um card flutuante para confirmação imediata.</p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Casos de Uso | 11</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 12: CASOS DE USO - GESTÃO & MULTI-PAPEL
+           ========================================== -->
+      <div class="slide" data-slide="12" data-cat="Casos de Uso">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 02 · CASOS DE USO</span>
+            <h2 class="slide-title">Foco Gestão, DRE & Dono Multi-Papel</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card highlight">
+              <div class="card-title">👑 Acúmulo Flexível de Perfis</div>
+              <p class="card-desc">Em oficinas de pequeno e médio porte, o dono frequentemente atende no balcão e realiza diagnósticos técnicos. O sistema permite acúmulo de papéis sem trocar de usuário.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">📊 UC07: Emitir DRE Gerencial</div>
+              <p class="card-desc">Demonstrativo de Resultado do Exercício com cálculo preciso de Receita Bruta, CMV (Custo de Peças), Mão de Obra e Despesas, gerando a Margem de Contribuição líquida.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">🔒 UC10: Fechamento Cego de Caixa</div>
+              <p class="card-desc">O operador informa os valores físicos em dinheiro e comprovantes sem visualizar o total teórico do sistema, eliminando acomodações e desvios de conferência.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">🛡️ Auditoria Rigorosa de Preços e Cancelamentos</div>
+              <p class="card-desc">Cada estorno, alteração manual de tabela ou concessão de abatimento gera log imutável no PostgreSQL com rastreabilidade completa do operador responsável.</p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Casos de Uso | 12</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 13: CASOS DE USO PRINCIPAIS - TEXTUAL
+           ========================================== -->
+      <div class="slide" data-slide="13" data-cat="Casos de Uso">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 02 · CASOS DE USO</span>
+            <h2 class="slide-title">Casos de Uso Principais — Descrição Textual</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">UC02: Realizar Venda no Balcão</div>
+              <div class="card-desc" style="font-size: 0.8rem;">
+                <strong>› Ator Principal:</strong> Balconista (ou Dono Multi-Perfil).<br>
+                <strong>› Pré-condições:</strong> Caixa do dia aberto e usuário autenticado.<br>
+                <strong>› Fluxo Principal:</strong><br>
+                1. Balconista pressiona <code>F2</code> para nova venda.<br>
+                2. Aponta o leitor óptico nas peças (UC03); sistema emite bip e adiciona itens (&lt; 150ms).<br>
+                3. Balconista tecla <code>F9</code> para tela de pagamento.<br>
+                4. Escolhe PIX (QR Code dinâmico gerado), Cartão ou Dinheiro.<br>
+                5. Confirma recebimento; backend processa transação ACID, baixa estoque e gera recibo térmico.<br>
+                <strong>› Pós-condições:</strong> Estoque deduzido e caixa atualizado.
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">UC06: Enviar Áudio Telegram / IA</div>
+              <div class="card-desc" style="font-size: 0.8rem;">
+                <strong>› Ator Principal:</strong> Eletricista / Mecânico.<br>
+                <strong>› Pré-condições:</strong> Telegram User ID autorizado na whitelist do banco.<br>
+                <strong>› Fluxo Principal:</strong><br>
+                1. Eletricista envia áudio no bot do Telegram relatando sintomas e peças.<br>
+                2. Webhook aciona Whisper ASR para transcrição.<br>
+                3. LLM extrai JSON estruturado com terminologia automotiva.<br>
+                4. Backend vincula cliente e veículo e gera a OS em status inicial.<br>
+                5. WebSocket emite alerta no balcão e bot retorna confirmação com botões inline.<br>
+                <strong>› Pós-condições:</strong> OS salva no banco de dados e visível no pátio.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Casos de Uso | 13</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 14: DIAGRAMA DE CLASSES (GERAL)
+           ========================================== -->
+      <div class="slide" data-slide="14" data-cat="Classes">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03 · DIAGRAMA DE CLASSES</span>
+            <h2 class="slide-title">Diagrama de Classes de Domínio (DDD / UML)</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/02_diagrama_classes.png')">
+            <img src="../diagramas/img/02_diagrama_classes.png" alt="Diagrama de Classes">
+          </div>
+          <div class="diagram-hint">🔍 Clique para ampliar. Entidades ricas isoladas de frameworks, com métodos de negócio e validações estritas.</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Classes | 14</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 15: CLASSES - USUÁRIOS E RBAC
+           ========================================== -->
+      <div class="slide" data-slide="15" data-cat="Classes">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03 · DIAGRAMA DE CLASSES</span>
+            <h2 class="slide-title">Classes de Segurança, Identidade e RBAC</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card highlight">
+              <div class="card-title">Usuario (Entity)</div>
+              <p class="card-desc">
+                <code>- id: UUID</code><br>
+                <code>- nome: string</code><br>
+                <code>- email: string</code><br>
+                <code>- senha_hash: string</code><br>
+                <code>- pin_rapido: string</code><br>
+                <code>- telegram_id: int</code><br>
+                <code>- ativo: bool</code><br>
+                ───────────────<br>
+                <code>+ autenticar(senha): bool</code><br>
+                <code>+ validar_pin(pin): bool</code><br>
+                <code>+ possui_papel(nome): bool</code><br>
+                <code>+ acumular_papeis(papeis)</code>
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Papel (Entity / Enum)</div>
+              <p class="card-desc">
+                <code>- id: int</code><br>
+                <code>- nome: TipoPapel</code><br>
+                <code>- descricao: string</code><br>
+                ───────────────<br>
+                <strong>Valores Possíveis:</strong><br>
+                • <code>ADMINISTRADOR</code><br>
+                • <code>BALCONISTA</code><br>
+                • <code>ELETRICISTA</code><br>
+                ───────────────<br>
+                <code>+ listar_permissoes(): list</code>
+              </p>
+            </div>
+            <div class="card alert">
+              <div class="card-title">UsuarioPapel (Associação)</div>
+              <p class="card-desc">
+                <code>- usuario_id: UUID</code><br>
+                <code>- papel_id: int</code><br>
+                <code>- atribuido_em: datetime</code><br>
+                ───────────────<br>
+                Permite a associação <strong>N:N</strong> flexível, viabilizando que o dono acumule os três perfis operacionais com integridade e sem duplicação de contas.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Classes | 15</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 16: CLASSES - CLIENTE, CARRO & OS
+           ========================================== -->
+      <div class="slide" data-slide="16" data-cat="Classes">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03 · DIAGRAMA DE CLASSES</span>
+            <h2 class="slide-title">Classes de Cliente, Veículo e Ordem de Serviço</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card">
+              <div class="card-title">Cliente (Entity)</div>
+              <p class="card-desc">
+                <code>- id: UUID</code><br>
+                <code>- nome: string</code><br>
+                <code>- cpf_cnpj: string (opc)</code><br>
+                <code>- telefone: string</code><br>
+                ───────────────<br>
+                <code>+ vincular_veiculo(carro)</code><br>
+                <code>+ listar_historico_os()</code>
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Veiculo (Entity)</div>
+              <p class="card-desc">
+                <code>- id: UUID</code><br>
+                <code>- cliente_id: UUID</code><br>
+                <code>- placa: PlacaVeiculo (VO)</code><br>
+                <code>- modelo: string</code><br>
+                <code>- ano: int</code><br>
+                ───────────────<br>
+                <code>+ validar_placa(): bool</code>
+              </p>
+            </div>
+            <div class="card highlight">
+              <div class="card-title">OrdemServico (Aggregate Root)</div>
+              <p class="card-desc">
+                <code>- id: UUID</code><br>
+                <code>- numero_os: string</code><br>
+                <code>- veiculo_id: UUID</code><br>
+                <code>- status: StatusOS</code><br>
+                <code>- checklist: ChecklistEletrico</code><br>
+                <code>- valor_total: Decimal</code><br>
+                ───────────────<br>
+                <code>+ adicionar_item(peca, qtd)</code><br>
+                <code>+ transitar_para(novo_status)</code><br>
+                <code>+ calcular_total(): Decimal</code>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Classes | 16</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 17: CLASSES - PEÇAS, VENDAS E CAIXA
+           ========================================== -->
+      <div class="slide" data-slide="17" data-cat="Classes">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03 · DIAGRAMA DE CLASSES</span>
+            <h2 class="slide-title">Classes de Peças, Vendas e Transações</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card highlight">
+              <div class="card-title">Peca (Entity / Aggregate)</div>
+              <p class="card-desc">
+                <code>- id: UUID</code><br>
+                <code>- sku: string</code><br>
+                <code>- codigo_barras: string</code><br>
+                <code>- codigo_fabricante: string</code><br>
+                <code>- preco_venda: Decimal</code><br>
+                <code>- estoque_atual: int</code><br>
+                ───────────────<br>
+                <code>+ reservar(qtd): bool</code><br>
+                <code>+ dar_baixa(qtd): void</code><br>
+                <code>+ estornar(qtd): void</code>
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">VendaBalcao (Aggregate Root)</div>
+              <p class="card-desc">
+                <code>- id: UUID</code><br>
+                <code>- operador_id: UUID</code><br>
+                <code>- data_venda: datetime</code><br>
+                <code>- valor_total: Decimal</code><br>
+                <code>- status: StatusVenda</code><br>
+                ───────────────<br>
+                <code>+ adicionar_item(peca, qtd)</code><br>
+                <code>+ aplicar_desconto(desc)</code><br>
+                <code>+ finalizar(pagamento)</code>
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">TransacaoFinanceira (Entity)</div>
+              <p class="card-desc">
+                <code>- id: UUID</code><br>
+                <code>- venda_id: UUID (opc)</code><br>
+                <code>- ordem_servico_id: UUID</code><br>
+                <code>- tipo: TipoTransacao</code><br>
+                <code>- meio_pagamento: MeioPagto</code><br>
+                <code>- valor: Decimal</code><br>
+                ───────────────<br>
+                <code>+ conciliar(): void</code>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Classes | 17</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 18: PERSISTÊNCIA LOCAL X REMOTA
+           ========================================== -->
+      <div class="slide" data-slide="18" data-cat="Persistência">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03 · PERSISTÊNCIA</span>
+            <h2 class="slide-title">Persistência Local (PWA) × Remota (PostgreSQL 16)</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Classe / Entidade</th>
+                  <th style="width: 25%;">Local (IndexedDB / PWA)</th>
+                  <th style="width: 25%;">Remota (PostgreSQL 16)</th>
+                  <th>Estratégia de Sincronização</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Usuario & Papel</strong></td>
+                  <td>Cache de leitura (Sessão)</td>
+                  <td>Fonte da verdade</td>
+                  <td>Somente leitura no cliente; revalidação a cada 4 horas.</td>
+                </tr>
+                <tr>
+                  <td><strong>Peca (Catálogo Balcão)</strong></td>
+                  <td>Cache local para busca rápida</td>
+                  <td>Fonte da verdade</td>
+                  <td>Baixa inicial de catálogo + atualização diferencial periódica.</td>
+                </tr>
+                <tr>
+                  <td><strong>Cliente & Veiculo</strong></td>
+                  <td>Cache de consulta recente</td>
+                  <td>Fonte da verdade</td>
+                  <td>Prioriza busca online; usa cache em caso de indisponibilidade.</td>
+                </tr>
+                <tr>
+                  <td><strong>VendaBalcao / Itens</strong></td>
+                  <td>Sim (Fila Outbox)</td>
+                  <td>Fonte da verdade</td>
+                  <td>Gravação síncrona local e disparo assíncrono para o servidor.</td>
+                </tr>
+                <tr>
+                  <td><strong>OrdemServico</strong></td>
+                  <td>Rascunhos temporários</td>
+                  <td>Fonte da verdade</td>
+                  <td>Rascunho local em preenchimento; fonte oficial no PostgreSQL.</td>
+                </tr>
+                <tr>
+                  <td><strong>TransacaoFinanceira</strong></td>
+                  <td>Não armazenado local</td>
+                  <td>Fonte da verdade</td>
+                  <td>Nunca escrita offline sem validação da autorizadora ou caixa.</td>
+                </tr>
+                <tr>
+                  <td><strong>SyncQueueItem</strong></td>
+                  <td>Sim (Exclusiva)</td>
+                  <td>Inexistente</td>
+                  <td>Tabela efêmera no IndexedDB com retry e backoff exponencial.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Persistência | 18</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 19: DER LOCAL (INDEXEDDB)
+           ========================================== -->
+      <div class="slide" data-slide="19" data-cat="Banco de Dados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03.1 · BANCO LOCAL</span>
+            <h2 class="slide-title">DER Local — Cache Offline e Fila de Sincronização</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card highlight">
+              <div class="card-title">TB_CATALOGO_OFFLINE</div>
+              <p class="card-desc">
+                <code>id: string (PK)</code><br>
+                <code>sku: string (index)</code><br>
+                <code>barcode: string (index)</code><br>
+                <code>descricao: string</code><br>
+                <code>preco_venda: number</code><br>
+                <code>saldo_estoque: number</code><br>
+                <code>updated_at: timestamp</code><br>
+                ───────────────<br>
+                Garante que a leitura de código de barras responda em &lt; 15ms mesmo sem internet.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">TB_RASCUNHOS_OS</div>
+              <p class="card-desc">
+                <code>rascunho_id: string (PK)</code><br>
+                <code>cliente_nome: string</code><br>
+                <code>veiculo_placa: string</code><br>
+                <code>sintomas: string</code><br>
+                <code>checklist_json: string</code><br>
+                <code>criado_em: timestamp</code><br>
+                ───────────────<br>
+                Prevenção contra perda de dados em caso de queda de energia ou fechamento de aba.
+              </p>
+            </div>
+            <div class="card alert">
+              <div class="card-title">TB_SYNC_QUEUE (Outbox)</div>
+              <p class="card-desc">
+                <code>id: string (PK)</code><br>
+                <code>endpoint: string</code><br>
+                <code>metodo: 'POST' | 'PUT'</code><br>
+                <code>payload: string (JSON)</code><br>
+                <code>tentativas: number</code><br>
+                <code>status: 'PENDING'|'ERROR'</code><br>
+                ───────────────<br>
+                Processada automaticamente pelo Service Worker assim que o sinal for restabelecido.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">DER Local | 19</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 20: DER REMOTO - USUÁRIOS E CLIENTES
+           ========================================== -->
+      <div class="slide" data-slide="20" data-cat="Banco de Dados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03.1 · DER REMOTO</span>
+            <h2 class="slide-title">Módulo de Usuários, Papéis e Clientes</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card highlight">
+              <div class="card-title">Tabelas de Autenticação e RBAC</div>
+              <p class="card-desc">
+                • <code>USUARIOS</code> (id [PK], nome, email [UNIQUE], senha_hash, pin_rapido, telegram_user_id [UNIQUE], ativo)<br>
+                • <code>PAPEIS</code> (id [PK], nome_papel [UNIQUE], descricao)<br>
+                • <code>USUARIOS_PAPEIS</code> (usuario_id [FK], papel_id [FK], atribuido_em, PK composta)<br>
+                ───────────────<br>
+                <strong>Integridade:</strong> Chaves estrangeiras com restrição estrita (<code>ON DELETE RESTRICT</code>), garantindo histórico de auditoria.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Tabelas de Clientes e Veículos</div>
+              <p class="card-desc">
+                • <code>CLIENTES</code> (id [PK], nome, cpf_cnpj [opc], telefone, created_at)<br>
+                • <code>VEICULOS</code> (id [PK], cliente_id [FK], placa [UNIQUE], modelo, montadora, ano)<br>
+                ───────────────<br>
+                <strong>Relação 1:N:</strong> Um único cliente pode possuir múltiplos veículos vinculados para frotistas ou famílias.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">DER Remoto | 20</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 21: DER REMOTO - ORDENS DE SERVIÇO
+           ========================================== -->
+      <div class="slide" data-slide="21" data-cat="Banco de Dados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03.1 · DER REMOTO</span>
+            <h2 class="slide-title">Módulo de Ordens de Serviço e Peças Alocadas</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card highlight">
+              <div class="card-title">Tabelas da Ordem de Serviço</div>
+              <p class="card-desc">
+                • <code>ORDENS_SERVICO</code> (id [PK], numero_os [UNIQUE], veiculo_id [FK], mecanico_id [FK], status, checklist_eletrico [JSONB], valor_total, origem [BALCAO/TELEGRAM])<br>
+                • <code>ITENS_OS</code> (id [PK], ordem_servico_id [FK], peca_id [FK opc], servico_id [FK opc], quantidade, valor_unitario, subtotal)<br>
+                • <code>SERVICOS</code> (id [PK], descricao, preco_base, tempo_estimado_minutos)
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Tabelas de Estoque e Catálogo</div>
+              <p class="card-desc">
+                • <code>PECAS</code> (id [PK], sku [UNIQUE], codigo_barras [INDEX], codigo_fabricante, descricao, preco_custo, preco_venda, estoque_atual, estoque_minimo)<br>
+                • <code>MOVIMENTACOES_ESTOQUE</code> (id [PK], peca_id [FK], tipo [ENTRADA/SAIDA], quantidade, motivo, user_id [FK], timestamp)
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">DER Remoto | 21</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 22: DER REMOTO - BALCÃO E CAIXA
+           ========================================== -->
+      <div class="slide" data-slide="22" data-cat="Banco de Dados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03.1 · DER REMOTO</span>
+            <h2 class="slide-title">Módulo de Vendas no Balcão e Caixa</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card highlight">
+              <div class="card-title">Tabelas de Balcão e PDV</div>
+              <p class="card-desc">
+                • <code>VENDAS_BALCAO</code> (id [PK], operador_id [FK], data_venda, subtotal, desconto, valor_final, status)<br>
+                • <code>ITENS_VENDA</code> (id [PK], venda_id [FK CASCADE], peca_id [FK], quantidade, valor_unitario, subtotal)<br>
+                ───────────────<br>
+                <strong>Transação Atômica:</strong> A inserção de itens de venda e a respectiva dedução de saldo de estoque ocorrem no mesmo bloco <code>BEGIN ... COMMIT</code>.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Tabelas Financeiras e Caixa</div>
+              <p class="card-desc">
+                • <code>FECHAMENTOS_CAIXA</code> (id [PK], operador_id [FK], data_abertura, data_fechamento, valor_apurado_cego, saldo_teorico, quebra_caixa)<br>
+                • <code>TRANSACOES_FINANCEIRAS</code> (id [PK], venda_id [FK], os_id [FK], tipo, meio_pagamento, valor, status_conciliacao)
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">DER Remoto | 22</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 23: DER REMOTO COMPLETO (SLIDE 4K)
+           ========================================== -->
+      <div class="slide" data-slide="23" data-cat="Banco de Dados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03.1 · DER REMOTO</span>
+            <h2 class="slide-title">Modelo Entidade-Relacionamento Completo (PostgreSQL 16)</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/03_diagrama_der.png')">
+            <img src="../diagramas/img/03_diagrama_der.png" alt="Diagrama Entidade-Relacionamento">
+          </div>
+          <div class="diagram-hint">🔍 Clique para inspecionar todos os relacionamentos e chaves no PostgreSQL 16.</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">DER Remoto | 23</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 24: INTEGRIDADE REFERENCIAL E ACID
+           ========================================== -->
+      <div class="slide" data-slide="24" data-cat="Banco de Dados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03.1 · BANCO DE DADOS</span>
+            <h2 class="slide-title">Integridade Referencial e Transações ACID</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card highlight">
+              <div class="card-title">🔒 Prevenção de Estoque Negativo</div>
+              <p class="card-desc">
+                Uso de bloqueio pessimista temporário na finalização de vendas:<br>
+                <code>SELECT estoque_atual FROM pecas WHERE id = :id FOR UPDATE;</code><br>
+                Garante que vendas simultâneas no balcão e na oficina não ultrapassem o saldo físico.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">🛡️ Soft-Delete e Auditoria Contínua</div>
+              <p class="card-desc">
+                Ordens de serviço, clientes e produtos utilizam a coluna <code>deleted_at (timestamptz)</code>. Registros fiscais e contábeis jamais são destruídos via <code>DELETE</code> rígido.
+              </p>
+            </div>
+            <div class="card alert">
+              <div class="card-title">⚙️ Transações Atômicas de Caixa</div>
+              <p class="card-desc">
+                Se a emissão do comprovante ou o registro contábil falharem, a transação realiza <code>ROLLBACK</code> integral, restaurando o estoque e cancelando o débito no caixa.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">📜 Triggers de Histórico Automático</div>
+              <p class="card-desc">
+                Toda alteração em preços de peças gera automaticamente uma linha na tabela de auditoria com o usuário logado e a variação de valor.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">DER Remoto | 24</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 25: ÍNDICES B-TREE E GIN
+           ========================================== -->
+      <div class="slide" data-slide="25" data-cat="Banco de Dados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03.1 · BANCO DE DADOS</span>
+            <h2 class="slide-title">Índices B-Tree e GIN para Alta Performance</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 20%;">Índice / Tipo</th>
+                  <th style="width: 35%;">Declaração DDL</th>
+                  <th>Impacto no Desempenho Operacional</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>B-Tree (Barcode)</strong></td>
+                  <td><code>CREATE INDEX idx_pecas_barcode ON pecas(codigo_barras);</code></td>
+                  <td>Busca direta pelo leitor óptico em menos de <strong>5ms</strong>.</td>
+                </tr>
+                <tr>
+                  <td><strong>B-Tree (Fabricante)</strong></td>
+                  <td><code>CREATE INDEX idx_pecas_cod_fab ON pecas(codigo_fabricante);</code></td>
+                  <td>Consulta imediata por código gravado em alternadores e motores Bosch.</td>
+                </tr>
+                <tr>
+                  <td><strong>B-Tree (Placa)</strong></td>
+                  <td><code>CREATE INDEX idx_veiculos_placa ON veiculos(placa);</code></td>
+                  <td>Identificação veicular instantânea no ato do atendimento.</td>
+                </tr>
+                <tr>
+                  <td><strong>GIN (Texto Português)</strong></td>
+                  <td><code>CREATE INDEX idx_pecas_gin ON pecas USING gin(to_tsvector('portuguese', descricao));</code></td>
+                  <td>Busca textual inteligente com autocompletar e tolerância a variações em &lt; 20ms.</td>
+                </tr>
+                <tr>
+                  <td><strong>GIN (JSONB Checklist)</strong></td>
+                  <td><code>CREATE INDEX idx_os_checklist ON ordens_servico USING gin(checklist_eletrico);</code></td>
+                  <td>Filtros analíticos rápidos por tipo de defeito elétrico na oficina.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">DER Remoto | 25</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 26: SEGURANÇA E MATRIZ RBAC
+           ========================================== -->
+      <div class="slide" data-slide="26" data-cat="Segurança">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 03.1 · SEGURANÇA DE DADOS</span>
+            <h2 class="slide-title">Matriz de Controle de Acesso (RBAC) por Recurso</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Recurso / Entidade</th>
+                  <th style="width: 25%;">Administrador / Dono</th>
+                  <th style="width: 25%;">Balconista / Atendente</th>
+                  <th>Eletricista / Mecânico</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Usuários e Papéis</strong></td>
+                  <td><span class="badge-pill" style="background:#dcfce7; color:#15803d;">Total (CRUD)</span></td>
+                  <td><span class="badge-pill" style="background:#fee2e2; color:#b91c1c;">Sem Acesso</span></td>
+                  <td><span class="badge-pill" style="background:#fee2e2; color:#b91c1c;">Sem Acesso</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Catálogo & Preços</strong></td>
+                  <td><span class="badge-pill" style="background:#dcfce7; color:#15803d;">Total / Ajuste Margem</span></td>
+                  <td><span class="badge-pill" style="background:#e0f2fe; color:#0369a1;">Leitura / Venda</span></td>
+                  <td><span class="badge-pill" style="background:#f1f5f9; color:#475569;">Leitura de Saldo</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Vendas de Balcão</strong></td>
+                  <td><span class="badge-pill" style="background:#dcfce7; color:#15803d;">Total / Estorno</span></td>
+                  <td><span class="badge-pill" style="background:#e0f2fe; color:#0369a1;">Criar / Consultar Próprias</span></td>
+                  <td><span class="badge-pill" style="background:#fee2e2; color:#b91c1c;">Sem Acesso</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Ordens de Serviço</strong></td>
+                  <td><span class="badge-pill" style="background:#dcfce7; color:#15803d;">Total / Aprovação</span></td>
+                  <td><span class="badge-pill" style="background:#e0f2fe; color:#0369a1;">Abertura / Faturamento</span></td>
+                  <td><span class="badge-pill" style="background:#e0f2fe; color:#0369a1;">Abertura Voz / Status</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Financeiro & DRE</strong></td>
+                  <td><span class="badge-pill" style="background:#dcfce7; color:#15803d;">Visualização Analítica</span></td>
+                  <td><span class="badge-pill" style="background:#fef3c7; color:#b45309;">Fechamento Cego</span></td>
+                  <td><span class="badge-pill" style="background:#fee2e2; color:#b91c1c;">Sem Acesso</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Logs de Auditoria</strong></td>
+                  <td><span class="badge-pill" style="background:#e0f2fe; color:#0369a1;">Somente Leitura</span></td>
+                  <td><span class="badge-pill" style="background:#fee2e2; color:#b91c1c;">Sem Acesso</span></td>
+                  <td><span class="badge-pill" style="background:#fee2e2; color:#b91c1c;">Sem Acesso</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Segurança | 26</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 27: DIAGRAMA DE OBJETOS
+           ========================================== -->
+      <div class="slide" data-slide="27" data-cat="Objetos">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 04 · DIAGRAMA DE OBJETOS</span>
+            <h2 class="slide-title">Diagrama de Objetos — Runtime Snapshot da Oficina</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/04_diagrama_objetos.png')">
+            <img src="../diagramas/img/04_diagrama_objetos.png" alt="Diagrama de Objetos">
+          </div>
+          <div class="diagram-hint">🔍 Clique para inspecionar os objetos em memória durante um dia movimentado de oficina.</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Objetos | 27</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 28: DIAGRAMA DE ESTADOS - SINCRONIZAÇÃO
+           ========================================== -->
+      <div class="slide" data-slide="28" data-cat="Estados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 05 · DIAGRAMA DE ESTADOS</span>
+            <h2 class="slide-title">Ciclo de Sincronização Local × Remoto</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card highlight">
+              <div class="card-title">🔄 Máquina de Estados da Sincronização PWA</div>
+              <p class="card-desc" style="line-height: 1.6;">
+                1. <strong>PENDENTE</strong>: Venda ou rascunho de OS registrado localmente no IndexedDB.<br>
+                2. <strong>ENFILEIRADO</strong>: Registro adicionado à <code>SyncQueue</code> do cliente.<br>
+                3. <strong>SINCRONIZANDO</strong>: Service Worker detecta rede online e transmite lote via HTTPS.<br>
+                4. <strong>SINCRONIZADO</strong>: Servidor responde HTTP 200/201; item é removido da fila local.<br>
+                5. <strong>ERRO / RETRY</strong>: Falha de conexão; aplica backoff exponencial (1s, 2s, 4s, 8s).
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">⚡ Resolução de Conflitos</div>
+              <p class="card-desc" style="line-height: 1.6;">
+                • <strong>Regra Last-Write-Wins</strong>: Conflitos em cadastros são resolvidos com base na data <code>updated_at</code> mais recente.<br>
+                • <strong>Transações Financeiras</strong>: Sempre verificadas no servidor antes de confirmar liquidação final.<br>
+                • <strong>Indicador Visual</strong>: Ícone no cabeçalho exibe [🟢 Sincronizado], [🟡 Sincronizando...] ou [🔴 3 Pendentes].
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Estados | 28</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 29: DIAGRAMA DE ESTADOS - CICLO DA OS
+           ========================================== -->
+      <div class="slide" data-slide="29" data-cat="Estados">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 05 · DIAGRAMA DE ESTADOS</span>
+            <h2 class="slide-title">Diagrama de Estados — Ciclo de Vida da OS</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/05_diagrama_estados_os.png')">
+            <img src="../diagramas/img/05_diagrama_estados_os.png" alt="Ciclo de Vida da OS">
+          </div>
+          <div class="diagram-hint">🔍 Clique para ampliar as 9 transições de estado da Ordem de Serviço, da triagem ao faturamento.</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Estados | 29</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 30: BCE - VENDA DE BALCÃO
+           ========================================== -->
+      <div class="slide" data-slide="30" data-cat="BCE">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 06 · BOUNDARY-CONTROL-ENTITY</span>
+            <h2 class="slide-title">Diagrama de Robustez — Venda no Balcão e Leitor de Barcode</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/06_diagrama_bce.png')">
+            <img src="../diagramas/img/06_diagrama_bce.png" alt="Diagrama Boundary-Control-Entity">
+          </div>
+          <div class="diagram-hint">🔍 Separação de fronteiras (UI/Hardware), controladores de caso de uso e entidades de domínio.</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">BCE | 30</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 31: BCE - ABERTURA DE OS POR VOZ
+           ========================================== -->
+      <div class="slide" data-slide="31" data-cat="BCE">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 06 · BOUNDARY-CONTROL-ENTITY</span>
+            <h2 class="slide-title">Diagrama de Robustez — Abertura de OS por Voz no Telegram</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card highlight">
+              <div class="card-title">Fronteiras (&laquo;boundary&raquo;)</div>
+              <p class="card-desc">
+                • <code>TelegramWebhookGateway</code>: Recebe o payload do áudio.<br>
+                • <code>WhisperAudioGateway</code>: Integração com modelo acústico ASR.<br>
+                • <code>LLMEntityParserGateway</code>: Chamada com JSON Schema rígido.<br>
+                • <code>WebSocketNotifierGateway</code>: Atualização da UI do balcão.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Controle (&laquo;control&raquo;)</div>
+              <p class="card-desc">
+                • <code>ProcessarAudioVozUseCase</code>: Orquestra o fluxo de decodificação.<br>
+                • <code>IdentificarClienteCarroUseCase</code>: Busca ou cria cliente/carro.<br>
+                • <code>CriarOrdemServicoUseCase</code>: Instancia e persiste a nova OS.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Entidades (&laquo;entity&raquo;)</div>
+              <p class="card-desc">
+                • <code>OrdemServico</code>: Raiz de agregação criada.<br>
+                • <code>Cliente</code>: Cliente associado.<br>
+                • <code>Veiculo</code>: Automóvel em manutenção.<br>
+                • <code>ChecklistEletrico</code>: Estado de bateria/alternador.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">BCE | 31</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 32: BCE - MAPEAMENTO POR CASO DE USO
+           ========================================== -->
+      <div class="slide" data-slide="32" data-cat="BCE">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 06 · BOUNDARY-CONTROL-ENTITY</span>
+            <h2 class="slide-title">Mapeamento por Caso de Uso (Matriz BCE)</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 18%;">Caso de Uso</th>
+                  <th style="width: 22%;">Boundary UI / HW</th>
+                  <th style="width: 22%;">Boundary Externo</th>
+                  <th style="width: 20%;">Control (Use Case)</th>
+                  <th>Entities</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>UC02: Venda Balcão</strong></td>
+                  <td><code>BalcaoScreen</code></td>
+                  <td><code>BarcodeReaderGateway</code></td>
+                  <td><code>RealizarVendaUseCase</code></td>
+                  <td><code>VendaBalcao</code>, <code>Peca</code></td>
+                </tr>
+                <tr>
+                  <td><strong>UC06: Áudio Telegram</strong></td>
+                  <td>—</td>
+                  <td><code>TelegramGateway</code>, <code>Whisper</code></td>
+                  <td><code>CriarOSVozUseCase</code></td>
+                  <td><code>OrdemServico</code>, <code>Cliente</code></td>
+                </tr>
+                <tr>
+                  <td><strong>UC07: Emitir DRE</strong></td>
+                  <td><code>DREDashboardScreen</code></td>
+                  <td><code>ThermalPrinterGateway</code></td>
+                  <td><code>CalcularDREUseCase</code></td>
+                  <td><code>TransacaoFinanceira</code></td>
+                </tr>
+                <tr>
+                  <td><strong>UC08: Atualizar OS</strong></td>
+                  <td><code>KanbanOficinaScreen</code></td>
+                  <td><code>WebSocketGateway</code></td>
+                  <td><code>AtualizarStatusOSUseCase</code></td>
+                  <td><code>OrdemServico</code></td>
+                </tr>
+                <tr>
+                  <td><strong>UC10: Fechar Caixa</strong></td>
+                  <td><code>FechamentoCaixaModal</code></td>
+                  <td><code>ThermalPrinterGateway</code></td>
+                  <td><code>FechamentoCegoUseCase</code></td>
+                  <td><code>FechamentoCaixa</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">BCE | 32</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 33: DIAGRAMA DE SEQUÊNCIA - VOZ
+           ========================================== -->
+      <div class="slide" data-slide="33" data-cat="Sequência">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 07 · DIAGRAMA DE SEQUÊNCIA</span>
+            <h2 class="slide-title">Pipeline de IA por Voz (Telegram + Whisper + LLM)</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/07_diagrama_sequencia_voz.png')">
+            <img src="../diagramas/img/07_diagrama_sequencia_voz.png" alt="Pipeline de IA por Voz">
+          </div>
+          <div class="diagram-hint">🔍 Cronologia da mensagem de áudio: da gravação na oficina até a criação da OS e notificação no balcão.</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Sequência | 33</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 34: SEQUÊNCIA OPERACIONAL BALCÃO/OFICINA
+           ========================================== -->
+      <div class="slide" data-slide="34" data-cat="Sequência">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 07 · DIAGRAMA DE SEQUÊNCIA</span>
+            <h2 class="slide-title">Sequência Operacional Ponta a Ponta (Balcão e Oficina)</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/11_diagrama_sequencia_fluxo_operacional.png')">
+            <img src="../diagramas/img/11_diagrama_sequencia_fluxo_operacional.png" alt="Fluxo Operacional Balcão e Oficina">
+          </div>
+          <div class="diagram-hint">🔍 Três processos simultâneos: abertura de OS por voz, leitura rápida no PDV e baixa atômica de estoque.</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Sequência | 34</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 35: DIAGRAMA DE ATIVIDADES - BALCÃO
+           ========================================== -->
+      <div class="slide" data-slide="35" data-cat="Atividades">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 08 · DIAGRAMA DE ATIVIDADES</span>
+            <h2 class="slide-title">Operação de Balcão e Protocolo do Leitor Barcode</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/08_diagrama_atividades_balcao.png')">
+            <img src="../diagramas/img/08_diagrama_atividades_balcao.png" alt="Diagrama de Atividades do Balcão">
+          </div>
+          <div class="diagram-hint">🔍 Decisões de validação de saldo de estoque, venda sob encomenda e protocolo temporal (&lt; 25ms/char).</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Atividades | 35</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 36: DIAGRAMA DE COMPONENTES
+           ========================================== -->
+      <div class="slide" data-slide="36" data-cat="Componentes">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 09 · DIAGRAMA DE COMPONENTES</span>
+            <h2 class="slide-title">Camadas Clean Architecture + Gateways</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Slide 4K UHD</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="diagram-stage" onclick="openLightbox('../diagramas/img/09_diagrama_componentes_clean_arch.png')">
+            <img src="../diagramas/img/09_diagrama_componentes_clean_arch.png" alt="Diagrama de Componentes Clean Architecture">
+          </div>
+          <div class="diagram-hint">🔍 O domínio e os casos de uso nunca dependem de bibliotecas de hardware ou do PostgreSQL (DIP).</div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Componentes | 36</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 37: DDD - AGGREGATES E VALUE OBJECTS
+           ========================================== -->
+      <div class="slide" data-slide="37" data-cat="DDD">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 10 · IMPLEMENTAÇÃO</span>
+            <h2 class="slide-title">Domain-Driven Design (DDD) — Aggregates e VOs</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Aggregate Root</th>
+                  <th style="width: 28%;">Entidades Internas</th>
+                  <th style="width: 25%;">Value Objects (VOs)</th>
+                  <th>Repositório Abstrato</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>OrdemServico</strong></td>
+                  <td><code>ItemOS</code>, <code>Servico</code>, <code>Diagnostico</code></td>
+                  <td><code>PlacaVeiculo</code>, <code>StatusOS</code>, <code>Moeda</code></td>
+                  <td><code>OrdemServicoRepository</code></td>
+                </tr>
+                <tr>
+                  <td><strong>VendaBalcao</strong></td>
+                  <td><code>ItemVenda</code></td>
+                  <td><code>CodigoBarras</code>, <code>Desconto</code>, <code>Moeda</code></td>
+                  <td><code>VendaBalcaoRepository</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Peca</strong></td>
+                  <td><code>MovimentacaoEstoque</code></td>
+                  <td><code>Sku</code>, <code>SaldoEstoque</code>, <code>Preco</code></td>
+                  <td><code>PecaRepository</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Usuario</strong></td>
+                  <td><code>Sessao</code></td>
+                  <td><code>Email</code>, <code>SenhaHash</code>, <code>PinRapido</code></td>
+                  <td><code>UsuarioRepository</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid-3" style="margin-top: 10px;">
+            <div class="card highlight">
+              <div class="card-title">ValidacaoEstoqueService</div>
+              <p class="card-desc">Domain service que assegura reserva atômica de peças e impede que duas ordens requisitem o mesmo item sem saldo.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">CalculoDREService</div>
+              <p class="card-desc">Consolidação contábil gerencial deduzindo CMV e custos de operação para apurar o lucro líquido do período.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">ExtracaoVozService</div>
+              <p class="card-desc">Calibração de sinônimos elétricos (bendix, induzido, bobina, relé) para estruturação correta do pedido de serviço.</p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">DDD | 37</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 38: CLEAN ARCHITECTURE - PASTAS
+           ========================================== -->
+      <div class="slide" data-slide="38" data-cat="Arquitetura">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 10 · IMPLEMENTAÇÃO</span>
+            <h2 class="slide-title">Clean Architecture — Estrutura de Camadas e Pastas</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="card" style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.5; background: #0f172a; color: #e2e8f0; border-color: #334155;">
+            <p><span style="color: #38bdf8;">src/</span></p>
+            <p>&nbsp;&nbsp;├── <span style="color: #4ade80;">domain/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Entidades puras, Value Objects, Domain Services, Interfaces Repositório</p>
+            <p>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── entities/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Usuario, OrdemServico, Peca, VendaBalcao, Cliente</p>
+            <p>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── value_objects/&nbsp;&nbsp;&nbsp;# PlacaVeiculo, CodigoBarras, Dinheiro</p>
+            <p>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── repositories/&nbsp;&nbsp;&nbsp;&nbsp;# IOrdemServicoRepository, IPecaRepository (Interfaces puras)</p>
+            <p>&nbsp;&nbsp;├── <span style="color: #facc15;">application/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Casos de uso (Use Cases) e orquestração de negócios</p>
+            <p>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── use_cases/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# RealizarVendaUseCase, CriarOSVozUseCase, EmitirDREUseCase</p>
+            <p>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── dtos/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Modelos de entrada/saída Pydantic v2</p>
+            <p>&nbsp;&nbsp;├── <span style="color: #fb923c;">adapters/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Controladores, Presenters e Gateways concretos</p>
+            <p>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── controllers/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Rotas FastAPI REST e Handlers WebSockets</p>
+            <p>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── gateways/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# BarcodeGateway, TelegramWebhook, WhisperAdapter</p>
+            <p>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── repositories/&nbsp;&nbsp;&nbsp;&nbsp;# Implementações SQLAlchemy 2.0</p>
+            <p>&nbsp;&nbsp;└── <span style="color: #f43f5e;">infra/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Configurações externas, banco e drivers</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── db/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# PostgreSQL 16 engine, migrations Alembic</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── hardware/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# WebHID e Web Serial device listeners</p>
+          </div>
+          <div class="card alert" style="margin-top: 4px; padding: 8px 14px; font-size: 0.78rem;">
+            ⚠️ <strong>Regra Estrita de Verificação:</strong> <code>domain/</code> e <code>application/</code> jamais importam SQLAlchemy, FastAPI, WebHID ou bibliotecas de terceiros diretamente.
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Arquitetura | 38</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 39: TDD - PIRÂMIDE DE TESTES
+           ========================================== -->
+      <div class="slide" data-slide="39" data-cat="Testes">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 10 · IMPLEMENTAÇÃO</span>
+            <h2 class="slide-title">TDD — Pirâmide de Testes (Red → Green → Refactor)</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Nível da Pirâmide</th>
+                  <th style="width: 35%;">Estratégia de Teste</th>
+                  <th>Escopo e Ferramentas Utilizadas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>1. Domínio (Unitários)</strong></td>
+                  <td>Sem mocks externos</td>
+                  <td>Validação de regras puras: <code>Peca.dar_baixa()</code>, transições da OS e cálculos monetários.</td>
+                </tr>
+                <tr>
+                  <td><strong>2. Casos de Uso (Application)</strong></td>
+                  <td>Fakes in-memory</td>
+                  <td>Repositórios e gateways mockados para isolar a regra de negócio do caso de uso.</td>
+                </tr>
+                <tr>
+                  <td><strong>3. Gateways & Hardware</strong></td>
+                  <td>Mocks de eventos I/O</td>
+                  <td>Simulação de rajadas de pulsos HID (&lt; 25ms) e payloads de áudio do Telegram.</td>
+                </tr>
+                <tr>
+                  <td><strong>4. Persistência (PostgreSQL)</strong></td>
+                  <td>Testcontainers / Banco real</td>
+                  <td>Validação de concorrência com <code>SELECT FOR UPDATE</code> e integridade de chaves.</td>
+                </tr>
+                <tr>
+                  <td><strong>5. API & Rotas REST</strong></td>
+                  <td>TestClient FastAPI assíncrono</td>
+                  <td>Validação de endpoints, códigos HTTP 200/422/500 e schemas Pydantic.</td>
+                </tr>
+                <tr>
+                  <td><strong>6. Interface & PWA</strong></td>
+                  <td>Vitest + Testing Library</td>
+                  <td>Renderização de telas, teclas de atalho (F1–F9) e suporte offline via Mock Service Worker.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Testes | 39</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 40: CHECKLIST DO PROJETO
+           ========================================== -->
+      <div class="slide" data-slide="40" data-cat="Fechamento">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 11 · FECHAMENTO</span>
+            <h2 class="slide-title">Checklist de Engenharia de Software — 15/15 Completo</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill" style="background:#dcfce7; color:#15803d;">100% Entregue</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="checklist-grid">
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Requisitos funcionais (24) e não funcionais (8) mensuráveis</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Diagrama de estados — máquina de estados da OS e sincronização</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Diagrama de casos de uso — RBAC flexível com múltiplos papéis</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Boundary-Control-Entity — robustez para balcão e voz</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Descrição textual dos casos de uso principais e fluxos de exceção</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Diagramas de sequência — pipeline Whisper/LLM e operação balcão</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Diagrama de classes — entidades ricas, métodos e multiplicidades</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Diagrama de atividades — protocolo de I/O e atalhos de PDV</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Persistência local (PWA) × remota por entidade de domínio</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Diagrama de componentes — Clean Architecture estrita (DIP)</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>DER local e remoto com integridade ACID e índices otimizados</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Mapeamento DDD — Aggregates, Value Objects e Repositórios</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Diagrama de objetos — runtime snapshot da oficina automotiva</span></div>
+            <div class="checklist-item"><span class="check-icon">✓</span> <span>Estrutura de camadas + pirâmide de testes automatizados TDD</span></div>
+            <div class="checklist-item" style="grid-column: span 2;"><span class="check-icon">✓</span> <span>Matriz de rastreabilidade completa e cronograma executivo em Sprints</span></div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Checklist | 40</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 41: RASTREABILIDADE
+           ========================================== -->
+      <div class="slide" data-slide="41" data-cat="Fechamento">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">SEÇÃO 11 · FECHAMENTO</span>
+            <h2 class="slide-title">Rastreabilidade RF → Caso de Uso → Teste de Aceitação</h2>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 14%;">Requisito</th>
+                  <th style="width: 25%;">Caso de Uso Vinculado</th>
+                  <th>Teste de Aceitação Automatizado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="code-pill">RF01</span></td>
+                  <td><code>UC01: Autenticar no Sistema</code></td>
+                  <td><code>test_auth_multi_role_success</code>: valida acesso combinado de Administrador e Balconista.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF04</span></td>
+                  <td><code>UC03: Ler Código de Barras</code></td>
+                  <td><code>test_barcode_temporal_buffer</code>: valida delta &lt; 25ms e rejeição de digitação humana.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF11</span></td>
+                  <td><code>UC06: Áudio Telegram / IA</code></td>
+                  <td><code>test_voice_os_creation_pipeline</code>: mock de Whisper/LLM criando OS no banco em &lt; 5s.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF15</span></td>
+                  <td><code>UC05: Alocar Peças</code></td>
+                  <td><code>test_atomic_stock_deduction</code>: impede concorrência dupla via <code>SELECT FOR UPDATE</code>.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RF19</span></td>
+                  <td><code>UC07: Emitir DRE Gerencial</code></td>
+                  <td><code>test_dre_calculation_cmv</code>: valida apuração de receita bruta deduzindo CMV e custos.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF01</span></td>
+                  <td><code>UC02: Realizar Venda no Balcão</code></td>
+                  <td><code>test_benchmark_item_add_latency</code>: valida adição de item ao carrinho em menos de 150ms.</td>
+                </tr>
+                <tr>
+                  <td><span class="code-pill">RNF05</span></td>
+                  <td><code>UC02: Realizar Venda no Balcão</code></td>
+                  <td><code>test_acid_transaction_rollback</code>: simula erro de pagamento e garante estorno total.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Rastreabilidade | 41</div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SLIDE 42: CRONOGRAMA EXECUTIVO
+           ========================================== -->
+      <div class="slide" data-slide="42" data-cat="Planejamento">
+        <div class="slide-header">
+          <div class="slide-header-left">
+            <span class="slide-category">PLANEJAMENTO</span>
+            <h2 class="slide-title">Cronograma Executivo de Desenvolvimento (10 Semanas)</h2>
+          </div>
+          <div class="slide-header-right">
+            <span class="badge-pill">Sprints de 2 Semanas</span>
+          </div>
+        </div>
+        <div class="slide-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 14%;">Sprint</th>
+                  <th style="width: 16%;">Prazo</th>
+                  <th>Entregas e Marcos Operacionais</th>
+                  <th style="width: 22%;">Responsável</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Sprint 1</strong></td>
+                  <td>Semanas 1–2</td>
+                  <td>Modelagem de Dados, Autenticação JWT/Bcrypt, RBAC e Cadastros Base.</td>
+                  <td>Equipe Backend & DB</td>
+                </tr>
+                <tr>
+                  <td><strong>Sprint 2</strong></td>
+                  <td>Semanas 3–4</td>
+                  <td>Módulo de Estoque e Integração com Leitor de Barcode (WebHID/Serial/Cunha).</td>
+                  <td>Equipe Fullstack</td>
+                </tr>
+                <tr>
+                  <td><strong>Sprint 3</strong></td>
+                  <td>Semanas 5–6</td>
+                  <td>Balcão (PDV Rápido), Ordens de Serviço & Telegram Voice Bot (Voz → OS).</td>
+                  <td>Equipe Fullstack & IA</td>
+                </tr>
+                <tr>
+                  <td><strong>Sprint 4</strong></td>
+                  <td>Semanas 7–8</td>
+                  <td>Módulo Financeiro, Fluxo de Caixa, DRE Gerencial e Meios de Pagamento (PIX).</td>
+                  <td>Equipe Backend & Finance</td>
+                </tr>
+                <tr>
+                  <td><strong>Sprint 5</strong></td>
+                  <td>Semana 9</td>
+                  <td>Testes de Carga, Homologação em Balcão/Oficina e Treinamento da Equipe.</td>
+                  <td>Toda a Equipe</td>
+                </tr>
+                <tr>
+                  <td><strong>Go-Live</strong></td>
+                  <td>Semana 10</td>
+                  <td>Entrada em Produção, Monitoramento de Estabilidade e Suporte Assistido.</td>
+                  <td>Toda a Equipe</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card highlight" style="margin-top: 10px;">
+            <p style="font-size: 0.84rem; line-height: 1.4;">
+              🚀 <strong>Meta de Entrega:</strong> Sistema 100% operacional no balcão e no pátio, eliminando perda de tempo em digitação de OS e zerando divergências de inventário elétrico.
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <div class="slide-footer-left">Auto Elétrica Eletrocar • Proposta de Especificação e Arquitetura</div>
+          <div class="slide-footer-right">Cronograma | 42</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==========================================
+       BARRA DE NAVEGAÇÃO FLUTUANTE
+       ========================================== -->
+  <div class="nav-toolbar">
+    <button class="nav-btn" id="prevBtn" title="Slide Anterior (Seta Esquerda)">◀ Anterior</button>
+    <div class="slide-counter" id="counter" title="Clique para ver todos os slides (G)">01 / 42</div>
+    <button class="nav-btn" id="nextBtn" title="Próximo Slide (Seta Direita / Espaço)">Próximo ▶</button>
+    <button class="nav-btn" id="gridBtn" title="Ver Grade de Slides (G)">🗂️ Slides</button>
+    <button class="nav-btn" id="fsBtn" title="Tela Cheia (F)">⛶ Tela Cheia</button>
+    <button class="nav-btn" id="printBtn" title="Exportar para PDF / Imprimir (Ctrl+P)">🖨️ PDF</button>
+  </div>
+
+  <!-- ==========================================
+       MODAL DE LIGHTBOX (ZOOM 4K)
+       ========================================== -->
+  <div class="lightbox-modal" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close">✕ Fechar</button>
+    <img id="lightboxImg" src="" alt="Zoom 4K">
+  </div>
+
+  <!-- ==========================================
+       MODAL DE GRADE DE SLIDES (OVERVIEW)
+       ========================================== -->
+  <div class="overview-modal" id="overviewModal">
+    <div class="overview-header">
+      <h2>Índice de Todos os 42 Slides</h2>
+      <button class="lightbox-close" onclick="toggleOverview()" style="position: static;">✕ Fechar</button>
+    </div>
+    <div class="overview-grid" id="overviewGrid">
+      <!-- Gerado via Javascript -->
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 1;
+
+    const counterEl = document.getElementById('counter');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const gridBtn = document.getElementById('gridBtn');
+    const fsBtn = document.getElementById('fsBtn');
+    const printBtn = document.getElementById('printBtn');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const overviewModal = document.getElementById('overviewModal');
+    const overviewGrid = document.getElementById('overviewGrid');
+
+    function showSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+
+      slides.forEach((s, idx) => {
+        s.classList.remove('active');
+        if (idx + 1 === index) {
+          s.classList.add('active');
+        }
+      });
+
+      currentSlide = index;
+      counterEl.textContent = `${String(currentSlide).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`;
+      
+      // Update hash in URL
+      window.location.hash = `slide-${currentSlide}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    // Event Listeners
+    nextBtn.addEventListener('click', nextSlide);
+    prevBtn.addEventListener('click', prevSlide);
+    counterEl.addEventListener('click', toggleOverview);
+    gridBtn.addEventListener('click', toggleOverview);
+
+    // Fullscreen
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    // Print
+    printBtn.addEventListener('click', () => {
+      window.print();
+    });
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      if (overviewModal.classList.contains('active')) {
+        if (e.key === 'Escape') toggleOverview();
+        return;
+      }
+      if (lightbox.classList.contains('active')) {
+        if (e.key === 'Escape') closeLightbox();
+        return;
+      }
+
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        showSlide(1);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        showSlide(totalSlides);
+      } else if (e.key === 'f' || e.key === 'F') {
+        fsBtn.click();
+      } else if (e.key === 'g' || e.key === 'G') {
+        toggleOverview();
+      } else if (e.key === 'p' || e.key === 'P') {
+        if (e.ctrlKey) return;
+        window.print();
+      }
+    });
+
+    // Lightbox
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      lightbox.classList.add('active');
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+    }
+
+    // Slide Overview Grid
+    function populateOverview() {
+      overviewGrid.innerHTML = '';
+      slides.forEach((slide, idx) => {
+        const num = idx + 1;
+        const titleEl = slide.querySelector('.slide-title') || slide.querySelector('.cover-title');
+        const title = titleEl ? titleEl.textContent : `Slide ${num}`;
+        const cat = slide.getAttribute('data-cat') || '';
+
+        const item = document.createElement('div');
+        item.className = `overview-item ${num === currentSlide ? 'current' : ''}`;
+        item.innerHTML = `
+          <div class="overview-num">#${String(num).padStart(2, '0')} • ${cat}</div>
+          <div class="overview-title">${title}</div>
+        `;
+        item.onclick = () => {
+          showSlide(num);
+          toggleOverview();
+        };
+        overviewGrid.appendChild(item);
+      });
+    }
+
+    function toggleOverview() {
+      overviewModal.classList.toggle('active');
+      if (overviewModal.classList.contains('active')) {
+        populateOverview();
+      }
+    }
+
+    // URL Hash routing
+    if (window.location.hash) {
+      const match = window.location.hash.match(/slide-(\d+)/);
+      if (match && match[1]) {
+        const s = parseInt(match[1], 10);
+        if (s >= 1 && s <= totalSlides) {
+          showSlide(s);
+        }
+      }
+    }
+  </script>
+</body>
+</html>

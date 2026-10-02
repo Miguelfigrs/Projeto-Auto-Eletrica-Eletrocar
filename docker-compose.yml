@@ -1,0 +1,80 @@
+# ==============================================================================
+# Docker Compose Integrado: PostgreSQL 16 + FastAPI Backend + pgAdmin 4
+# Projeto: Auto Elétrica Eletrocar
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Banco de Dados: PostgreSQL 16 (Isolado em container dedicado)
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: eletrocar_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eletrocar2026}
+      POSTGRES_DB: ${POSTGRES_DB:-eletrocar_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./Eletrocar.Database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - eletrocar_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-eletrocar_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 2. Backend API: FastAPI (Python 3.11 Slim - Clean Architecture)
+  # ----------------------------------------------------------------------------
+  api:
+    build:
+      context: ./Eletrocar.API
+      dockerfile: Dockerfile
+    container_name: eletrocar_api
+    restart: always
+    environment:
+      # Conexão assíncrona PostgreSQL via asyncpg
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-eletrocar2026}@postgres:5432/${POSTGRES_DB:-eletrocar_db}
+      SECRET_KEY: ${SECRET_KEY:-eletrocar_secret_key_super_segura_2026_auto_eletrica}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-eletrocar_webhook_secret_2026}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - eletrocar_network
+
+  # ----------------------------------------------------------------------------
+  # 3. Gerenciador Web do Banco: pgAdmin 4
+  # ----------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: eletrocar_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@eletrocar.com.br}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - eletrocar_network
+
+# Redes e Volumes persistentes
+networks:
+  eletrocar_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

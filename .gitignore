@@ -9,3 +9,13 @@ build/
 .DS_Store
 Thumbs.db
 *.log
+
+# Python & Testes
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.db
+*.sqlite
+.env
+.venv/

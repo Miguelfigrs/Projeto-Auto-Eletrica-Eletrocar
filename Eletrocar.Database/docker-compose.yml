@@ -1,0 +1,41 @@
+# ==============================================================================
+# Docker Compose: Banco de Dados Relacional PostgreSQL 16 & pgAdmin 4
+# Auto Elétrica Eletrocar (Ambiente Isolado e Fora da API)
+# ==============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: eletrocar_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eletrocar2026}
+      POSTGRES_DB: ${POSTGRES_DB:-eletrocar_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d eletrocar_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: eletrocar_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@eletrocar.com.br
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+    driver: local
