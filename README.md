@@ -47,8 +47,8 @@ Projeto_Eletrocar/
 │   │       ├── security/        # Hashing Bcrypt e geração/validação de tokens JWT
 │   │       └── config.py        # Configurações globais (aponta banco para fora da API)
 │   ├── tests/                   # 34 Testes Automatizados (TDD: Domain, Application e Integration)
-│   ├── requirements.txt         # Dependências do backend
-│   └── run_backend.py           # Script de execução
+│   ├── Dockerfile               # Imagem Python 3.11 com dependências instaladas diretamente
+│   └── run_backend.py           # Script de execução local opcional
 │
 └── Eletrocar.Database/          # Módulo de Banco de Dados 100% FORA da API
     ├── docker-compose.yml       # Contêiner PostgreSQL 16 oficial + pgAdmin 4
@@ -122,13 +122,12 @@ docker compose down
 
 ---
 
-## 💻 Como Executar Localmente (Sem Docker)
+## 💻 Como Executar (Ambiente 100% Dockerizado)
 
-1. **Instalar Dependências**:
-   ```powershell
-   cd Eletrocar.API
-   pip install -r requirements.txt
-   ```
+Todo o ecossistema roda de forma encapsulada no Docker:
+```powershell
+docker compose up -d --build
+```
 
 2. **Iniciar o Servidor FastAPI**:
    ```powershell

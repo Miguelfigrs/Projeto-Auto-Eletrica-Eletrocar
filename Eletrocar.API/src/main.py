@@ -181,7 +181,21 @@ api_v1.include_router(ws_router)
 app.include_router(api_v1)
 
 
-@app.get("/health")
+@app.get("/", tags=["Status"])
+async def root():
+    return {
+        "status": "online",
+        "servico": settings.PROJECT_NAME,
+        "versao": settings.VERSION,
+        "mensagem": "API da Auto Elétrica Eletrocar em execução com sucesso!",
+        "documentacao_swagger": "/docs",
+        "documentacao_redoc": "/redoc",
+        "health_check": "/health",
+        "rotas_api": f"{settings.API_V1_PREFIX}"
+    }
+
+
+@app.get("/health", tags=["Status"])
 async def health_check():
     return {
         "status": "online",

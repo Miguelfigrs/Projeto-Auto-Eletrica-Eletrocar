@@ -22,9 +22,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Diretório de trabalho
 WORKDIR /app
 
-# Copia e instala dependências do requirements.txt
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+# Instala dependências do backend diretamente no contêiner (100% Dockerizado)
+RUN pip install --no-cache-dir \
+    "fastapi>=0.115.0" \
+    "uvicorn[standard]>=0.34.0" \
+    "sqlalchemy>=2.0.0" \
+    "greenlet>=3.1.0" \
+    "aiosqlite>=0.20.0" \
+    "psycopg2-binary>=2.9.0" \
+    "bcrypt>=4.2.0" \
+    "pyjwt>=2.10.0" \
+    "python-jose>=3.3.0" \
+    "pydantic>=2.10.0" \
+    "websockets>=13.0" \
+    "pytest>=8.0.0" \
+    "pytest-asyncio>=0.24.0" \
+    "httpx>=0.28.0" \
+    "python-multipart>=0.0.9" \
+    "python-dotenv>=1.0.1" \
+    "asyncpg>=0.30.0"
 
 # Copia código-fonte da API
 COPY . /app/

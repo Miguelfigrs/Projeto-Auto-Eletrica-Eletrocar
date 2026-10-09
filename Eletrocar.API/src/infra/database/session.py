@@ -14,11 +14,13 @@ if "sqlite" in settings.DATABASE_URL:
     except Exception:
         pass
 
-# Engine assíncrono SQLAlchemy
+# Engine assíncrono SQLAlchemy com reconexão automática
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
-    future=True
+    future=True,
+    pool_pre_ping=True,
+    pool_recycle=300
 )
 
 # Fabrica de sessões assíncronas

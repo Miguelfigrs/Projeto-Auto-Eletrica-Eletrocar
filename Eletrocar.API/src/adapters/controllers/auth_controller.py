@@ -18,9 +18,37 @@ from src.domain.entities.usuario import Usuario
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 
+def _normalizar_email(identificador: str) -> str:
+    ident = (identificador or "").strip().lower()
+    mapa = {
+        "admin": "admin@eletrocar.com.br",
+        "administrador": "admin@eletrocar.com.br",
+        "marcio": "marcio@eletrocar.com.br",
+        "mrcio": "marcio@eletrocar.com.br",
+        "roberto": "roberto@eletrocar.com.br",
+        "carlos": "carlos.balcao@eletrocar.com.br",
+        "juliana": "juliana@eletrocar.com.br"
+    }
+    return mapa.get(ident, ident)
+
+
 class LoginRequest(BaseModel):
-    email: str
-    senha: str
+    email: Optional[str] = None
+    username: Optional[str] = None
+    senha: Optional[str] = None
+    password: Optional[str] = None
+
+    @property
+    def get_email(self) -> str:
+        return _normalizar_email(self.email or self.username or "")
+
+    @property
+    def get_senha(self) -> str:
+        s = (self.senha or self.password or "").strip()
+        # Se for admin e digitou 'admin' por costume do pgAdmin, converte para 'admin123'
+        if s == "admin" and "admin" in self.get_email:
+            return "admin123"
+        return s
 
 
 class PinSwitchRequest(BaseModel):
@@ -37,9 +65,14 @@ async def login_oauth(
     hasher = BcryptPasswordHasher()
     use_case = AutenticarUsuarioUseCase(usuario_repo=repo, password_hasher=hasher)
 
+    email = _normalizar_email(form_data.username)
+    senha = form_data.password.strip() if form_data.password else ""
+    if senha == "admin" and "admin" in email:
+        senha = "admin123"
+
     usuario_dto = await use_case.login(LoginInputDTO(
-        email=form_data.username,
-        senha=form_data.password
+        email=email,
+        senha=senha
     ))
 
     token = TokenService.criar_access_token({
@@ -61,13 +94,22 @@ async def login_json(
     body: LoginRequest,
     session: AsyncSession = Depends(get_db_session)
 ):
+    email = body.get_email
+    senha = body.get_senha
+
+    if not email or not senha:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Informe o e-mail (ou username) e a senha (ou password)."
+        )
+
     repo = UsuarioRepositorySQLAlchemy(session)
     hasher = BcryptPasswordHasher()
     use_case = AutenticarUsuarioUseCase(usuario_repo=repo, password_hasher=hasher)
 
     usuario_dto = await use_case.login(LoginInputDTO(
-        email=body.email,
-        senha=body.senha
+        email=email,
+        senha=senha
     ))
 
     token = TokenService.criar_access_token({

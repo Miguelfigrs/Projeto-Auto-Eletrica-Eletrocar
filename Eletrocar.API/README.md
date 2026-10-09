@@ -27,8 +27,8 @@ Eletrocar.API/
 │       ├── security/            # Hashing Bcrypt e emissão/validação de Tokens JWT
 │       └── config.py            # Variáveis de ambiente e configurações da aplicação
 ├── tests/                       # 34 Testes Automatizados (TDD: Domain, Application e Integration)
-├── requirements.txt             # Dependências do backend
-├── run_backend.py               # Script de inicialização local
+├── Dockerfile                   # Build autocontido sem arquivo requirements.txt
+├── run_backend.py               # Script de inicialização local opcional
 └── .env.example                 # Modelo de variáveis de ambiente
 ```
 
@@ -36,23 +36,18 @@ Eletrocar.API/
 
 ## 🧪 Testes Automatizados (TDD)
 
-Para rodar todos os testes unitários e de integração:
+Para rodar todos os testes dentro do contêiner Docker:
 ```powershell
-python -m pytest -v
+docker exec eletrocar_api pytest tests/ -v
 ```
 
 ---
 
-## 🚀 Como Executar o Servidor
+## 🚀 Como Executar o Servidor (100% via Docker)
 
-1. Instalar dependências:
+1. Subir a infraestrutura completa (API + PostgreSQL 16 + pgAdmin 4):
    ```powershell
-   pip install -r requirements.txt
-   ```
-
-2. Executar o servidor:
-   ```powershell
-   python run_backend.py
+   docker compose up -d --build
    ```
 
 3. Acessar a documentação interativa:

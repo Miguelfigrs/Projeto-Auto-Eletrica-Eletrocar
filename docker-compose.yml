@@ -21,7 +21,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./Eletrocar.Database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
-      - eletrocar_network
+      eletrocar_network:
+        aliases:
+          - postgres
+          - eletrocar_postgres
+          - eletrocar_db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-eletrocar_db}"]
       interval: 5s
@@ -46,6 +50,9 @@ services:
       TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-eletrocar_webhook_secret_2026}
     ports:
       - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./Eletrocar.API/src:/app/src
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,6 +71,8 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
     ports:
       - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - ./Eletrocar.Database/servers.json:/pgadmin4/servers.json:ro
     depends_on:
       postgres:
         condition: service_healthy
