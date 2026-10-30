@@ -1,4 +1,14 @@
 {
+  "name": "projeto-eletrocar",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix Eletrocar.UI",
+    "build": "npm run build --prefix Eletrocar.UI",
+    "test": "npm run test --prefix Eletrocar.UI",
+    "ui:dev": "npm run dev --prefix Eletrocar.UI",
+    "ui:build": "npm run build --prefix Eletrocar.UI",
+    "ui:test": "npm run test --prefix Eletrocar.UI"
+  },
   "dependencies": {
     "puppeteer-core": "^25.10.0"
   }
