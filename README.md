@@ -13,131 +13,93 @@ Este projeto tem como objetivo gerenciar e divulgar os serviços de auto elétri
 - **[Especificação Técnica e Operacional Consolidada](docs/ESPECIFICACAO_TECNICA_E_COMERCIAL.md)**: Detalhamento de arquitetura, integração Telegram Voice Bot, usabilidade de balcão, módulos financeiros (Fluxo de Caixa, DRE), cadastro simplificado de clientes e matriz de riscos.
 
 ## 🛠️ Tecnologias
-- **Backend**: Python 3.11/3.12 (FastAPI) + AsyncIO + SQLAlchemy 2.0 (RESTful API + WebSockets)
-- **Banco de Dados**: PostgreSQL 16 / SQLite Assíncrono (`aiosqlite`)
-- **Segurança**: Bcrypt + JWT (OAuth2 Password Bearer) + PIN de Caixa
+- **Backend**: Python 3.12 (FastAPI) + AsyncIO + SQLAlchemy 2.0 + Alembic (REST + WebSockets)
+- **Banco de Dados**: PostgreSQL 16 (UUID, índices B-Tree/GIN trigram e JSONB, CHECKs, auditoria imutável por trigger)
+- **Segurança**: Bcrypt (custo 12) + JWT de curta duração + refresh token rotativo em cookie HTTP-Only, RBAC multi-papel, limite de 5 tentativas (login/PIN)
 - **Hardware & I/O**: Leitores de Código de Barras USB / Bluetooth (HID Keyboard Wedge + Web Serial API)
-- **Inteligência Artificial & Voz**: Telegram Bot API + Whisper ASR + LLM Entity Extraction
-- **Qualidade & Metodologia**: Clean Architecture, Domain-Driven Design (DDD) e Test-Driven Development (TDD)
+- **IA & Voz**: Telegram Bot API (webhook com segredo) + Whisper ASR + Claude (saída estruturada em JSON Schema)
+- **Pagamentos**: PIX (BR Code com txid) com webhook de liquidação, cartões, boleto e faturado (contas a receber)
+- **Qualidade & Metodologia**: Clean Architecture, DDD e TDD com cobertura mínima de **80%** (pytest-cov)
 
 ---
 
 ## 🏛️ Arquitetura do Backend (Clean Architecture & DDD)
 
-O backend foi construído seguindo estritamente as diretrizes da **Clean Architecture** e **DDD**:
-
 ```
 Projeto_Eletrocar/
-├── Eletrocar.API/               # Módulo Backend FastAPI (Clean Architecture & DDD)
+├── Eletrocar.API/
 │   ├── src/
-│   │   ├── domain/              # Camada 1: Domain (Zero dependências, regras puras)
-│   │   │   ├── entities/        # Peca, OrdemServico, Cliente, Carro, VendaBalcao, CaixaDiario, Usuario
-│   │   │   ├── value_objects/   # Dinheiro, CodigoBarras, CpfCnpj, Enums (Role, StatusOS...)
-│   │   │   ├── exceptions/      # Exceções ricas de domínio (EstoqueInsuficiente, etc.)
-│   │   │   ├── services/        # Domain Services: CalculadoraDREService, ConciliadorCaixaService
-│   │   │   └── repositories/    # Interfaces Abstratas (ABCs) - Inversão de Dependência (DIP)
-│   │   ├── application/         # Camada 2: Application (Casos de Uso e DTOs)
-│   │   │   ├── use_cases/       # RealizarVendaBalcao, CriarOSPorVozTelegram, OperarCaixa...
-│   │   │   └── dtos/            # Data Transfer Objects com validação estrita
-│   │   ├── adapters/            # Camada 3: Interface Adapters
-│   │   │   ├── controllers/     # Endpoints FastAPI REST e WebSockets em tempo real
-│   │   │   └── repositories/    # Implementações SQLAlchemy 2.0 assíncronas dos repositórios
-│   │   └── infra/               # Camada 4: Frameworks & Drivers
-│   │       ├── database/        # Conexão assíncrona, SessionMaker e modelos ORM
-│   │       ├── security/        # Hashing Bcrypt e geração/validação de tokens JWT
-│   │       └── config.py        # Configurações globais (aponta banco para fora da API)
-│   ├── tests/                   # 34 Testes Automatizados (TDD: Domain, Application e Integration)
-│   ├── Dockerfile               # Imagem Python 3.11 com dependências instaladas diretamente
-│   └── run_backend.py           # Script de execução local opcional
-│
-└── Eletrocar.Database/          # Módulo de Banco de Dados 100% FORA da API
-    ├── docker-compose.yml       # Contêiner PostgreSQL 16 oficial + pgAdmin 4
-    ├── init.sql                 # DDL completo com índices B-Tree e chaves relacionais
-    ├── README.md                # Instruções de operação do banco
-    └── data/                    # Diretório externo para arquivos de dados locais (.gitkeep)
+│   │   ├── domain/              # Camada 1: regras puras, sem frameworks
+│   │   │   ├── entities/        # Usuario (multi-papel), Peca (reserva), OrdemServico, VendaBalcao, CaixaDiario,
+│   │   │   │                    # TituloFinanceiro, CobrancaPix, SessaoRefresh, LogAuditoria
+│   │   │   ├── value_objects/   # Dinheiro, CodigoBarras, CpfCnpj, PinOperador, DadosOSExtraidos, Enums
+│   │   │   ├── services/        # DRE, Conciliação de caixa, Política de alçada, Sugestão de compra, Termos elétricos
+│   │   │   ├── repositories/    # Interfaces (DIP)
+│   │   │   └── gateways/        # Interfaces de Telegram, Whisper, extrator LLM e PIX
+│   │   ├── application/         # Camada 2: casos de uso, DTOs, portas (hash, token, limitador) e serviços
+│   │   ├── adapters/            # Camada 3: controllers FastAPI, repositórios SQLAlchemy e gateways HTTP/IA/PIX/PDF
+│   │   └── infra/               # Camada 4: configuração, sessão/engine, modelos ORM, migrações Alembic, segurança
+│   ├── tests/                   # domain / application (fakes) / adapters / integration (API + banco real)
+│   ├── alembic.ini · pytest.ini # Migrações e configuração dos testes (cobertura mínima de 80%)
+│   └── Dockerfile               # Python 3.12 com dependências declaradas (sem requirements.txt)
+├── Eletrocar.UI/                # Frontend PWA (React 19 + TypeScript + Clean Architecture)
+│   ├── src/
+│   │   ├── domain/              # Camada 1: Entities (OS, Venda, Caixa, Peca), Value Objects (Dinheiro, Barcode)
+│   │   ├── application/         # Camada 2: Use Cases (AdicionarItem, FinalizarVenda, AvancarStatusOS, OperarCaixa)
+│   │   ├── adapters/            # Camada 3: Gateways de Hardware (WebHID, Keyboard Wedge, Web Audio) e ViewModels
+│   │   └── presentation/        # Camada 4: UI Balcão PDV, Kanban OS, Estoque, Caixa, DRE e Lock Screen
+│   └── package.json
+└── Eletrocar.Database/
+    ├── init.sql                 # Extensões (pg_trgm, pgcrypto) e banco de testes
+    └── seed_completo.sql        # Carga de demonstração (somente desenvolvimento)
 ```
 
 ---
 
-## 🧪 Test-Driven Development (TDD)
+## 🐳 Execução (100% Docker)
 
-O projeto possui **34 testes automatizados** cobrindo 100% das regras críticas de negócio e integração da API:
-
-1. **Testes de Domínio Puros** (`tests/domain/`):
-   - Invariantes de Peças (baixa de estoque, ponto de reposição, prevenção de saldo negativo)
-   - Máquina de Estados Finita da Ordem de Serviço (Triagem -> Orçamento -> Execução -> Testes -> Conclusão)
-   - Value Objects (cálculo financeiro preciso sem float, validação Módulo 11 de CPF/CNPJ, EAN-13/SKU)
-   - Domain Services: DRE Gerencial (CMV, margem bruta/líquida) e Conciliação Cega de Caixa
-2. **Testes de Casos de Uso com Fake Repositories** (`tests/application/`):
-   - Baixa atômica de estoque em vendas de balcão
-   - Pipeline de voz do Telegram com whitelist de eletricistas e auto-cadastro de cliente/carro
-   - Fechamento cego de caixa (detecção de quebra/sobra)
-   - Busca em < 50ms para leitores de código de barras USB/BT
-3. **Testes de Integração com Banco e API** (`tests/integration/`):
-   - Endpoints `/api/v1/auth` (Login JWT, troca rápida de operador por PIN no balcão)
-   - Endpoints `/api/v1/pecas` (Leitura de código de barras USB/Bluetooth)
-   - Endpoints `/api/v1/vendas` e `/api/v1/caixa` (Ciclo de PDV rápido e conciliação)
-   - Endpoints `/api/v1/telegram/webhook` (Pipeline Voz -> OS)
-
-### Como rodar os testes:
 ```powershell
-python -m pytest -v
-```
-
----
-
-## 🐳 Como Executar com Docker Compose (API + PostgreSQL 16)
-
-Tanto a API quanto o banco de dados PostgreSQL 16 (além do painel web pgAdmin 4) rodam de forma integrada e orquestrada via Docker Compose:
-
-### 1. Subir todos os serviços com um único comando:
-```powershell
+copy .env.example .env      # ajuste segredos e chaves
 docker compose up -d --build
 ```
 
-Os seguintes serviços serão inicializados:
-| Serviço | Contêiner | Porta Externa | Descrição |
+Na subida, a API aplica as migrações Alembic e, com `SEED_DADOS_DEMO=true` e banco vazio, a carga de demonstração.
+
+| Serviço | Contêiner | Porta | Descrição |
 |---|---|---|---|
-| **PostgreSQL 16** | `eletrocar_postgres` | `5432` | Banco relacional com esquemas e índices B-Tree (`init.sql`) |
-| **Backend FastAPI** | `eletrocar_api` | `8000` | API Python 3.11 assíncrona (Clean Architecture + DDD) |
-| **pgAdmin 4** | `eletrocar_pgadmin` | `5050` | Gerenciador visual web do banco de dados |
+| **PostgreSQL 16** | `eletrocar_postgres` | `5432` | Banco `eletrocar_db` (e `eletrocar_test` para os testes) |
+| **Backend FastAPI** | `eletrocar_api` | `8000` | API Python 3.12 (Swagger em `/docs`) |
+| **Frontend App** | `eletrocar_ui` / local | `3000` | Next.js 16.4 (App Router) + Turbopack + TailwindCSS + Shadcn/UI |
+| **pgAdmin 4** | `eletrocar_pgadmin` | `5050` | Gerenciador web do banco |
 
-### 2. Acessar os Serviços:
-- **Swagger UI da API**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc da API**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-- **Health Check da API**: [http://localhost:8000/health](http://localhost:8000/health)
-- **pgAdmin 4**: [http://localhost:5050](http://localhost:5050)
-  - *Email*: `admin@eletrocar.com.br` | *Senha*: `admin`
-  - *Host para conectar*: `postgres` | *Porta*: `5432` | *Usuário*: `postgres` | *Senha*: `eletrocar2026`
+- **Frontend Next.js 16**: [http://localhost:3000](http://localhost:3000)
+- **Swagger**: [http://localhost:8000/docs](http://localhost:8000/docs) · **Health**: [http://localhost:8000/health](http://localhost:8000/health)
+- **pgAdmin**: [http://localhost:5050](http://localhost:5050) (`admin@eletrocar.com.br` / `admin`)
 
-### 3. Rodar os Testes dentro do Docker:
+### Execução e Testes do Frontend (Next.js 16 + Vitest)
 ```powershell
-docker exec eletrocar_api pytest tests/ -v
+cd Eletrocar.UI
+npm install
+npm run dev      # Inicia Next.js 16 com Turbopack (http://localhost:3000)
+npm run test     # Executa bateria de testes unitários TDD com Vitest & React Testing Library
 ```
 
-### 4. Parar os contêineres:
+### Logins da carga de demonstração (somente desenvolvimento)
+| Usuário | Senha | PIN | Papéis |
+|---|---|---|---|
+| `admin` | `admin123` | 1234 | ADMIN + BALCONISTA + ELETRICISTA (dono) |
+| `marcio` | `marcio123` | 4321 | ELETRICISTA (Telegram 987654321) |
+| `roberto` | `roberto123` | 5566 | ELETRICISTA (Telegram 987654322) |
+| `carlos` | `carlos123` | 1122 | BALCONISTA |
+| `juliana` | `juliana123` | 3344 | BALCONISTA + ELETRICISTA |
+
+### Testes (TDD, PostgreSQL real, cobertura mínima de 80%)
 ```powershell
-docker compose down
+docker exec eletrocar_api pytest
 ```
 
----
-
-## 💻 Como Executar (Ambiente 100% Dockerizado)
-
-Todo o ecossistema roda de forma encapsulada no Docker:
+### Recriar o banco do zero
 ```powershell
+docker compose down -v
 docker compose up -d --build
 ```
-
-2. **Iniciar o Servidor FastAPI**:
-   ```powershell
-   python run_backend.py
-   ```
-   Ou via uvicorn:
-   ```powershell
-   uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-3. **Credenciais Padrão (Seed Automático)**:
-   - **Administrador**: `admin@eletrocar.com.br` | Senha: `admin123` | PIN Caixa: `1234`
-   - **Eletricista (Telegram Bot)**: `marcio@eletrocar.com.br` | Senha: `marcio123` | Telegram ID: `987654321` | PIN: `4321`

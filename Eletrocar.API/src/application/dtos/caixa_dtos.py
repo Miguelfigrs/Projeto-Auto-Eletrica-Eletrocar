@@ -1,5 +1,7 @@
 """
-DTOs para fluxo e fechamento de caixa diário.
+DTOs para fluxo e fechamento cego de caixa diário.
+Os DTOs do operador NUNCA expõem saldo teórico, totais calculados ou quebra/sobra;
+essas informações existem apenas nos DTOs gerenciais.
 """
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -18,10 +20,16 @@ class AbrirCaixaInputDTO:
 @dataclass
 class MovimentarCaixaInputDTO:
     operador_id: uuid.UUID
-    tipo: str  # SUPRIMENTO, SANGRIA
+    tipo: str  # SUPRIMENTO ou SANGRIA
     valor: Decimal
     forma_pagamento: FormaPagamento = FormaPagamento.DINHEIRO
     descricao: str = ""
+
+
+@dataclass
+class FechamentoCegoInputDTO:
+    operador_id: uuid.UUID
+    valores_contados: Dict[FormaPagamento, Decimal] = field(default_factory=dict)
 
 
 @dataclass
@@ -32,33 +40,54 @@ class MovimentacaoOutputDTO:
     forma_pagamento: str
     descricao: str
     created_at: datetime
-    sucesso: bool = True
 
 
 @dataclass
-class FechamentoCegoInputDTO:
-    operador_id: uuid.UUID
-    valores_contados: Dict[FormaPagamento, Decimal] = field(default_factory=dict)
-
-
-@dataclass
-class FechamentoCegoOutputDTO:
-    caixa_id: uuid.UUID
-    saldo_teorico_dinheiro: Decimal
-    saldo_contado_dinheiro: Decimal
-    diferenca_total: Decimal
-    quebra_ou_sobra: str
-    data_fechamento: datetime
-    sucesso: bool = True
-
-
-@dataclass
-class CaixaOutputDTO:
+class CaixaOperadorOutputDTO:
+    """Visão do operador de balcão (sem saldos calculados)."""
     id: uuid.UUID
     operador_id: uuid.UUID
     status: str
     saldo_inicial: Decimal
-    saldo_teorico: Decimal
     data_abertura: datetime
-    data_fechamento: Optional[datetime] = None
-    movimentacoes: List[MovimentacaoOutputDTO] = field(default_factory=list)
+    quantidade_movimentacoes: int
+
+
+@dataclass
+class FechamentoCegoConfirmacaoDTO:
+    """Resposta ao operador no fechamento cego: apenas a confirmação."""
+    caixa_id: uuid.UUID
+    data_fechamento: datetime
+    mensagem: str = "Caixa fechado. Valores informados registrados para conferência da gerência."
+
+
+@dataclass
+class CaixaGerencialOutputDTO:
+    id: uuid.UUID
+    operador_id: uuid.UUID
+    status: str
+    saldo_inicial: Decimal
+    saldo_teorico_dinheiro: Decimal
+    totais_por_forma: Dict[str, Decimal]
+    data_abertura: datetime
+    data_fechamento: Optional[datetime]
+    movimentacoes: List[MovimentacaoOutputDTO]
+
+
+@dataclass
+class ConciliacaoFormaDTO:
+    forma_pagamento: str
+    teorico: Decimal
+    contado: Decimal
+    diferenca: Decimal
+
+
+@dataclass
+class RelatorioFechamentoOutputDTO:
+    caixa_id: uuid.UUID
+    operador_id: uuid.UUID
+    data_abertura: datetime
+    data_fechamento: datetime
+    formas: List[ConciliacaoFormaDTO]
+    diferenca_total: Decimal
+    status: str  # CORRETO, QUEBRA_DE_CAIXA, SOBRA_DE_CAIXA

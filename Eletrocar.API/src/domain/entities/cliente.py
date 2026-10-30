@@ -4,6 +4,7 @@ Gerencia seus veículos vinculados e dados cadastrais de balcão.
 """
 from dataclasses import dataclass, field
 from datetime import datetime
+from src.domain.value_objects.tempo import agora_utc
 from typing import List, Optional
 import uuid
 from src.domain.entities.carro import Carro
@@ -19,7 +20,7 @@ class Cliente:
     telefone: Optional[str] = None
     email: Optional[str] = None
     carros: List[Carro] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=agora_utc)
 
     def __post_init__(self):
         if not self.nome or not self.nome.strip():

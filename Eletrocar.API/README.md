@@ -1,56 +1,65 @@
 # Eletrocar.API - Backend de Gestão & Balcão Operacional
 Auto Elétrica Eletrocar
 
-Backend de alta performance construído com **Python 3.11/3.12 (FastAPI)**, **Clean Architecture**, **Domain-Driven Design (DDD)** e **Test-Driven Development (TDD)**.
+Backend em **Python 3.12 (FastAPI)** com **Clean Architecture**, **DDD** e **TDD**, executado 100% no Docker.
 
 ---
 
-## 🏛️ Estrutura Arquitetural
+## 🏛️ Camadas
 
-```
-Eletrocar.API/
-├── src/
-│   ├── domain/                  # Camada 1: Domain (Zero dependências externas, regras puras)
-│   │   ├── entities/            # Peca, OrdemServico, Cliente, Carro, VendaBalcao, CaixaDiario, Usuario
-│   │   ├── value_objects/       # Dinheiro, CodigoBarras, CpfCnpj, Enums (Role, StatusOS, FormaPagamento...)
-│   │   ├── exceptions/          # Exceções de Domínio (EstoqueInsuficiente, TransicaoStatusInvalida...)
-│   │   ├── services/            # Domain Services: CalculadoraDREService, ConciliadorCaixaService
-│   │   └── repositories/        # Interfaces Abstratas (ABCs) - Inversão de Dependência (DIP)
-│   ├── application/             # Camada 2: Application (Casos de Uso e DTOs)
-│   │   ├── use_cases/           # RealizarVendaBalcao, CriarOSPorVozTelegram, BuscarPecaBarcode, OperarCaixa...
-│   │   └── dtos/                # Schemas de Entrada e Saída
-│   ├── adapters/                # Camada 3: Interface Adapters
-│   │   ├── controllers/         # Endpoints FastAPI REST e WebSockets em tempo real
-│   │   └── repositories/        # Implementações assíncronas SQLAlchemy 2.0 dos repositórios
-│   └── infra/                   # Camada 4: Frameworks & Drivers
-│       ├── database/            # Conexão Async, SessionMaker e Modelos ORM com índices B-Tree
-│       ├── security/            # Hashing Bcrypt e emissão/validação de Tokens JWT
-│       └── config.py            # Variáveis de ambiente e configurações da aplicação
-├── tests/                       # 34 Testes Automatizados (TDD: Domain, Application e Integration)
-├── Dockerfile                   # Build autocontido sem arquivo requirements.txt
-├── run_backend.py               # Script de inicialização local opcional
-└── .env.example                 # Modelo de variáveis de ambiente
-```
+| Camada | Pasta | Conteúdo |
+|---|---|---|
+| Domain | `src/domain` | Entidades, Value Objects, Domain Services, interfaces de repositórios e gateways |
+| Application | `src/application` | Casos de uso, DTOs, portas de segurança e serviços de aplicação |
+| Adapters | `src/adapters` | Controllers FastAPI, fábricas (composition root), repositórios SQLAlchemy, gateways (Telegram, Whisper, Claude, PIX, PDF) |
+| Infra | `src/infra` | Configuração, engine/sessão, modelos ORM, migrações Alembic, Bcrypt/JWT/limitador |
+
+A regra de dependência aponta sempre para dentro: o domínio não importa FastAPI, SQLAlchemy nem SDKs externos.
 
 ---
 
-## 🧪 Testes Automatizados (TDD)
+## 🔐 Controle de acesso (RBAC multi-papel)
 
-Para rodar todos os testes dentro do contêiner Docker:
+| Recurso | ADMIN | BALCONISTA | ELETRICISTA |
+|---|---|---|---|
+| Usuários e papéis, auditoria, DRE, contas a pagar/receber | ✅ | — | — |
+| Cadastro de peças, preço, entrada/ajuste de estoque, sugestão de compra | ✅ | — | — |
+| Vendas, caixa (fechamento cego), cobrança PIX, faturamento/desconto de OS | ✅ | ✅ | — |
+| Consulta de peças, clientes, abertura/atualização de OS, reserva de peças | ✅ | ✅ | ✅ |
+| Cancelamento de venda, relatório de quebra de caixa | ✅ | — | — |
+
+Um usuário pode acumular papéis (tabela `usuarios_papeis`); o Administrador tem acesso total.
+
+---
+
+## 🧪 Testes
+
 ```powershell
-docker exec eletrocar_api pytest tests/ -v
+docker exec eletrocar_api pytest
+```
+
+- `tests/domain` · `tests/application` (fakes em memória) · `tests/adapters` (HTTP simulado) · `tests/integration` (API + PostgreSQL real)
+- O banco de testes (`eletrocar_test`) é criado pelas **migrações Alembic**, garantindo que modelos e migrações estejam alinhados.
+- Cobertura mínima de **80%** (`--cov-fail-under=80` no `pytest.ini`).
+
+---
+
+## 🗄️ Migrações
+
+```powershell
+docker exec eletrocar_api alembic upgrade head          # aplicada automaticamente na subida
+docker exec eletrocar_api alembic revision --autogenerate -m "descricao"
 ```
 
 ---
 
-## 🚀 Como Executar o Servidor (100% via Docker)
+## 🔌 Integrações
 
-1. Subir a infraestrutura completa (API + PostgreSQL 16 + pgAdmin 4):
-   ```powershell
-   docker compose up -d --build
-   ```
+| Integração | Variáveis | Observação |
+|---|---|---|
+| Telegram Voice Bot | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | Registre o webhook com `secret_token` igual a `TELEGRAM_WEBHOOK_SECRET` apontando para `/api/v1/telegram/webhook` |
+| Whisper ASR | `WHISPER_API_URL`, `WHISPER_API_KEY` | Endpoint compatível com `/v1/audio/transcriptions` (nuvem ou self-hosted) |
+| Extração por IA | `ANTHROPIC_API_KEY`, `LLM_MODELO` | Saída estruturada por JSON Schema, esforço baixo para respostas rápidas |
+| PIX | `PIX_CHAVE`, `PIX_WEBHOOK_SECRET` | O PSP chama `/api/v1/pagamentos/pix/webhook` com header `X-Webhook-Secret` |
 
-3. Acessar a documentação interativa:
-   - Swagger: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-   - ReDoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-   - Health: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+Swagger: [http://localhost:8000/docs](http://localhost:8000/docs)

@@ -1,42 +1,41 @@
 """
-Controlador de Relatórios Financeiros e DRE Gerencial.
+Controlador de Relatórios Gerenciais: DRE (UC07) e auditoria (somente leitura) - Administrador.
 """
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date, timedelta
-from decimal import Decimal
-from typing import Optional
-from src.infra.database.session import get_db_session
-from src.adapters.repositories.venda_balcao_repository_sqlalchemy import VendaBalcaoRepositorySQLAlchemy
-from src.adapters.repositories.ordem_servico_repository_sqlalchemy import OrdemServicoRepositorySQLAlchemy
-from src.application.use_cases.gerar_dre_use_case import GerarRelatorioDREUseCase
-from src.application.dtos.dre_dtos import PeriodoDREInputDTO, RelatorioDREOutputDTO
-from src.adapters.controllers.dependencies import require_role
+from typing import List, Optional
+import uuid
+from fastapi import APIRouter, Depends, Query
+from src.infra.config import settings
 from src.domain.entities.usuario import Usuario
+from src.application.dtos.dre_dtos import PeriodoDREInputDTO, RelatorioDREOutputDTO
+from src.application.use_cases.gerar_dre_use_case import GerarRelatorioDREUseCase
+from src.application.use_cases.consultar_auditoria_use_case import ConsultarAuditoriaUseCase, LogAuditoriaOutputDTO
+from src.adapters.controllers.dependencies import somente_admin
+from src.adapters.controllers.fabricas import dre_uc, auditoria_uc
 
-router = APIRouter(prefix="/relatorios", tags=["Relatórios Financeiros & DRE"])
+router = APIRouter(tags=["Relatórios Gerenciais (Admin)"])
 
 
-@router.get("/dre", response_model=RelatorioDREOutputDTO)
+@router.get("/relatorios/dre", response_model=RelatorioDREOutputDTO)
 async def obter_relatorio_dre(
     data_inicio: Optional[date] = Query(None),
     data_fim: Optional[date] = Query(None),
-    despesas_fixas: Decimal = Query(Decimal("0.00")),
-    despesas_variaveis: Decimal = Query(Decimal("0.00")),
-    session: AsyncSession = Depends(get_db_session),
-    usuario: Usuario = Depends(require_role(["ADMIN"]))
+    _: Usuario = Depends(somente_admin),
+    uc: GerarRelatorioDREUseCase = Depends(dre_uc),
 ):
-    dt_inicio = data_inicio or (date.today() - timedelta(days=30))
-    dt_fim = data_fim or date.today()
-
-    use_case = GerarRelatorioDREUseCase(
-        venda_repo=VendaBalcaoRepositorySQLAlchemy(session),
-        os_repo=OrdemServicoRepositorySQLAlchemy(session)
-    )
-
-    return await use_case.executar(PeriodoDREInputDTO(
-        data_inicio=dt_inicio,
-        data_fim=dt_fim,
-        despesas_fixas=despesas_fixas,
-        despesas_variaveis=despesas_variaveis
+    fim = data_fim or date.today()
+    inicio = data_inicio or fim.replace(day=1)
+    return await uc.executar(PeriodoDREInputDTO(
+        data_inicio=inicio, data_fim=fim, percentual_custo_mao_obra=settings.PERCENTUAL_CUSTO_MAO_OBRA
     ))
+
+
+@router.get("/auditoria", response_model=List[LogAuditoriaOutputDTO])
+async def listar_auditoria(
+    limite: int = Query(100, ge=1, le=1000),
+    acao: Optional[str] = None,
+    usuario_id: Optional[uuid.UUID] = None,
+    _: Usuario = Depends(somente_admin),
+    uc: ConsultarAuditoriaUseCase = Depends(auditoria_uc),
+):
+    return await uc.listar(limite, acao, usuario_id)

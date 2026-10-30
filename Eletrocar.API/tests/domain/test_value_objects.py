@@ -7,7 +7,8 @@ from decimal import Decimal
 from src.domain.value_objects.dinheiro import Dinheiro
 from src.domain.value_objects.codigo_barras import CodigoBarras
 from src.domain.value_objects.cpf_cnpj import CpfCnpj
-from src.domain.value_objects.enums import Role, StatusOS, FormaPagamento
+from src.domain.value_objects.enums import StatusOS, FormaPagamento
+from src.domain.value_objects.dados_os_extraidos import DadosOSExtraidos
 from src.domain.exceptions.domain_exceptions import RegraNegocioException
 
 
@@ -73,3 +74,18 @@ def test_cpf_cnpj_nulo_ou_vazio_quando_opcional():
     doc = CpfCnpj(None)
     assert doc.valor is None
     assert doc.eh_valido() is True
+
+
+def test_dados_os_extraidos_exige_cliente_carro_e_sintomas():
+    dados = DadosOSExtraidos(
+        nome_cliente="Carlos Silva",
+        carro_modelo="Gol 1.6",
+        sintomas_relatados="Bateria descarregando",
+        servicos_sugeridos=["Diagnóstico de alternador"],
+    )
+    assert dados.prioridade.value == "MEDIA"
+
+    with pytest.raises(RegraNegocioException):
+        DadosOSExtraidos(nome_cliente="", carro_modelo="Gol", sintomas_relatados="x")
+    with pytest.raises(RegraNegocioException):
+        DadosOSExtraidos(nome_cliente="Carlos", carro_modelo=" ", sintomas_relatados="x")

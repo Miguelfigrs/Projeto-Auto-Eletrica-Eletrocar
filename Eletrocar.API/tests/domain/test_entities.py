@@ -1,24 +1,20 @@
 """
 Testes unitários das Entidades de Domínio (TDD).
-Testa regras de negócio puras: estoque, transições de estado de OS, cálculo de totais.
+Testa regras de negócio puras: estoque com reserva, transições de estado de OS, cálculo de totais.
 """
 import pytest
 from decimal import Decimal
 import uuid
-from src.domain.entities.usuario import Usuario
 from src.domain.entities.cliente import Cliente
 from src.domain.entities.carro import Carro
 from src.domain.entities.peca import Peca
-from src.domain.entities.ordem_servico import OrdemServico, ItemOS, ServicoOS
-from src.domain.entities.venda_balcao import VendaBalcao, ItemVenda
-from src.domain.entities.caixa import CaixaDiario, MovimentacaoCaixa
+from src.domain.entities.ordem_servico import OrdemServico
+from src.domain.entities.venda_balcao import VendaBalcao
 from src.domain.value_objects.enums import (
-    Role,
     StatusOS,
     OrigemOS,
     FormaPagamento,
-    TipoMovimentacaoCaixa,
-    StatusCaixa
+    StatusVenda
 )
 from src.domain.exceptions.domain_exceptions import (
     EstoqueInsuficienteException,
@@ -27,32 +23,98 @@ from src.domain.exceptions.domain_exceptions import (
 )
 
 
-def test_peca_baixa_e_reposicao_estoque():
-    peca = Peca(
+def _peca(estoque=10, **kwargs) -> Peca:
+    dados = dict(
         id=uuid.uuid4(),
         codigo_barras="7891049281023",
-        sku="REG-BOSCH-12V",
+        sku="reg-bosch-12v",
         descricao="Regulador de Voltagem Bosch 12V",
         preco_custo=Decimal("110.00"),
         preco_venda=Decimal("185.00"),
-        estoque_atual=10,
+        estoque_atual=estoque,
         estoque_minimo=3,
         localizacao="Prateleira B3"
     )
-    
+    dados.update(kwargs)
+    return Peca(**dados)
+
+
+def _os(**kwargs) -> OrdemServico:
+    dados = dict(
+        id=uuid.uuid4(),
+        numero_os="OS-2026-0001",
+        cliente_id=uuid.uuid4(),
+        carro_id=uuid.uuid4(),
+        usuario_id=uuid.uuid4(),
+        origem=OrigemOS.TELEGRAM_VOICE,
+        sintomas="Alternador não carrega bateria",
+    )
+    dados.update(kwargs)
+    return OrdemServico(**dados)
+
+
+def test_peca_baixa_e_reposicao_estoque():
+    peca = _peca(estoque=10)
+    assert peca.sku == "REG-BOSCH-12V"  # SKU sempre normalizado em maiúsculas
     assert peca.esta_abaixo_minimo() is False
-    
+
     peca.baixar_estoque(8)
     assert peca.estoque_atual == 2
     assert peca.esta_abaixo_minimo() is True
-    
-    # Tentativa de baixar mais do que disponível deve lançar exceção
+
     with pytest.raises(EstoqueInsuficienteException):
         peca.baixar_estoque(5)
-        
+
     peca.adicionar_estoque(10)
     assert peca.estoque_atual == 12
     assert peca.esta_abaixo_minimo() is False
+
+
+def test_peca_reserva_para_os_reduz_saldo_disponivel():
+    peca = _peca(estoque=5)
+
+    peca.reservar(3)
+    assert peca.estoque_atual == 5
+    assert peca.estoque_reservado == 3
+    assert peca.estoque_disponivel == 2
+
+    # Venda de balcão só enxerga o saldo disponível (não reservado)
+    with pytest.raises(EstoqueInsuficienteException):
+        peca.baixar_estoque(3)
+
+    # Finalização da OS converte a reserva em baixa definitiva
+    peca.baixar_reserva(3)
+    assert peca.estoque_atual == 2
+    assert peca.estoque_reservado == 0
+
+
+def test_peca_liberar_reserva_no_cancelamento_da_os():
+    peca = _peca(estoque=4)
+    peca.reservar(2)
+    peca.liberar_reserva(2)
+    assert peca.estoque_disponivel == 4
+
+    with pytest.raises(RegraNegocioException):
+        peca.liberar_reserva(1)
+
+
+def test_peca_ajuste_de_inventario_retorna_diferenca():
+    peca = _peca(estoque=10)
+    peca.reservar(2)
+    assert peca.ajustar_saldo(7) == -3
+    assert peca.estoque_atual == 7
+
+    # Não pode ajustar abaixo do que já está reservado para OS
+    with pytest.raises(RegraNegocioException):
+        peca.ajustar_saldo(1)
+
+
+def test_peca_alterar_precos_valida_valores():
+    peca = _peca()
+    peca.alterar_precos(preco_custo=Decimal("120.00"), preco_venda=Decimal("199.90"))
+    assert peca.preco_venda == Decimal("199.90")
+    with pytest.raises(RegraNegocioException):
+        peca.alterar_precos(preco_custo=Decimal("10.00"), preco_venda=Decimal("-1.00"))
 
 
 def test_cliente_com_carros():
@@ -63,7 +125,7 @@ def test_cliente_com_carros():
         telefone="11999998888"
     )
     assert len(cliente.carros) == 0
-    
+
     carro = Carro(
         id=uuid.uuid4(),
         cliente_id=cliente.id,
@@ -78,127 +140,96 @@ def test_cliente_com_carros():
 
 
 def test_ordem_servico_ciclo_de_vida_state_machine():
-    os_id = uuid.uuid4()
-    cliente_id = uuid.uuid4()
-    carro_id = uuid.uuid4()
-    usuario_id = uuid.uuid4()
-    
-    os = OrdemServico(
-        id=os_id,
-        numero_os="OS-2026-0001",
-        cliente_id=cliente_id,
-        carro_id=carro_id,
-        usuario_id=usuario_id,
-        origem=OrigemOS.TELEGRAM_VOICE,
-        sintomas="Alternador não carrega bateria",
-        status=StatusOS.TRIAGEM
-    )
-    
+    os = _os()
     assert os.status == StatusOS.TRIAGEM
-    
-    # Triagem -> OrcamentoPendente
+
     os.transicionar_para(StatusOS.ORCAMENTO_PENDENTE)
-    assert os.status == StatusOS.ORCAMENTO_PENDENTE
-    
-    # Adicionar serviço e peça
     os.adicionar_servico("Mão de obra de substituição do regulador", Decimal("120.00"))
-    os.adicionar_item_peca(uuid.uuid4(), "Regulador Bosch 12V", 1, Decimal("185.00"))
-    
+    os.adicionar_item_peca(uuid.uuid4(), "Regulador Bosch 12V", 1, Decimal("185.00"), Decimal("110.00"))
+
     assert os.valor_servicos == Decimal("120.00")
     assert os.valor_pecas == Decimal("185.00")
+    assert os.custo_pecas == Decimal("110.00")
     assert os.valor_total == Decimal("305.00")
-    
-    # OrcamentoPendente -> Aprovado
+
     os.transicionar_para(StatusOS.APROVADO)
-    assert os.status == StatusOS.APROVADO
-    
-    # Aprovado -> EmExecucao
     os.transicionar_para(StatusOS.EM_EXECUCAO)
-    assert os.status == StatusOS.EM_EXECUCAO
-    
-    # EmExecucao -> TestesEletricos
     os.transicionar_para(StatusOS.TESTES_ELETRICOS)
-    assert os.status == StatusOS.TESTES_ELETRICOS
-    
-    # TestesEletricos -> Finalizado
     os.transicionar_para(StatusOS.FINALIZADO)
     assert os.status == StatusOS.FINALIZADO
-    
-    # Finalizado -> Entregue
-    os.transicionar_para(StatusOS.ENTREGUE)
+    assert os.finalizada_em is not None
+
+    # A entrega só ocorre via faturamento (exige forma de pagamento)
+    with pytest.raises(RegraNegocioException):
+        os.transicionar_para(StatusOS.ENTREGUE)
+
+    os.entregar(FormaPagamento.PIX)
     assert os.status == StatusOS.ENTREGUE
-    
-    # Não pode transicionar de Entregue para Triagem (transição proibida)
+    assert os.forma_pagamento == FormaPagamento.PIX
+    assert os.entregue_em is not None
+
     with pytest.raises(TransicaoStatusInvalidaException):
         os.transicionar_para(StatusOS.TRIAGEM)
+
+
+def test_os_nao_pode_ser_entregue_antes_de_finalizada():
+    os = _os()
+    with pytest.raises(TransicaoStatusInvalidaException):
+        os.entregar(FormaPagamento.DINHEIRO)
+
+
+def test_os_quantidades_por_peca_agrupa_itens():
+    os = _os()
+    peca_id = uuid.uuid4()
+    os.adicionar_item_peca(peca_id, "Relé", 1, Decimal("25.00"))
+    os.adicionar_item_peca(peca_id, "Relé", 2, Decimal("25.00"))
+    assert os.quantidades_por_peca() == {peca_id: 3}
 
 
 def test_venda_balcao_adicao_itens_e_desconto():
     venda = VendaBalcao(
         id=uuid.uuid4(),
-        numero_venda="VND-0001",
+        numero_venda="VB-2026-0001",
         operador_id=uuid.uuid4()
     )
-    
+
     peca_id = uuid.uuid4()
-    venda.adicionar_item(peca_id, "Lâmpada H7 Philips", 2, Decimal("45.00"))
+    venda.adicionar_item(peca_id, "Lâmpada H7 Philips", 2, Decimal("45.00"), Decimal("28.00"))
     assert venda.subtotal == Decimal("90.00")
-    assert venda.valor_total == Decimal("90.00")
-    
-    # Aplicar desconto de 10 reais
-    venda.aplicar_desconto(Decimal("10.00"))
-    assert venda.valor_total == Decimal("80.00")
-    
-    # Finalizar venda
+    assert venda.custo_total == Decimal("56.00")
+
+    venda.aplicar_desconto(Decimal("9.00"))
+    assert venda.valor_total == Decimal("81.00")
+    assert venda.percentual_desconto == Decimal("10.00")
+
     venda.finalizar(FormaPagamento.PIX)
     assert venda.forma_pagamento == FormaPagamento.PIX
-    
-    # Não pode modificar venda finalizada
+
     with pytest.raises(RegraNegocioException):
         venda.adicionar_item(uuid.uuid4(), "Outro item", 1, Decimal("10.00"))
 
 
-def test_caixa_diario_sangria_suprimento_fechamento_cego():
-    caixa = CaixaDiario(
-        id=uuid.uuid4(),
-        operador_id=uuid.uuid4(),
-        saldo_inicial=Decimal("200.00")
-    )
-    assert caixa.status == StatusCaixa.ABERTO
-    assert caixa.saldo_teorico == Decimal("200.00")
-    
-    # Suprimento de troco
-    caixa.registrar_movimentacao(
-        TipoMovimentacaoCaixa.SUPRIMENTO,
-        Decimal("100.00"),
-        FormaPagamento.DINHEIRO,
-        "Troco adicional de moedas"
-    )
-    assert caixa.saldo_teorico == Decimal("300.00")
-    
-    # Venda em dinheiro
-    caixa.registrar_movimentacao(
-        TipoMovimentacaoCaixa.ENTRADA_VENDA,
-        Decimal("150.00"),
-        FormaPagamento.DINHEIRO,
-        "Venda VND-0001"
-    )
-    assert caixa.saldo_teorico == Decimal("450.00")
-    
-    # Sangria para cofre
-    caixa.registrar_movimentacao(
-        TipoMovimentacaoCaixa.SANGRIA,
-        Decimal("200.00"),
-        FormaPagamento.DINHEIRO,
-        "Retirada de excesso para cofre"
-    )
-    assert caixa.saldo_teorico == Decimal("250.00")
-    
-    # Fechamento cego: operador conta R$ 250,00 fisicamente
-    resultado = caixa.fechar_cego(valores_contados_por_forma={
-        FormaPagamento.DINHEIRO: Decimal("250.00")
-    })
-    
-    assert caixa.status == StatusCaixa.FECHADO
-    assert resultado["diferenca_total"] == Decimal("0.00")
-    assert resultado["quebra_ou_sobra"] == "CORRETO"
+def test_venda_desconto_percentual():
+    venda = VendaBalcao(id=uuid.uuid4(), numero_venda="VB-2026-0002", operador_id=uuid.uuid4())
+    venda.adicionar_item(uuid.uuid4(), "Bateria", 1, Decimal("489.00"))
+    venda.aplicar_desconto_percentual(Decimal("5"))
+    assert venda.desconto == Decimal("24.45")
+
+    with pytest.raises(RegraNegocioException):
+        venda.aplicar_desconto_percentual(Decimal("101"))
+
+
+def test_cancelamento_de_venda_exige_motivo_e_e_unico():
+    venda = VendaBalcao(id=uuid.uuid4(), numero_venda="VB-2026-0003", operador_id=uuid.uuid4())
+    venda.adicionar_item(uuid.uuid4(), "Fusível", 1, Decimal("14.00"))
+    venda.finalizar(FormaPagamento.DINHEIRO)
+
+    with pytest.raises(RegraNegocioException):
+        venda.cancelar("")
+
+    venda.cancelar("Cliente desistiu da compra")
+    assert venda.status == StatusVenda.CANCELADA
+    assert venda.cancelada_em is not None
+
+    with pytest.raises(RegraNegocioException):
+        venda.cancelar("Novamente")

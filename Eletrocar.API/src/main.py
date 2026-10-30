@@ -1,183 +1,131 @@
 """
 Ponto de entrada da aplicação FastAPI - Auto Elétrica Eletrocar.
-Configuração de middlewares, rotas REST, WebSockets, exception handlers de domínio e inicialização de dados base.
+Configuração de middlewares, rotas REST/WebSocket, tratamento de exceções de domínio e inicialização do banco.
 """
 from contextlib import asynccontextmanager
-from decimal import Decimal
-import uuid
-from fastapi import FastAPI, Request, status
+import logging
+from fastapi import APIRouter, FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from src.infra.config import settings
-from src.infra.database.session import init_db, AsyncSessionLocal
-from src.infra.security.security import BcryptPasswordHasher
-from src.adapters.repositories.usuario_repository_sqlalchemy import UsuarioRepositorySQLAlchemy
-from src.adapters.repositories.peca_repository_sqlalchemy import PecaRepositorySQLAlchemy
-from src.domain.entities.usuario import Usuario
-from src.domain.entities.peca import Peca
-from src.domain.value_objects.enums import Role
+from src.infra.database.session import engine, AsyncSessionLocal
+from src.infra.database.inicializacao import inicializar_banco
+from src.infra.web.contexto_requisicao import ip_requisicao
 from src.domain.exceptions.domain_exceptions import (
     DomainException,
     EntidadeNaoEncontradaException,
     CredenciaisInvalidasException,
     EstoqueInsuficienteException,
     TransicaoStatusInvalidaException,
-    CaixaFechadoException
+    CaixaFechadoException,
+    AcessoNegadoException,
+    AutorizacaoGerencialNecessariaException,
+    LimiteTentativasExcedidoException,
+    ConflitoConcorrenciaException,
+    IntegracaoExternaException,
 )
-
-# Controladores
 from src.adapters.controllers.auth_controller import router as auth_router
+from src.adapters.controllers.usuarios_controller import router as usuarios_router
 from src.adapters.controllers.pecas_controller import router as pecas_router
 from src.adapters.controllers.clientes_controller import router as clientes_router
 from src.adapters.controllers.vendas_controller import router as vendas_router
 from src.adapters.controllers.os_controller import router as os_router
 from src.adapters.controllers.caixa_controller import router as caixa_router
-from src.adapters.controllers.dre_controller import router as dre_router
+from src.adapters.controllers.financeiro_controller import router as financeiro_router
+from src.adapters.controllers.dre_controller import router as relatorios_router
 from src.adapters.controllers.telegram_controller import router as telegram_router
 from src.adapters.controllers.hardware_controller import router as hardware_router
 from src.adapters.controllers.ws_controller import router as ws_router
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Inicializa tabelas
-    await init_db()
-    
-    # Seed de usuário Admin padrão caso o banco esteja vazio
-    async with AsyncSessionLocal() as session:
-        user_repo = UsuarioRepositorySQLAlchemy(session)
-        admin = await user_repo.buscar_por_email("admin@eletrocar.com.br")
-        if not admin:
-            hasher = BcryptPasswordHasher()
-            novo_admin = Usuario(
-                id=uuid.uuid4(),
-                nome="Administrador Eletrocar",
-                email="admin@eletrocar.com.br",
-                senha_hash=hasher.hash("admin123"),
-                role=Role.ADMIN,
-                pin_caixa="1234"
-            )
-            await user_repo.salvar(novo_admin)
-
-            eletricista = Usuario(
-                id=uuid.uuid4(),
-                nome="Marcio Eletricista",
-                email="marcio@eletrocar.com.br",
-                senha_hash=hasher.hash("marcio123"),
-                role=Role.ELETRICISTA,
-                telegram_user_id="987654321",
-                pin_caixa="4321"
-            )
-            await user_repo.salvar(eletricista)
-
-            # Seed inicial de peça de exemplo para leitor de código de barras
-            peca_repo = PecaRepositorySQLAlchemy(session)
-            peca_exemplo = Peca(
-                id=uuid.uuid4(),
-                codigo_barras="7891049281023",
-                sku="REG-BOSCH-12V",
-                descricao="Regulador de Voltagem Bosch 12V",
-                preco_custo=Decimal("110.00"),
-                preco_venda=Decimal("185.00"),
-                estoque_atual=15,
-                estoque_minimo=3,
-                localizacao="Prateleira B3"
-            )
-            await peca_repo.salvar(peca_exemplo)
-            await session.commit()
-
+    await inicializar_banco(engine, AsyncSessionLocal, settings)
     yield
+    await engine.dispose()
 
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="Backend de alta performance para a Auto Elétrica Eletrocar (Clean Architecture, DDD & TDD)",
-    lifespan=lifespan
+    description="Backend da Auto Elétrica Eletrocar (Clean Architecture, DDD & TDD)",
+    lifespan=lifespan,
 )
 
-# CORS Middleware para acesso local e da rede da oficina
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials="*" not in settings.CORS_ORIGINS,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
-# Exception Handlers do Domínio
-@app.exception_handler(EntidadeNaoEncontradaException)
-async def entidade_nao_encontrada_handler(request: Request, exc: EntidadeNaoEncontradaException):
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content={"erro": exc.mensagem, "tipo": "EntidadeNaoEncontrada"}
-    )
+@app.middleware("http")
+async def registrar_ip_origem(request: Request, call_next):
+    """Disponibiliza o IP de origem para os logs de auditoria (respeita proxy reverso Nginx)."""
+    encaminhado = request.headers.get("x-forwarded-for")
+    ip = encaminhado.split(",")[0].strip() if encaminhado else (request.client.host if request.client else None)
+    token = ip_requisicao.set(ip)
+    try:
+        return await call_next(request)
+    finally:
+        ip_requisicao.reset(token)
 
 
-@app.exception_handler(CredenciaisInvalidasException)
-async def credenciais_invalidas_handler(request: Request, exc: CredenciaisInvalidasException):
-    return JSONResponse(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        content={"erro": exc.mensagem, "tipo": "CredenciaisInvalidas"}
-    )
+def _erro(status_code: int, exc: DomainException, tipo: str, **extra) -> JSONResponse:
+    return JSONResponse(status_code=status_code, content={"erro": exc.mensagem, "tipo": tipo, **extra})
 
 
-@app.exception_handler(EstoqueInsuficienteException)
-async def estoque_insuficiente_handler(request: Request, exc: EstoqueInsuficienteException):
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={
-            "erro": exc.mensagem,
-            "tipo": "EstoqueInsuficiente",
-            "detalhes": {
-                "peca": exc.peca_descricao,
-                "disponivel": exc.estoque_atual,
-                "requisitado": exc.quantidade_requisitada
-            }
-        }
-    )
-
-
-@app.exception_handler(TransicaoStatusInvalidaException)
-async def transicao_invalida_handler(request: Request, exc: TransicaoStatusInvalidaException):
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"erro": exc.mensagem, "tipo": "TransicaoStatusInvalida"}
-    )
-
-
-@app.exception_handler(CaixaFechadoException)
-async def caixa_fechado_handler(request: Request, exc: CaixaFechadoException):
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"erro": exc.mensagem, "tipo": "CaixaFechado"}
-    )
+MAPA_EXCECOES = [
+    (EntidadeNaoEncontradaException, status.HTTP_404_NOT_FOUND, "EntidadeNaoEncontrada"),
+    (CredenciaisInvalidasException, status.HTTP_401_UNAUTHORIZED, "CredenciaisInvalidas"),
+    (AcessoNegadoException, status.HTTP_403_FORBIDDEN, "AcessoNegado"),
+    (AutorizacaoGerencialNecessariaException, status.HTTP_403_FORBIDDEN, "AutorizacaoGerencialNecessaria"),
+    (TransicaoStatusInvalidaException, 422, "TransicaoStatusInvalida"),
+    (CaixaFechadoException, status.HTTP_409_CONFLICT, "CaixaFechado"),
+    (ConflitoConcorrenciaException, status.HTTP_409_CONFLICT, "ConflitoConcorrencia"),
+    (IntegracaoExternaException, status.HTTP_502_BAD_GATEWAY, "IntegracaoExterna"),
+]
 
 
 @app.exception_handler(DomainException)
 async def domain_exception_handler(request: Request, exc: DomainException):
+    if isinstance(exc, LimiteTentativasExcedidoException):
+        resposta = _erro(status.HTTP_429_TOO_MANY_REQUESTS, exc, "LimiteTentativasExcedido")
+        resposta.headers["Retry-After"] = str(exc.segundos_restantes)
+        return resposta
+    if isinstance(exc, EstoqueInsuficienteException):
+        return _erro(422, exc, "EstoqueInsuficiente", detalhes={
+            "peca": exc.peca_descricao, "disponivel": exc.estoque_atual, "requisitado": exc.quantidade_requisitada
+        })
+    for classe, codigo, tipo in MAPA_EXCECOES:
+        if isinstance(exc, classe):
+            resposta = _erro(codigo, exc, tipo)
+            if codigo == status.HTTP_401_UNAUTHORIZED:
+                resposta.headers["WWW-Authenticate"] = "Bearer"
+            return resposta
+    return _erro(status.HTTP_400_BAD_REQUEST, exc, "RegraNegocio")
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError):
     return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"erro": exc.mensagem, "tipo": "RegraNegocio"}
+        status_code=status.HTTP_409_CONFLICT,
+        content={"erro": "Registro duplicado ou em uso por outro cadastro.", "tipo": "ViolacaoIntegridade"},
     )
 
 
-# Registro de Rotas da API v1 via APIRouter
-from fastapi import APIRouter
 api_v1 = APIRouter(prefix=settings.API_V1_PREFIX)
-api_v1.include_router(auth_router)
-api_v1.include_router(pecas_router)
-api_v1.include_router(clientes_router)
-api_v1.include_router(vendas_router)
-api_v1.include_router(os_router)
-api_v1.include_router(caixa_router)
-api_v1.include_router(dre_router)
-api_v1.include_router(telegram_router)
-api_v1.include_router(hardware_router)
-api_v1.include_router(ws_router)
-
+for router in (
+    auth_router, usuarios_router, pecas_router, clientes_router, vendas_router, os_router, caixa_router,
+    financeiro_router, relatorios_router, telegram_router, hardware_router, ws_router,
+):
+    api_v1.include_router(router)
 app.include_router(api_v1)
 
 
@@ -187,18 +135,13 @@ async def root():
         "status": "online",
         "servico": settings.PROJECT_NAME,
         "versao": settings.VERSION,
-        "mensagem": "API da Auto Elétrica Eletrocar em execução com sucesso!",
         "documentacao_swagger": "/docs",
         "documentacao_redoc": "/redoc",
         "health_check": "/health",
-        "rotas_api": f"{settings.API_V1_PREFIX}"
+        "rotas_api": settings.API_V1_PREFIX,
     }
 
 
 @app.get("/health", tags=["Status"])
 async def health_check():
-    return {
-        "status": "online",
-        "servico": settings.PROJECT_NAME,
-        "versao": settings.VERSION
-    }
+    return {"status": "online", "servico": settings.PROJECT_NAME, "versao": settings.VERSION}

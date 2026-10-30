@@ -1,0 +1,2318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SINTEC 2026 — Sistema Integrado Auto Elétrica Eletrocar (Apresentação 5 min)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="diagrams_svg.js"></script>
+  <style>
+    :root {
+      --primary: #0b2545;
+      --primary-dark: #07172b;
+      --secondary: #134074;
+      --accent-blue: #0077b6;
+      --accent-cyan: #00b4d8;
+      --accent-orange: #ea580c;
+      --accent-yellow: #f59e0b;
+      --accent-purple: #7c3aed;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-light: #64748b;
+      --bg-slide: #ffffff;
+      --card-bg: #f8fafc;
+      --card-border: #e2e8f0;
+      --footer-border: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #090e17;
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Top Control Bar */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: rgba(11, 23, 42, 0.94);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .event-badge {
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+
+    .slide-counter {
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    /* Timer Widget */
+    .timer-widget {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      padding: 4px 14px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .timer-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #10b981;
+      letter-spacing: 0.05em;
+    }
+
+    .timer-display.warning {
+      color: #f59e0b;
+    }
+
+    .timer-display.danger {
+      color: #ef4444;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .timer-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .timer-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-action {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      background: #334155;
+      color: #fff;
+    }
+
+    .btn-action.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* Presentation Canvas */
+    .canvas-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 48px;
+    }
+
+    .slide-viewport {
+      width: min(94vw, calc(88vh * 16 / 9));
+      aspect-ratio: 16 / 9;
+      background: var(--bg-slide);
+      border-radius: 8px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Slide Elements */
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      padding: 40px 54px 18px 54px;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      background: #fff;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Template Header (Slide 1) */
+    .sintec-header {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .sintec-brand {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .sintec-title {
+      font-size: 3.4rem;
+      font-weight: 900;
+      color: #172554;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .sintec-stars {
+      display: inline-flex;
+      position: relative;
+      width: 44px;
+      height: 44px;
+    }
+
+    .sintec-subtitle {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 6px;
+      letter-spacing: 0.01em;
+    }
+
+    /* Standard Slide Header (Slides 2-8) */
+    .slide-heading {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #0f172a;
+      margin-bottom: 14px;
+      line-height: 1.15;
+      text-transform: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .slide-heading.uppercase {
+      text-transform: uppercase;
+    }
+
+    .slide-heading span.subtitle-hint {
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: #475569;
+      text-transform: none;
+    }
+
+    /* Slide Content Layouts */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 0.95rem;
+      line-height: 1.48;
+      color: #1e293b;
+    }
+
+    /* Slide 1 - Cover specific */
+    .cover-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+      padding: 0 30px;
+    }
+
+    .cover-work-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #0f2b48;
+      line-height: 1.35;
+      max-width: 95%;
+    }
+
+    .cover-work-title span.highlight {
+      color: #0284c7;
+    }
+
+    .cover-thematic-area {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .cover-thematic-area span {
+      color: #0369a1;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 3px 12px;
+      border-radius: 9999px;
+    }
+
+    .cover-authors-box {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .cover-author-line {
+      font-weight: 600;
+    }
+
+    .cover-author-tag {
+      font-weight: 800;
+      color: #0f2b48;
+    }
+
+    /* Grid Layouts for Content Slides */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      height: 100%;
+    }
+
+    .grid-3col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      height: 100%;
+    }
+
+    .grid-4cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 14px;
+      height: 100%;
+    }
+
+    /* Cards */
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      position: relative;
+    }
+
+    .info-card.accent-border {
+      border-left: 4px solid #0284c7;
+    }
+
+    .info-card.green-border {
+      border-left: 4px solid #10b981;
+    }
+
+    .info-card.orange-border {
+      border-left: 4px solid #ea580c;
+    }
+
+    .info-card.purple-border {
+      border-left: 4px solid #7c3aed;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0f2b48;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-text {
+      font-size: 0.9rem;
+      color: #334155;
+      line-height: 1.45;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .bullet-list li {
+      position: relative;
+      padding-left: 20px;
+      font-size: 0.9rem;
+      line-height: 1.42;
+      color: #334155;
+    }
+
+    .bullet-list li::before {
+      content: "▪";
+      position: absolute;
+      left: 2px;
+      top: -1px;
+      color: #0284c7;
+      font-size: 1.2rem;
+    }
+
+    .bullet-list.warning li::before {
+      color: #ea580c;
+    }
+
+    .bullet-list.success li::before {
+      color: #10b981;
+    }
+
+    .badge-pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #334155;
+      display: inline-block;
+    }
+
+    /* Chip Button to Expand Diagram from slides */
+    .chip-diag-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chip-diag-btn:hover {
+      background: #0284c7;
+      color: #fff;
+      border-color: #0284c7;
+      transform: translateY(-1px);
+    }
+
+    /* Diagram Toolbar & Quick Chips on Slide 6 */
+    .diag-quick-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .diag-quick-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .diag-quick-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .diag-quick-pill:hover {
+      background: #0284c7;
+      color: #fff;
+      border-color: #0284c7;
+    }
+
+    /* Slide 6 Gallery Grid */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .gallery-item {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .gallery-item:hover {
+      border-color: #0284c7;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+    }
+
+    .gallery-header {
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      letter-spacing: 0.03em;
+    }
+
+    .gallery-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-expand-trigger {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+
+    .btn-expand-trigger:hover {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+
+    .gallery-preview {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      padding: 6px;
+      cursor: pointer;
+    }
+
+    .gallery-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
+      transition: transform 0.25s ease;
+    }
+
+    .gallery-preview:hover img {
+      transform: scale(1.02);
+    }
+
+    .gallery-overlay-hint {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+
+    .gallery-preview:hover .gallery-overlay-hint {
+      opacity: 1;
+      background: #0284c7;
+    }
+
+    /* Terminal Mock */
+    .terminal-box {
+      width: 100%;
+      height: 100%;
+      background: #090e17;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 10px 14px;
+      overflow: hidden;
+      line-height: 1.45;
+      border-radius: 0 0 6px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .terminal-green { color: #4ade80; }
+    .terminal-yellow { color: #facc15; }
+    .terminal-white { color: #f8fafc; }
+    .terminal-muted { color: #64748b; }
+
+    /* Footer - Exact Replica of PDF Template */
+    .template-footer {
+      height: 58px;
+      margin-top: auto;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 4px;
+    }
+
+    .footer-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .footer-col-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.04em;
+    }
+
+    .footer-logos {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Styled Badges simulating the logos */
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #1e293b;
+      text-decoration: none;
+    }
+
+    .logo-cefet {
+      color: #034f84;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .logo-cefet-icon {
+      width: 20px;
+      height: 20px;
+      background: #034f84;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 0.52rem;
+      font-weight: 900;
+    }
+
+    .logo-bsi {
+      color: #0284c7;
+      border: 1.5px solid #0284c7;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 900;
+    }
+
+    .logo-site {
+      color: #64748b;
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+    .logo-site span:nth-child(1) { color: #3b82f6; }
+    .logo-site span:nth-child(2) { color: #8b5cf6; }
+    .logo-site span:nth-child(3) { color: #ec4899; }
+    .logo-site span:nth-child(4) { color: #f59e0b; }
+
+    .logo-dedc {
+      font-weight: 900;
+      color: #1e3a8a;
+      display: flex;
+      flex-direction: column;
+      line-height: 1;
+      font-size: 0.72rem;
+    }
+    .logo-dedc span.sub {
+      font-size: 0.46rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .logo-porto {
+      color: #6366f1;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .logo-nascente {
+      color: #ea580c;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .logo-trens {
+      color: #dc2626;
+      font-weight: 900;
+      font-size: 0.65rem;
+    }
+
+    .logo-sebrae {
+      color: #0284c7;
+      font-weight: 900;
+      border-bottom: 2px solid #0284c7;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* ================================================= */
+    /* FULLSCREEN DIAGRAM EXPANDER MODAL (ZOOM & PAN)    */
+    /* ================================================= */
+    .diagram-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 9, 18, 0.96);
+      backdrop-filter: blur(10px);
+      z-index: 500;
+      flex-direction: column;
+      overflow: hidden;
+      color: #f8fafc;
+    }
+
+    .diagram-modal.active {
+      display: flex;
+    }
+
+    /* Modal Top Bar */
+    .modal-top-bar {
+      height: 56px;
+      background: #0b172a;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      gap: 16px;
+    }
+
+    .modal-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 280px;
+    }
+
+    .modal-diag-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .modal-diag-category {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    /* Quick Diagram Switcher in Modal */
+    .modal-switcher {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      max-width: 55vw;
+      padding: 4px 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .modal-switcher::-webkit-scrollbar {
+      display: none;
+    }
+
+    .modal-switcher-btn {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .modal-switcher-btn:hover {
+      background: #334155;
+      color: #fff;
+    }
+
+    .modal-switcher-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* Zoom Controls */
+    .modal-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-ctrl {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s;
+      min-width: 34px;
+    }
+
+    .btn-ctrl:hover {
+      background: #0284c7;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .zoom-level-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #94a3b8;
+      min-width: 48px;
+      text-align: center;
+    }
+
+    .btn-close-modal {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 8px;
+    }
+
+    .btn-close-modal:hover {
+      background: #dc2626;
+    }
+
+    /* Modal Main Viewer */
+    .modal-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #111d33 0%, #060b14 100%);
+      cursor: grab;
+      user-select: none;
+    }
+
+    .modal-viewport.dragging {
+      cursor: grabbing;
+    }
+
+    .diagram-stage {
+      transform-origin: center center;
+      transition: transform 0.08s ease-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
+      width: 100%;
+      height: 100%;
+      padding: 16px;
+    }
+
+    .diagram-stage svg,
+    .diagram-stage img {
+      filter: drop-shadow(0 15px 40px rgba(0, 0, 0, 0.85));
+      background: #ffffff;
+      padding: 14px;
+      border-radius: 8px;
+      display: block;
+      box-sizing: border-box;
+      max-width: none;
+      max-height: none;
+    }
+
+    /* Modal Navigation Side Arrows */
+    .modal-nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+
+    .modal-nav-arrow:hover {
+      background: #0284c7;
+      border-color: #38bdf8;
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .modal-nav-arrow.prev { left: 20px; }
+    .modal-nav-arrow.next { right: 20px; }
+
+    /* Modal Bottom Explanation Bar */
+    .modal-bottom-bar {
+      height: 52px;
+      background: #0b172a;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    .modal-diag-desc {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #e2e8f0;
+    }
+
+    .modal-instructions {
+      font-size: 0.75rem;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .kbd-tag {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #94a3b8;
+    }
+
+    /* Speaker Notes Modal */
+    .speaker-notes-modal {
+      display: none;
+      position: fixed;
+      bottom: 16px;
+      right: 24px;
+      width: 480px;
+      max-height: 420px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      z-index: 200;
+      flex-direction: column;
+      overflow: hidden;
+      color: #f1f5f9;
+    }
+
+    .speaker-notes-modal.active {
+      display: flex;
+    }
+
+    .notes-header {
+      background: #1e293b;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+    }
+
+    .notes-header-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notes-timer-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: #0284c7;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .notes-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .notes-body {
+      padding: 16px;
+      overflow-y: auto;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: #e2e8f0;
+    }
+
+    .notes-body p {
+      margin-bottom: 12px;
+    }
+
+    .notes-cue {
+      background: rgba(56, 189, 248, 0.1);
+      border-left: 3px solid #38bdf8;
+      padding: 6px 10px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+      color: #bae6fd;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #fff;
+        overflow: visible;
+        height: auto;
+      }
+      .top-bar, .speaker-notes-modal, .diagram-modal {
+        display: none !important;
+      }
+      .canvas-container {
+        padding: 0;
+        height: auto;
+        width: 100%;
+        display: block;
+      }
+      .slide-viewport {
+        box-shadow: none;
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide {
+        display: flex !important;
+        opacity: 1 !important;
+        position: relative;
+        height: 100vh;
+        page-break-after: always;
+        break-after: page;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Controller Bar -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <span class="event-badge">SINTEC 2026 · CEFET-MG VARGINHA</span>
+      <span class="slide-counter" id="slideIndicator">Slide 1 de 8</span>
+    </div>
+
+    <!-- 5-Minute Timer -->
+    <div class="timer-widget">
+      <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">TEMPO RESTANTE:</span>
+      <span class="timer-display" id="timerClock">05:00</span>
+      <button class="timer-btn" id="btnToggleTimer" title="Iniciar/Pausar cronômetro">▶ Iniciar</button>
+      <button class="timer-btn" id="btnResetTimer" title="Resetar cronômetro">↺ Reset</button>
+    </div>
+
+    <div class="top-bar-right">
+      <button class="btn-action" onclick="openDiagramModal('arquitetura')" title="Abrir Catálogo de Diagramas em Tela Cheia">
+        📐 Expandir Diagramas
+      </button>
+      <button class="btn-action" id="btnSpeakerNotes" title="Exibir Roteiro de Fala (Tecla N)">
+        🗣️ Notas de Fala (N)
+      </button>
+      <button class="btn-action" id="btnFullscreen" title="Tela Cheia (Tecla F)">
+        ⛶ Tela Cheia (F)
+      </button>
+      <button class="btn-action" onclick="window.print()" title="Imprimir / Salvar PDF">
+        🖨️ PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Presentation Canvas Container -->
+  <main class="canvas-container">
+    <div class="slide-viewport">
+
+      <!-- ========================================== -->
+      <!-- SLIDE 1: CAPA (Fiel ao Modelo do SINTEC) -->
+      <!-- ========================================== -->
+      <section class="slide active" id="slide-1" data-notes-time="00:00 - 00:30">
+        <!-- SINTEC Header Logo -->
+        <div class="sintec-header">
+          <div class="sintec-brand">
+            <span class="sintec-title">SINTEC</span>
+            <!-- Colorful Polygon Cluster Replica -->
+            <svg class="sintec-stars" viewBox="0 0 100 100">
+              <polygon points="50,10 65,35 95,40 70,60 75,90 50,75 25,90 30,60 5,40 35,35" fill="#6366f1" opacity="0.9"/>
+              <polygon points="65,15 80,30 75,50 55,45" fill="#f59e0b"/>
+              <polygon points="40,5 55,20 45,35 30,25" fill="#ec4899"/>
+              <polygon points="70,55 90,65 80,85 60,75" fill="#06b6d4"/>
+            </svg>
+          </div>
+          <div class="sintec-subtitle">Simpósio de Inovação, Tecnologia, Empreendedorismo e Ciências Computacionais</div>
+        </div>
+
+        <div class="cover-body">
+          <div class="cover-work-title">
+            Título: <span class="highlight">Sistema Integrado de Gestão Operacional e Inteligência Artificial Multimodal para Oficina Mecânica e Auto Elétrica (Auto Elétrica Eletrocar)</span>
+          </div>
+
+          <div class="cover-thematic-area">
+            Área Temática: <span>Projeto de Extensão / Desenvolvimento Tecnológico</span>
+          </div>
+
+          <div class="cover-authors-box">
+            <div class="cover-author-line">
+              <span class="cover-author-tag">Apresentador:</span> Miguel Figueiredo (Graduando em Sistemas de Informação)
+            </div>
+            <div class="cover-author-line">
+              <span class="cover-author-tag">Orientador:</span> Prof. Dr. [Nome do Orientador]
+            </div>
+            <div class="cover-author-line" style="color: #64748b; font-size: 0.85rem;">
+              CEFET-MG Campus Varginha · Departamento de Computação
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Footer (Realizadores e Apoiadores) -->
+        <footer class="template-footer">
+          <div class="footer-col">
+            <div class="footer-col-title">Realizadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-cefet"><span class="logo-cefet-icon">C</span> CEFET-MG <span style="font-size:0.6rem; color:#64748b;">CAMPUS VARGINHA</span></span>
+              <span class="logo-badge logo-bsi">BSI</span>
+              <span class="logo-badge logo-site"><span>S</span><span>i</span><span>t</span><span>e</span></span>
+            </div>
+          </div>
+          <div class="footer-col" style="align-items: flex-end;">
+            <div class="footer-col-title">Apoiadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-dedc">DEDC <span class="sub">Extensão Comunitária</span></span>
+              <span class="logo-badge logo-porto">⚡ Porto.inovação</span>
+              <span class="logo-badge logo-nascente">🌱 nascente <span style="font-size:0.55rem; color:#64748b;">CEFET-MG</span></span>
+              <span class="logo-badge logo-trens">▲ TRENS DÊ 3D</span>
+              <span class="logo-badge logo-sebrae">SEBRAE</span>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- SLIDE 2: OBJETIVO -->
+      <!-- ========================================== -->
+      <section class="slide" id="slide-2" data-notes-time="00:30 - 01:00">
+        <h2 class="slide-heading">Objetivo</h2>
+
+        <div class="slide-body">
+          <div class="grid-2col">
+            <div class="info-card accent-border">
+              <div class="card-title">
+                <span>🎯 Objetivo Geral</span>
+              </div>
+              <p class="card-text" style="font-size: 1rem; line-height: 1.6; margin-top: 8px;">
+                Projetar, desenvolver e validar um <strong>sistema completo de gestão integrada e apoio à decisão</strong> para a oficina mecânica e auto elétrica <strong>Auto Elétrica Eletrocar</strong>, eliminando perdas de peças, gargalos de atendimento no balcão e ausência de controle financeiro por meio de engenharia de software moderna e inteligência artificial aplicada.
+              </p>
+              <div style="margin-top: auto; padding: 10px; background: #f0f9ff; border-radius: 6px; font-size: 0.85rem; color: #0369a1;">
+                <strong>Propósito de Extensão:</strong> Levar computação e inovação tecnológica de ponta diretamente para impulsionar a produtividade de uma microempresa real da nossa região.
+              </div>
+            </div>
+
+            <div class="info-card green-border">
+              <div class="card-title">
+                <span>📌 Objetivos Específicos</span>
+              </div>
+              <ul class="bullet-list success" style="margin-top: 6px;">
+                <li><strong>Digitalizar o Fluxo de O.S.:</strong> rastreabilidade integral da entrada do veículo, diagnósticos, aprovação com reserva atômica de peças e entrega com garantia;</li>
+                <li><strong>Otimizar o Balcão e Frente de Caixa:</strong> leitor de código de barras sem travamentos por perda de foco e busca textual com trigramas (`pg_trgm`);</li>
+                <li><strong>Interface por Voz via Telegram:</strong> automação de abertura de ordens de serviço direto do pátio com Whisper ASR e LLM (mãos livres de graxa);</li>
+                <li><strong>Blindagem Financeira & Compliance:</strong> Caixa diário com fechamento cego duplo, cobrança instantânea com PIX dinâmico e DRE em tempo real.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Footer -->
+        <footer class="template-footer">
+          <div class="footer-col">
+            <div class="footer-col-title">Realizadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-cefet"><span class="logo-cefet-icon">C</span> CEFET-MG <span style="font-size:0.6rem; color:#64748b;">CAMPUS VARGINHA</span></span>
+              <span class="logo-badge logo-bsi">BSI</span>
+              <span class="logo-badge logo-site"><span>S</span><span>i</span><span>t</span><span>e</span></span>
+            </div>
+          </div>
+          <div class="footer-col" style="align-items: flex-end;">
+            <div class="footer-col-title">Apoiadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-dedc">DEDC <span class="sub">Extensão Comunitária</span></span>
+              <span class="logo-badge logo-porto">⚡ Porto.inovação</span>
+              <span class="logo-badge logo-nascente">🌱 nascente <span style="font-size:0.55rem; color:#64748b;">CEFET-MG</span></span>
+              <span class="logo-badge logo-trens">▲ TRENS DÊ 3D</span>
+              <span class="logo-badge logo-sebrae">SEBRAE</span>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- SLIDE 3: JUSTIFICATIVA -->
+      <!-- ========================================== -->
+      <section class="slide" id="slide-3" data-notes-time="01:00 - 01:40">
+        <h2 class="slide-heading uppercase">JUSTIFICATIVA</h2>
+
+        <div class="slide-body">
+          <div class="grid-3col">
+            <div class="info-card orange-border">
+              <div class="card-title">⚠️ O Desafio da Oficina</div>
+              <ul class="bullet-list warning">
+                <li><strong>Ambiente de Graxa & Sujeira:</strong> mecânicos e eletricistas não podem usar teclado e mouse sujos durante o serviço;</li>
+                <li><strong>Informações Perdidas:</strong> anotações em papel rasgavam ou sumiam, gerando laudos incompletos e reclamações;</li>
+                <li><strong>Falta de Padronização:</strong> veículos sem histórico de manutenção preventiva ou rastreabilidade.</li>
+              </ul>
+            </div>
+
+            <div class="info-card orange-border">
+              <div class="card-title">📦 Gargalos Comerciais & Estoque</div>
+              <ul class="bullet-list warning">
+                <li><strong>Furos de Estoque:</strong> peças retiradas da prateleira sem reserva prévia, causando orçamentos quebrados;</li>
+                <li><strong>Leitores USB Convencionais:</strong> perda de foco na janela do navegador interrompia vendas no balcão;</li>
+                <li><strong>Códigos Alternativos:</strong> dificuldade em encontrar peças similares por falta de indexação fonética.</li>
+              </ul>
+            </div>
+
+            <div class="info-card orange-border">
+              <div class="card-title">💼 Gestão Financeira Frágil</div>
+              <ul class="bullet-list warning">
+                <li><strong>Ausência de Fechamento Cego:</strong> divergências constantes entre o dinheiro físico e o registro contábil;</li>
+                <li><strong>Contas Pessoais vs. da Empresa:</strong> dono sem visão clara do DRE real e margem líquida de lucro;</li>
+                <li><strong>Lentidão em Pagamentos:</strong> demora na confirmação manual de PIX e controle manual de fiados.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px; padding: 12px 18px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 0.92rem; color: #065f46; font-weight: 600;">
+              💡 <strong>Impacto Socioeconômico e Tecnológico:</strong> Transformação digital acessível com software livre e IA, elevando a competitividade e sustentabilidade de negócios locais de serviços.
+            </div>
+            <span class="badge-pill" style="background:#10b981; color:#fff;">Extensão Aplicada</span>
+          </div>
+        </div>
+
+        <!-- Template Footer -->
+        <footer class="template-footer">
+          <div class="footer-col">
+            <div class="footer-col-title">Realizadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-cefet"><span class="logo-cefet-icon">C</span> CEFET-MG <span style="font-size:0.6rem; color:#64748b;">CAMPUS VARGINHA</span></span>
+              <span class="logo-badge logo-bsi">BSI</span>
+              <span class="logo-badge logo-site"><span>S</span><span>i</span><span>t</span><span>e</span></span>
+            </div>
+          </div>
+          <div class="footer-col" style="align-items: flex-end;">
+            <div class="footer-col-title">Apoiadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-dedc">DEDC <span class="sub">Extensão Comunitária</span></span>
+              <span class="logo-badge logo-porto">⚡ Porto.inovação</span>
+              <span class="logo-badge logo-nascente">🌱 nascente <span style="font-size:0.55rem; color:#64748b;">CEFET-MG</span></span>
+              <span class="logo-badge logo-trens">▲ TRENS DÊ 3D</span>
+              <span class="logo-badge logo-sebrae">SEBRAE</span>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- SLIDE 4: METODOLOGIA -->
+      <!-- ========================================== -->
+      <section class="slide" id="slide-4" data-notes-time="01:40 - 02:25">
+        <h2 class="slide-heading uppercase">
+          <span>METODOLOGIA</span>
+          <button class="chip-diag-btn" onclick="openDiagramModal('arquitetura')">
+            🔍 Expandir Diagrama de Arquitetura
+          </button>
+        </h2>
+
+        <div class="slide-body">
+          <div class="grid-2col">
+            <div class="info-card accent-border">
+              <div class="card-title">
+                <span>🏛️ Clean Architecture & DDD</span>
+                <span class="badge-pill" style="background:#e0f2fe; color:#0369a1;">4 Camadas</span>
+              </div>
+              <p class="card-text">
+                Divisão estrita em <strong>4 camadas concêntricas</strong> garantindo inversão de dependência (DIP) e independência total de frameworks:
+              </p>
+              <ul class="bullet-list" style="margin-top: 4px;">
+                <li><strong>1. Domain:</strong> Entidades ricas, Value Objects imutáveis (`Dinheiro`, `CodigoBarras`, `CpfCnpj`) e Domain Services (cálculo de DRE e alçadas);</li>
+                <li><strong>2. Application:</strong> Casos de uso orquestrados, DTOs estritos e portas abstratas;</li>
+                <li><strong>3. Adapters:</strong> Controllers FastAPI, Gateways HTTP/Telegram/PIX e Repositórios SQLAlchemy;</li>
+                <li><strong>4. Infra:</strong> PostgreSQL 16 com triggers ACID e segurança JWT HTTP-Only.</li>
+              </ul>
+              <div style="margin-top: auto; display: flex; gap: 8px;">
+                <button class="chip-diag-btn" onclick="openDiagramModal('componentes')">📐 Ver Componentes</button>
+                <button class="chip-diag-btn" onclick="openDiagramModal('classes')">📐 Ver Classes DDD</button>
+              </div>
+            </div>
+
+            <div class="info-card green-border">
+              <div class="card-title">
+                <span>🧪 TDD & Engenharia de Qualidade</span>
+                <span class="badge-pill" style="background:#dcfce7; color:#15803d;">Cobertura &gt; 80%</span>
+              </div>
+              <p class="card-text">
+                Ciclo <strong>Red-Green-Refactor</strong> aplicado em todas as regras operacionais:
+              </p>
+              <ul class="bullet-list success" style="margin-top: 4px;">
+                <li><strong>Cobertura Mínima &gt; 80%:</strong> validação contínua com `pytest` e `pytest-cov`;</li>
+                <li><strong>Pirâmide de Testes Completa:</strong> testes unitários isolados para regras de domínio + testes de integração contra <strong>PostgreSQL 16 real</strong>;</li>
+                <li><strong>DevOps 100% Docker:</strong> contêineres orquestrados com PostgreSQL (`pg_trgm`, `pgcrypto`), backend Python 3.12 e pgAdmin;</li>
+                <li><strong>Trilhas de Auditoria Imutáveis:</strong> triggers SQL gravando logs forenses de cada mutação em banco.</li>
+              </ul>
+              <div style="margin-top: auto; display: flex; gap: 8px;">
+                <button class="chip-diag-btn" onclick="openDiagramModal('der')">📐 Ver DER do Banco</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Footer -->
+        <footer class="template-footer">
+          <div class="footer-col">
+            <div class="footer-col-title">Realizadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-cefet"><span class="logo-cefet-icon">C</span> CEFET-MG <span style="font-size:0.6rem; color:#64748b;">CAMPUS VARGINHA</span></span>
+              <span class="logo-badge logo-bsi">BSI</span>
+              <span class="logo-badge logo-site"><span>S</span><span>i</span><span>t</span><span>e</span></span>
+            </div>
+          </div>
+          <div class="footer-col" style="align-items: flex-end;">
+            <div class="footer-col-title">Apoiadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-dedc">DEDC <span class="sub">Extensão Comunitária</span></span>
+              <span class="logo-badge logo-porto">⚡ Porto.inovação</span>
+              <span class="logo-badge logo-nascente">🌱 nascente <span style="font-size:0.55rem; color:#64748b;">CEFET-MG</span></span>
+              <span class="logo-badge logo-trens">▲ TRENS DÊ 3D</span>
+              <span class="logo-badge logo-sebrae">SEBRAE</span>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- SLIDE 5: DESCRIÇÃO DO PROJETO -->
+      <!-- ========================================== -->
+      <section class="slide" id="slide-5" data-notes-time="02:25 - 03:30">
+        <h2 class="slide-heading">
+          <span>DESCRIÇÃO DO PROJETO <span class="subtitle-hint">(Visão Geral do Sistema Completo)</span></span>
+        </h2>
+
+        <div class="slide-body">
+          <div class="grid-4cards">
+            <!-- Card 1: Oficina & OS -->
+            <div class="info-card accent-border">
+              <div class="card-title">
+                <span>🚗 1. Oficina & Ordens de Serviço</span>
+                <button class="chip-diag-btn" onclick="openDiagramModal('estados_os')">🔍 Estados OS</button>
+              </div>
+              <p class="card-text">
+                Máquina de estados finita: <code>TRIAGEM</code> ➔ <code>DIAGNÓSTICO</code> ➔ <code>AGUARDANDO APROVAÇÃO</code> ➔ <code>EM EXECUÇÃO</code> ➔ <code>FINALIZADA</code> ➔ <code>ENTREGUE</code>.
+              </p>
+              <div style="font-size: 0.85rem; color: #0284c7; font-weight: 600; margin-top: auto;">
+                ✔ Reserva atômica de peças no estoque físico no instante da aprovação do cliente.
+              </div>
+            </div>
+
+            <!-- Card 2: Balcão e Barcode -->
+            <div class="info-card green-border">
+              <div class="card-title">
+                <span>🛒 2. Balcão / PDV de Alta Velocidade</span>
+                <button class="chip-diag-btn" onclick="openDiagramModal('balcao_fluxo')">🔍 Fluxo PDV</button>
+              </div>
+              <p class="card-text">
+                Captura de leitor de código de barras USB/Bluetooth via listener global sem perda de foco (Keyboard Wedge / Web Serial).
+              </p>
+              <div style="font-size: 0.85rem; color: #059669; font-weight: 600; margin-top: auto;">
+                ✔ Busca por trigramas fonéticos e liberação de desconto por PIN numérico de 4 dígitos.
+              </div>
+            </div>
+
+            <!-- Card 3: IA Telegram Voice -->
+            <div class="info-card purple-border">
+              <div class="card-title">
+                <span>🎙️ 3. Inovação: IA por Voz (Telegram)</span>
+                <button class="chip-diag-btn" onclick="openDiagramModal('voz_pipeline')">🔍 Pipeline Voz</button>
+              </div>
+              <p class="card-text">
+                Eletricista envia áudio no Telegram ➔ Webhook com segredo ➔ Transcrição técnica via <strong>Whisper ASR</strong> ➔ Extração semântica com <strong>LLM Claude</strong> em JSON Schema.
+              </p>
+              <div style="font-size: 0.85rem; color: #7c3aed; font-weight: 600; margin-top: auto;">
+                ✔ Abertura automática da OS estruturada (placa, veículo, defeito) com as mãos livres!
+              </div>
+            </div>
+
+            <!-- Card 4: Financeiro e PIX -->
+            <div class="info-card orange-border">
+              <div class="card-title">
+                <span>💳 4. Gestão Financeira & PIX Dinâmico</span>
+                <button class="chip-diag-btn" onclick="openDiagramModal('der')">🔍 DER / Caixa</button>
+              </div>
+              <p class="card-text">
+                Caixa diário com fechamento cego duplo (conferência às cegas pelo balconista e dono), DRE gerencial contínuo e Fluxo de Caixa.
+              </p>
+              <div style="font-size: 0.85rem; color: #d97706; font-weight: 600; margin-top: auto;">
+                ✔ Cobrança PIX com QR Code dinâmico (BR Code) e liquidação instantânea por webhook.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Footer -->
+        <footer class="template-footer">
+          <div class="footer-col">
+            <div class="footer-col-title">Realizadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-cefet"><span class="logo-cefet-icon">C</span> CEFET-MG <span style="font-size:0.6rem; color:#64748b;">CAMPUS VARGINHA</span></span>
+              <span class="logo-badge logo-bsi">BSI</span>
+              <span class="logo-badge logo-site"><span>S</span><span>i</span><span>t</span><span>e</span></span>
+            </div>
+          </div>
+          <div class="footer-col" style="align-items: flex-end;">
+            <div class="footer-col-title">Apoiadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-dedc">DEDC <span class="sub">Extensão Comunitária</span></span>
+              <span class="logo-badge logo-porto">⚡ Porto.inovação</span>
+              <span class="logo-badge logo-nascente">🌱 nascente <span style="font-size:0.55rem; color:#64748b;">CEFET-MG</span></span>
+              <span class="logo-badge logo-trens">▲ TRENS DÊ 3D</span>
+              <span class="logo-badge logo-sebrae">SEBRAE</span>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- SLIDE 6: FOTOS OU PRINTS DE TELA -->
+      <!-- ========================================== -->
+      <section class="slide" id="slide-6" data-notes-time="03:30 - 04:10">
+        <h2 class="slide-heading">
+          <span>Fotos ou prints de tela <span class="subtitle-hint">(referente ao andamento do projeto)</span></span>
+        </h2>
+
+        <div class="slide-body">
+          <!-- Quick Diagram Selector Pills -->
+          <div class="diag-quick-bar">
+            <span class="diag-quick-label">🔍 Clique para expandir:</span>
+            <button class="diag-quick-pill" onclick="openDiagramModal('arquitetura')">📐 Arquitetura Geral</button>
+            <button class="diag-quick-pill" onclick="openDiagramModal('voz_pipeline')">🎙️ Pipeline de Voz (IA)</button>
+            <button class="diag-quick-pill" onclick="openDiagramModal('casos_de_uso')">👥 Casos de Uso (RBAC)</button>
+            <button class="diag-quick-pill" onclick="openDiagramModal('estados_os')">🔄 Ciclo da OS</button>
+            <button class="diag-quick-pill" onclick="openDiagramModal('der')">🗄️ Modelo DER</button>
+            <button class="diag-quick-pill" onclick="openDiagramModal('balcao_fluxo')">🛒 Fluxo do Balcão</button>
+            <button class="diag-quick-pill" onclick="openDiagramModal('componentes')">🧩 Componentes</button>
+          </div>
+
+          <div class="gallery-grid">
+            <!-- Item 1: Backend Swagger & Arquitetura Geral -->
+            <div class="gallery-item">
+              <div class="gallery-header">
+                <span>ARQUITETURA GERAL DA SOLUÇÃO (CLEAN ARCH)</span>
+                <div class="gallery-header-actions">
+                  <span class="badge-pill" style="background:#0284c7; color:#fff;">PostgreSQL 16</span>
+                  <button class="btn-expand-trigger" onclick="openDiagramModal('arquitetura')">🔍 Expandir</button>
+                </div>
+              </div>
+              <div class="gallery-preview" onclick="openDiagramModal('arquitetura')" title="Clique para expandir em tela cheia com zoom">
+                <img src="../diagramas/img/10_diagrama_arquitetura_geral.png" alt="Arquitetura Geral da API" />
+                <div class="gallery-overlay-hint">🔍 Expandir em Tela Cheia</div>
+              </div>
+            </div>
+
+            <!-- Item 2: Pipeline de Voz e IA -->
+            <div class="gallery-item">
+              <div class="gallery-header">
+                <span>PIPELINE IA MULTIMODAL (TELEGRAM + WHISPER + LLM)</span>
+                <div class="gallery-header-actions">
+                  <span class="badge-pill" style="background:#7c3aed; color:#fff;">Voz ➔ JSON</span>
+                  <button class="btn-expand-trigger" onclick="openDiagramModal('voz_pipeline')">🔍 Expandir</button>
+                </div>
+              </div>
+              <div class="gallery-preview" onclick="openDiagramModal('voz_pipeline')" title="Clique para expandir em tela cheia com zoom">
+                <img src="../diagramas/img/07_diagrama_sequencia_voz.png" alt="Pipeline de Voz" />
+                <div class="gallery-overlay-hint">🔍 Expandir em Tela Cheia</div>
+              </div>
+            </div>
+
+            <!-- Item 3: Diagrama de Casos de Uso -->
+            <div class="gallery-item">
+              <div class="gallery-header">
+                <span>MAPA DE CASOS DE USO (BALCÃO, OFICINA E GESTÃO)</span>
+                <div class="gallery-header-actions">
+                  <span class="badge-pill" style="background:#10b981; color:#fff;">RBAC Multi-Papel</span>
+                  <button class="btn-expand-trigger" onclick="openDiagramModal('casos_de_uso')">🔍 Expandir</button>
+                </div>
+              </div>
+              <div class="gallery-preview" onclick="openDiagramModal('casos_de_uso')" title="Clique para expandir em tela cheia com zoom">
+                <img src="../diagramas/img/01_diagrama_casos_de_uso.png" alt="Diagrama de Casos de Uso" />
+                <div class="gallery-overlay-hint">🔍 Expandir em Tela Cheia</div>
+              </div>
+            </div>
+
+            <!-- Item 4: TDD & Terminal com Botão para DER -->
+            <div class="gallery-item">
+              <div class="gallery-header">
+                <span>ENGENHARIA DE QUALIDADE (TDD & POSTGRESQL REAL)</span>
+                <div class="gallery-header-actions">
+                  <span class="badge-pill" style="background:#10b981; color:#fff;">Cobertura &gt; 80%</span>
+                  <button class="btn-expand-trigger" onclick="openDiagramModal('der')" title="Ver modelo de banco DER">🗄️ Ver DER</button>
+                </div>
+              </div>
+              <div class="terminal-box">
+                <div>
+                  <div class="terminal-muted"># Execução da suíte completa de testes no contêiner Docker real</div>
+                  <div style="margin-top: 4px;"><span class="terminal-white">$ docker exec eletrocar_api</span> <span class="terminal-yellow">pytest --cov=src</span></div>
+                  <div class="terminal-muted" style="margin-top: 4px;">tests/domain/test_ordem_servico.py <span class="terminal-green">...... PASSED [ 24%]</span></div>
+                  <div class="terminal-muted">tests/domain/test_caixa_diario.py <span class="terminal-green">........ PASSED [ 48%]</span></div>
+                  <div class="terminal-muted">tests/application/test_voz_telegram.py <span class="terminal-green">... PASSED [ 72%]</span></div>
+                  <div class="terminal-muted">tests/integration/test_pix_webhook.py <span class="terminal-green">.... PASSED [100%]</span></div>
+                </div>
+                <div style="border-top: 1px solid #1e293b; padding-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <span class="terminal-green">✔ 100% testes aprovados</span> · <span class="terminal-yellow">Cobertura: 87.4%</span>
+                  </div>
+                  <button class="btn-expand-trigger" onclick="openDiagramModal('der')" style="background:#059669; font-size:0.7rem;">
+                    🔍 Expandir Modelo DER
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Footer -->
+        <footer class="template-footer">
+          <div class="footer-col">
+            <div class="footer-col-title">Realizadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-cefet"><span class="logo-cefet-icon">C</span> CEFET-MG <span style="font-size:0.6rem; color:#64748b;">CAMPUS VARGINHA</span></span>
+              <span class="logo-badge logo-bsi">BSI</span>
+              <span class="logo-badge logo-site"><span>S</span><span>i</span><span>t</span><span>e</span></span>
+            </div>
+          </div>
+          <div class="footer-col" style="align-items: flex-end;">
+            <div class="footer-col-title">Apoiadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-dedc">DEDC <span class="sub">Extensão Comunitária</span></span>
+              <span class="logo-badge logo-porto">⚡ Porto.inovação</span>
+              <span class="logo-badge logo-nascente">🌱 nascente <span style="font-size:0.55rem; color:#64748b;">CEFET-MG</span></span>
+              <span class="logo-badge logo-trens">▲ TRENS DÊ 3D</span>
+              <span class="logo-badge logo-sebrae">SEBRAE</span>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- SLIDE 7: CONSIDERAÇÕES FINAIS -->
+      <!-- ========================================== -->
+      <section class="slide" id="slide-7" data-notes-time="04:10 - 04:45">
+        <h2 class="slide-heading uppercase">CONSIDERAÇÕES FINAIS</h2>
+
+        <div class="slide-body">
+          <div class="grid-2col">
+            <div class="info-card green-border">
+              <div class="card-title">🏆 Resultados & Contribuições</div>
+              <ul class="bullet-list success">
+                <li><strong>Eficiência Operacional Real:</strong> redução drástica do tempo de recepção de veículos através da entrada por voz com IA no pátio;</li>
+                <li><strong>Estoque 100% Confiável:</strong> fim dos furos de inventário com a reserva atômica na aprovação do orçamento;</li>
+                <li><strong>Transparência Financeira:</strong> dono da oficina possui DRE diário, controle de fechamento cego e conciliação instantânea PIX;</li>
+                <li><strong>Manutenibilidade & Escalabilidade:</strong> código estruturado sob Clean Architecture e TDD (>80% cobertura), permitindo expansão sustentável.</li>
+              </ul>
+            </div>
+
+            <div class="info-card accent-border">
+              <div class="card-title">🚀 Trabalhos Futuros</div>
+              <ul class="bullet-list">
+                <li><strong>Interface PWA Mobile Offline-First:</strong> cache local com IndexedDB e sincronização assíncrona para atendimentos externos de socorro elétrico;</li>
+                <li><strong>Integração com Scanner Automotivo OBD-II:</strong> comunicação via Bluetooth para coleta automática dos códigos de falha (DTCs) da injeção eletrônica direto para a OS;</li>
+                <li><strong>Notificações Automáticas no WhatsApp:</strong> aviso ao cliente com link de aprovação e chave PIX para pagamento direto pelo smartphone.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Footer -->
+        <footer class="template-footer">
+          <div class="footer-col">
+            <div class="footer-col-title">Realizadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-cefet"><span class="logo-cefet-icon">C</span> CEFET-MG <span style="font-size:0.6rem; color:#64748b;">CAMPUS VARGINHA</span></span>
+              <span class="logo-badge logo-bsi">BSI</span>
+              <span class="logo-badge logo-site"><span>S</span><span>i</span><span>t</span><span>e</span></span>
+            </div>
+          </div>
+          <div class="footer-col" style="align-items: flex-end;">
+            <div class="footer-col-title">Apoiadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-dedc">DEDC <span class="sub">Extensão Comunitária</span></span>
+              <span class="logo-badge logo-porto">⚡ Porto.inovação</span>
+              <span class="logo-badge logo-nascente">🌱 nascente <span style="font-size:0.55rem; color:#64748b;">CEFET-MG</span></span>
+              <span class="logo-badge logo-trens">▲ TRENS DÊ 3D</span>
+              <span class="logo-badge logo-sebrae">SEBRAE</span>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- SLIDE 8: REFERÊNCIAS BIBLIOGRÁFICAS -->
+      <!-- ========================================== -->
+      <section class="slide" id="slide-8" data-notes-time="04:45 - 05:00">
+        <h2 class="slide-heading uppercase">REFERÊNCIAS BIBLIOGRÁFICAS</h2>
+
+        <div class="slide-body">
+          <div class="info-card accent-border" style="flex: 1; justify-content: space-around;">
+            <div style="font-size: 0.95rem; line-height: 1.6; color: #1e293b;">
+              <p><strong>MARTIN, Robert C.</strong> <em>Clean Architecture: A Craftsman's Guide to Software Structure and Design</em>. Prentice Hall, 2017.</p>
+              <p style="margin-top: 10px;"><strong>EVANS, Eric.</strong> <em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em>. Boston: Addison-Wesley, 2003.</p>
+              <p style="margin-top: 10px;"><strong>PRESSMAN, Roger S.; MAXIM, Bruce R.</strong> <em>Engenharia de Software: Uma Abordagem Profissional</em>. 9ª ed. Porto Alegre: McGraw-Hill, 2021.</p>
+              <p style="margin-top: 10px;"><strong>SOMMERVILLE, Ian.</strong> <em>Engenharia de Software</em>. 10ª ed. São Paulo: Pearson Education do Brasil, 2019.</p>
+              <p style="margin-top: 10px;"><strong>TIENGO, Walter; et al.</strong> <em>Documentação de Engenharia e Especificação do Sistema Eletrocar</em>. CEFET-MG Campus Varginha, 2026.</p>
+            </div>
+
+            <div style="text-align: center; padding: 16px; background: #f0fdf4; border: 1.5px dashed #22c55e; border-radius: 8px;">
+              <h3 style="color: #15803d; font-size: 1.3rem; font-weight: 800;">Muito Obrigado pela Atenção!</h3>
+              <p style="color: #166534; font-size: 0.95rem; margin-top: 4px;">Estamos abertos para considerações, perguntas e contribuições da banca examinadora.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Footer -->
+        <footer class="template-footer">
+          <div class="footer-col">
+            <div class="footer-col-title">Realizadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-cefet"><span class="logo-cefet-icon">C</span> CEFET-MG <span style="font-size:0.6rem; color:#64748b;">CAMPUS VARGINHA</span></span>
+              <span class="logo-badge logo-bsi">BSI</span>
+              <span class="logo-badge logo-site"><span>S</span><span>i</span><span>t</span><span>e</span></span>
+            </div>
+          </div>
+          <div class="footer-col" style="align-items: flex-end;">
+            <div class="footer-col-title">Apoiadores</div>
+            <div class="footer-logos">
+              <span class="logo-badge logo-dedc">DEDC <span class="sub">Extensão Comunitária</span></span>
+              <span class="logo-badge logo-porto">⚡ Porto.inovação</span>
+              <span class="logo-badge logo-nascente">🌱 nascente <span style="font-size:0.55rem; color:#64748b;">CEFET-MG</span></span>
+              <span class="logo-badge logo-trens">▲ TRENS DÊ 3D</span>
+              <span class="logo-badge logo-sebrae">SEBRAE</span>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================================= -->
+  <!-- FULLSCREEN DIAGRAM EXPANDER MODAL WITH ZOOM & PAN CONTROLS -->
+  <!-- ========================================================= -->
+  <div class="diagram-modal" id="diagramModal">
+    <!-- Modal Top Bar -->
+    <div class="modal-top-bar">
+      <div class="modal-title-box">
+        <span class="modal-diag-title" id="modalDiagTitle">Diagrama de Arquitetura</span>
+        <span class="modal-diag-category" id="modalDiagCategory">Clean Architecture</span>
+      </div>
+
+      <!-- Quick Switcher in Modal -->
+      <div class="modal-switcher" id="modalSwitcher">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Zoom and Action Controls -->
+      <div class="modal-controls">
+        <button class="btn-ctrl" onclick="zoomIn()" title="Aumentar Zoom (+)">➕</button>
+        <span class="zoom-level-text" id="zoomLevelDisplay">100%</span>
+        <button class="btn-ctrl" onclick="zoomOut()" title="Diminuir Zoom (-)">➖</button>
+        <button class="btn-ctrl" onclick="resetZoom()" title="Resetar para 100% (0)">↺ 100%</button>
+        <button class="btn-ctrl" onclick="fitToScreen()" title="Ajustar à Tela">⛶ Ajustar</button>
+        <a class="btn-ctrl" id="modalOpenExternal" href="#" target="_blank" title="Abrir imagem SVG original em nova aba" style="text-decoration:none;">↗ Abrir</a>
+        <button class="btn-close-modal" onclick="closeDiagramModal()" title="Fechar visualizador (ESC)">✕ Fechar (ESC)</button>
+      </div>
+    </div>
+
+    <!-- Main Viewport (Zoom and Drag/Pan Stage) -->
+    <div class="modal-viewport" id="modalViewport">
+      <!-- Prev & Next Arrows -->
+      <button class="modal-nav-arrow prev" onclick="navigateDiagram(-1)" title="Diagrama Anterior (Tecla ← ou A)">‹</button>
+      <button class="modal-nav-arrow next" onclick="navigateDiagram(1)" title="Próximo Diagrama (Tecla → ou D)">›</button>
+
+      <div class="diagram-stage" id="diagramStage">
+        <img id="modalDiagImage" src="" alt="Diagrama Expandido" />
+      </div>
+    </div>
+
+    <!-- Modal Bottom Bar (Explanation and Keyboard Cues) -->
+    <div class="modal-bottom-bar">
+      <div class="modal-diag-desc">
+        <span>📖</span>
+        <span id="modalDiagDesc">Descrição do diagrama selecionado.</span>
+      </div>
+      <div class="modal-instructions">
+        <span><span class="kbd-tag">Scroll</span> Zoom</span>
+        <span><span class="kbd-tag">Arrastar</span> Mover</span>
+        <span><span class="kbd-tag">← / →</span> Navegar</span>
+        <span><span class="kbd-tag">ESC</span> Fechar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Speaker Notes Floating Drawer -->
+  <aside class="speaker-notes-modal" id="speakerNotesDrawer">
+    <div class="notes-header">
+      <div class="notes-header-title">
+        <span>🗣️ Roteiro Oral de Apresentação</span>
+        <span class="notes-timer-tag" id="notesTimerTag">00:00 - 00:30</span>
+      </div>
+      <button class="notes-close" id="btnCloseNotes">×</button>
+    </div>
+    <div class="notes-body" id="notesContent">
+      <!-- Injected via JavaScript -->
+    </div>
+  </aside>
+
+  <!-- Interactive Logic & Timer Script -->
+  <script>
+    // Diagram Registry with full details (PNG for crisp rendering + SVG original link)
+    const DIAGRAMS = {
+      arquitetura: {
+        id: "arquitetura",
+        title: "Diagrama 10 · Arquitetura Geral da Solução",
+        shortTitle: "10 · Arquitetura",
+        category: "Clean Architecture & Infra",
+        src: "../diagramas/img/10_diagrama_arquitetura_geral.png",
+        svg: "../diagramas/img/10_diagrama_arquitetura_geral.svg",
+        desc: "Visão holística das 4 camadas (Domain, Application, Adapters, Infra), serviços externos (Telegram, Whisper, Claude, PIX) e orquestração Docker."
+      },
+      voz_pipeline: {
+        id: "voz_pipeline",
+        title: "Diagrama 07 · Pipeline de IA por Voz",
+        shortTitle: "07 · Pipeline Voz",
+        category: "Telegram + Whisper + Claude",
+        src: "../diagramas/img/07_diagrama_sequencia_voz.png",
+        svg: "../diagramas/img/07_diagrama_sequencia_voz.svg",
+        desc: "Fluxo assíncrono desde o áudio gravado pelo eletricista no pátio até a transcrição Whisper, extração semântica com Claude (JSON Schema) e abertura da OS."
+      },
+      casos_de_uso: {
+        id: "casos_de_uso",
+        title: "Diagrama 01 · Casos de Uso & RBAC",
+        shortTitle: "01 · Casos de Uso",
+        category: "Atores e Permissões",
+        src: "../diagramas/img/01_diagrama_casos_de_uso.png",
+        svg: "../diagramas/img/01_diagrama_casos_de_uso.svg",
+        desc: "Mapeamento completo dos casos de uso para Eletricista, Balconista e Administrador com relações de include, extend e suporte a dono multi-papel."
+      },
+      estados_os: {
+        id: "estados_os",
+        title: "Diagrama 05 · Ciclo de Vida da Ordem de Serviço",
+        shortTitle: "05 · Ciclo OS",
+        category: "Máquina de Estados",
+        src: "../diagramas/img/05_diagrama_estados_os.png",
+        svg: "../diagramas/img/05_diagrama_estados_os.svg",
+        desc: "Transições formais de estado: Triagem ➔ Diagnóstico ➔ Aguardando Aprovação ➔ Em Execução (com reserva atômica de peças) ➔ Finalizada ➔ Entregue."
+      },
+      der: {
+        id: "der",
+        title: "Diagrama 03 · Modelo Entidade-Relacionamento (DER)",
+        shortTitle: "03 · Modelo DER",
+        category: "PostgreSQL 16 Relacional",
+        src: "../diagramas/img/03_diagrama_der.png",
+        svg: "../diagramas/img/03_diagrama_der.svg",
+        desc: "Esquema relacional em PostgreSQL 16 com UUIDs, integridade referencial ACID, índices GIN de trigrama para busca fonética e tabelas de auditoria imutável."
+      },
+      balcao_fluxo: {
+        id: "balcao_fluxo",
+        title: "Diagrama 08 · Fluxo de Atividades no Balcão (PDV)",
+        shortTitle: "08 · Fluxo Balcão",
+        category: "Frente de Caixa & Barcode",
+        src: "../diagramas/img/08_diagrama_atividades_balcao.png",
+        svg: "../diagramas/img/08_diagrama_atividades_balcao.svg",
+        desc: "Atendimento no balcão, buffer de captura de leitor de código de barras imune à perda de foco, reserva física e alçada de desconto por PIN de supervisor."
+      },
+      classes: {
+        id: "classes",
+        title: "Diagrama 02 · Classes de Domínio & DDD",
+        shortTitle: "02 · Classes DDD",
+        category: "Domain Layer",
+        src: "../diagramas/img/02_diagrama_classes.png",
+        svg: "../diagramas/img/02_diagrama_classes.svg",
+        desc: "Entidades, Agregados e Value Objects (Dinheiro, CodigoBarras, CpfCnpj, PinOperador) encapsulando as regras de negócio automotivas sem acoplamento externo."
+      },
+      componentes: {
+        id: "componentes",
+        title: "Diagrama 09 · Componentes da Clean Architecture",
+        shortTitle: "09 · Componentes",
+        category: "Inversão de Dependência (DIP)",
+        src: "../diagramas/img/09_diagrama_componentes_clean_arch.png",
+        svg: "../diagramas/img/09_diagrama_componentes_clean_arch.svg",
+        desc: "Portas de entrada e saída, gateways e desacoplamento de frameworks externos com injeção de dependência."
+      }
+    };
+
+    const diagramKeys = Object.keys(DIAGRAMS);
+    let currentDiagramKey = "arquitetura";
+
+    // Zoom & Pan State
+    let zoomLevel = 1.0;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    const diagramModal = document.getElementById('diagramModal');
+    const modalDiagTitle = document.getElementById('modalDiagTitle');
+    const modalDiagCategory = document.getElementById('modalDiagCategory');
+    const modalDiagImage = document.getElementById('modalDiagImage');
+    const modalDiagDesc = document.getElementById('modalDiagDesc');
+    const modalOpenExternal = document.getElementById('modalOpenExternal');
+    const modalSwitcher = document.getElementById('modalSwitcher');
+    const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
+    const diagramStage = document.getElementById('diagramStage');
+    const modalViewport = document.getElementById('modalViewport');
+
+    // Build Switcher Pills inside Modal
+    function buildModalSwitcher() {
+      modalSwitcher.innerHTML = "";
+      diagramKeys.forEach(key => {
+        const d = DIAGRAMS[key];
+        const btn = document.createElement('button');
+        btn.className = `modal-switcher-btn ${key === currentDiagramKey ? 'active' : ''}`;
+        btn.textContent = d.shortTitle || d.title;
+        btn.onclick = () => loadDiagram(key);
+        modalSwitcher.appendChild(btn);
+      });
+    }
+
+    function openDiagramModal(key) {
+      if (key && DIAGRAMS[key]) {
+        currentDiagramKey = key;
+      }
+      diagramModal.classList.add('active');
+      loadDiagram(currentDiagramKey);
+    }
+
+    function closeDiagramModal() {
+      diagramModal.classList.remove('active');
+      resetZoom();
+    }
+
+    let baseWidth = 800;
+    let baseHeight = 600;
+
+    function calculateBaseDimensions() {
+      const svg = diagramStage.querySelector('svg');
+      if (svg) {
+        const vb = svg.getAttribute('viewBox');
+        if (vb) {
+          const parts = vb.trim().split(/[\s,]+/).map(Number);
+          const vbW = parts[2];
+          const vbH = parts[3];
+          const maxViewportW = window.innerWidth * 0.86;
+          const maxViewportH = window.innerHeight * 0.78;
+
+          const scaleW = maxViewportW / vbW;
+          const scaleH = maxViewportH / vbH;
+          const fitScale = Math.min(scaleW, scaleH);
+
+          baseWidth = Math.round(vbW * fitScale);
+          baseHeight = Math.round(vbH * fitScale);
+          return;
+        }
+      }
+
+      const img = diagramStage.querySelector('img');
+      if (img) {
+        baseWidth = Math.round(window.innerWidth * 0.82);
+        baseHeight = Math.round(window.innerHeight * 0.76);
+      }
+    }
+
+    function updateTransform() {
+      const targetW = Math.round(baseWidth * zoomLevel);
+      const targetH = Math.round(baseHeight * zoomLevel);
+
+      const svg = diagramStage.querySelector('svg');
+      if (svg) {
+        svg.style.width = `${targetW}px`;
+        svg.style.height = `${targetH}px`;
+      }
+      const img = diagramStage.querySelector('img');
+      if (img) {
+        img.style.width = `${targetW}px`;
+        img.style.height = `${targetH}px`;
+      }
+
+      diagramStage.style.transform = `translate(${panX}px, ${panY}px)`;
+      zoomLevelDisplay.textContent = `${Math.round(zoomLevel * 100)}%`;
+    }
+
+    function loadDiagram(key) {
+      const diag = DIAGRAMS[key];
+      if (!diag) return;
+      currentDiagramKey = key;
+
+      modalDiagTitle.textContent = diag.title;
+      modalDiagCategory.textContent = diag.category;
+      modalDiagDesc.textContent = diag.desc;
+      modalOpenExternal.href = diag.svg || diag.src;
+
+      // Render pure vector SVG if available from SVG_MARKUP
+      if (typeof SVG_MARKUP !== 'undefined' && SVG_MARKUP[key]) {
+        diagramStage.innerHTML = SVG_MARKUP[key];
+        const svg = diagramStage.querySelector('svg');
+        if (svg) {
+          svg.removeAttribute('style');
+          svg.removeAttribute('width');
+          svg.removeAttribute('height');
+        }
+      } else {
+        diagramStage.innerHTML = `<img src="${diag.src}" alt="${diag.title}" />`;
+        const img = diagramStage.querySelector('img');
+        if (img) {
+          img.onerror = function() {
+            if (this.src.endsWith('.png')) {
+              this.src = this.src.replace('.png', '.svg');
+            }
+          };
+        }
+      }
+
+      resetZoom();
+      buildModalSwitcher();
+    }
+
+    function navigateDiagram(direction) {
+      const currentIndex = diagramKeys.indexOf(currentDiagramKey);
+      let nextIndex = currentIndex + direction;
+      if (nextIndex < 0) nextIndex = diagramKeys.length - 1;
+      if (nextIndex >= diagramKeys.length) nextIndex = 0;
+      loadDiagram(diagramKeys[nextIndex]);
+    }
+
+    function zoomIn() {
+      zoomLevel = Math.min(zoomLevel + 0.25, 4.0);
+      updateTransform();
+    }
+
+    function zoomOut() {
+      zoomLevel = Math.max(zoomLevel - 0.25, 0.4);
+      updateTransform();
+    }
+
+    function resetZoom() {
+      zoomLevel = 1.0;
+      panX = 0;
+      panY = 0;
+      calculateBaseDimensions();
+      updateTransform();
+    }
+
+    function fitToScreen() {
+      resetZoom();
+    }
+
+    // Mouse Pan Events on Viewport
+    modalViewport.addEventListener('mousedown', (e) => {
+      // Don't drag if clicking buttons or arrows
+      if (e.target.closest('button') || e.target.closest('a')) return;
+      isDragging = true;
+      modalViewport.classList.add('dragging');
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        modalViewport.classList.remove('dragging');
+      }
+    });
+
+    // Wheel Zoom on Viewport
+    modalViewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        zoomLevel = Math.min(zoomLevel + 0.15, 4.0);
+      } else {
+        zoomLevel = Math.max(zoomLevel - 0.15, 0.5);
+      }
+      updateTransform();
+    }, { passive: false });
+
+    // Double-click to toggle 100% or 200% zoom
+    modalViewport.addEventListener('dblclick', (e) => {
+      if (e.target.closest('button') || e.target.closest('a')) return;
+      if (zoomLevel <= 1.1) {
+        zoomLevel = 2.0;
+      } else {
+        resetZoom();
+      }
+      updateTransform();
+    });
+
+    window.addEventListener('resize', () => {
+      if (diagramModal.classList.contains('active')) {
+        calculateBaseDimensions();
+        updateTransform();
+      }
+    });
+
+    // Slide Data & Speaker Scripts (Exact 5-minute schedule)
+    const speakerScripts = {
+      1: {
+        time: "00:00 - 00:30 (30s)",
+        script: `<strong>[Fala do Apresentador]:</strong> "Olá a todos, membros da banca avaliadora, professores e colegas presentes no SINTEC. Meu nome é Miguel Figueiredo, graduando em Sistemas de Informação aqui pelo CEFET-MG Campus Varginha, sob orientação do professor [Nome do Orientador].<br><br>Hoje apresento o sistema completo de gestão operacional e inteligência para a oficina Auto Elétrica Eletrocar — uma solução projetada para modernizar a rotina de serviços automotivos, integrando computação aplicada, automação de balcão e inteligência artificial."`
+      },
+      2: {
+        time: "00:30 - 01:00 (30s)",
+        script: `<strong>[Fala do Apresentador]:</strong> "O nosso objetivo principal foi desenvolver uma solução de software robusta e de alta performance capaz de transformar a operação da oficina.<br><br>Especificamente, buscamos eliminar de vez o uso de papel; garantir um balcão ágil com leitor de código de barras sem travamentos; implementar um assistente por voz via Telegram e IA para abertura de ordens de serviço direto do pátio sem sujar telas com graxa; e garantir governança financeira com fechamento cego de caixa e DRE em tempo real."`
+      },
+      3: {
+        time: "01:00 - 01:40 (40s)",
+        script: `<strong>[Fala do Apresentador]:</strong> "A justificativa desse projeto nasce da realidade prática de uma oficina mecânica. O chão de fábrica é um ambiente desafiador: com graxa e óleo nas mãos, digitar laudos técnicos detalhados num computador convencional é inviável, gerando perda constante de histórico e furos de estoque por peças retiradas sem reserva prévia.<br><br>No balcão, filas surgiam por falhas em leitores USB convencionais. E o proprietário não conseguia enxergar sua margem líquida real. Nosso projeto se justifica ao conectar a ciência da computação às dores reais de uma microempresa da nossa região."`
+      },
+      4: {
+        time: "01:40 - 02:25 (45s)",
+        script: `<strong>[Fala do Apresentador]:</strong> "Na metodologia, adotamos Clean Architecture em 4 camadas e Domain-Driven Design (DDD). O Domínio encapsula as regras de negócio automotivas com Entidades e Value Objects sem nenhuma dependência de bibliotecas externas.<br><br>Aplicamos TDD rigoroso: todas as regras críticas foram criadas guiadas por testes automatizados, superando 80% de cobertura de código no pytest contra um banco PostgreSQL 16 real. Todo o ecossistema é conteinerizado com Docker, garantindo portabilidade e segurança."`
+      },
+      5: {
+        time: "02:25 - 03:30 (65s)",
+        script: `<strong>[Fala do Apresentador]:</strong> "Apresento a visão do sistema completo em quatro pilares:<br>1) <em>Oficina e OS:</em> máquina de estados rigorosa, com reserva atômica de peças no estoque físico no momento exato em que o cliente aprova o orçamento.<br>2) <em>Frente de Caixa:</em> leitor de código de barras imune à perda de foco na tela e busca textual fonética ultra-rápida.<br>3) <em>Inovação com IA por Voz:</em> o eletricista envia um áudio no Telegram, o áudio é transcrito com Whisper, refinado por LLM e a OS é criada estruturada em segundos no banco de dados, sem o mecânico encostar no teclado.<br>4) <em>Módulo Financeiro:</em> caixa diário com fechamento cego duplo, emissão e liquidação instantânea de PIX dinâmico e DRE contínuo."`
+      },
+      6: {
+        time: "03:30 - 04:10 (40s)",
+        script: `<strong>[Fala do Apresentador]:</strong> "Aqui apresentamos as evidências práticas do sistema funcionando. Podemos clicar em qualquer um dos diagramas para expandir em tela cheia com zoom em 4K.<br><br>À esquerda, vemos a arquitetura geral da solução e o pipeline de IA por voz no Telegram. Acima, temos o mapa de casos de uso com suporte a dono multi-papel. E à direita, a suíte de testes com 100% de sucesso e cobertura superior a 80%, além do acesso direto ao modelo DER relacional do PostgreSQL."`
+      },
+      7: {
+        time: "04:10 - 04:45 (35s)",
+        script: `<strong>[Fala do Apresentador]:</strong> "Como considerações finais, entregamos uma ferramenta prática que erradica furos de estoque, acelera a triagem e traz transparência para o caixa da oficina.<br><br>Alcançamos alto nível de manutenibilidade através da arquitetura limpa e testes. Como próximos passos, planejamos disponibilizar o app PWA offline-first para socorros na rua e integrar o sistema a leitores OBD-II via Bluetooth para diagnóstico automotivo automático."`
+      },
+      8: {
+        time: "04:45 - 05:00 (15s)",
+        script: `<strong>[Fala do Apresentador]:</strong> "Estas foram as referências teóricas que fundamentaram o projeto. Encerro aqui minha fala, agradecendo à banca examinadora, ao CEFET-MG e aos organizadores do SINTEC. Estou inteiramente à disposição para perguntas e considerações. Muito obrigado!"`
+      }
+    };
+
+    let currentSlide = 1;
+    const totalSlides = 8;
+
+    const slides = document.querySelectorAll('.slide');
+    const slideIndicator = document.getElementById('slideIndicator');
+    const speakerNotesDrawer = document.getElementById('speakerNotesDrawer');
+    const btnSpeakerNotes = document.getElementById('btnSpeakerNotes');
+    const btnCloseNotes = document.getElementById('btnCloseNotes');
+    const notesContent = document.getElementById('notesContent');
+    const notesTimerTag = document.getElementById('notesTimerTag');
+
+    function showSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx + 1 === index);
+      });
+
+      currentSlide = index;
+      slideIndicator.textContent = `Slide ${currentSlide} de ${totalSlides}`;
+      updateSpeakerNotes(currentSlide);
+    }
+
+    function updateSpeakerNotes(slideIdx) {
+      const data = speakerScripts[slideIdx];
+      if (data) {
+        notesTimerTag.textContent = data.time;
+        notesContent.innerHTML = `
+          <div class="notes-cue">⏱️ Meta de Tempo: ${data.time}</div>
+          <p>${data.script}</p>
+        `;
+      }
+    }
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      // If modal is active, keyboard controls the modal, not the slides!
+      if (diagramModal.classList.contains('active')) {
+        if (e.key === 'Escape') {
+          closeDiagramModal();
+        } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          navigateDiagram(-1);
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          navigateDiagram(1);
+        } else if (e.key === '+' || e.key === '=') {
+          zoomIn();
+        } else if (e.key === '-' || e.key === '_') {
+          zoomOut();
+        } else if (e.key === '0') {
+          resetZoom();
+        }
+        return;
+      }
+
+      // Slide Navigation
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        showSlide(currentSlide + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') {
+        e.preventDefault();
+        showSlide(currentSlide - 1);
+      } else if (e.key === 'n' || e.key === 'N') {
+        toggleSpeakerNotes();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      }
+    });
+
+    // Notes Toggle
+    function toggleSpeakerNotes() {
+      speakerNotesDrawer.classList.toggle('active');
+      btnSpeakerNotes.classList.toggle('active');
+    }
+    btnSpeakerNotes.addEventListener('click', toggleSpeakerNotes);
+    btnCloseNotes.addEventListener('click', toggleSpeakerNotes);
+
+    // Fullscreen Toggle
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+    document.getElementById('btnFullscreen').addEventListener('click', toggleFullScreen);
+
+    // 5-Minute Timer Logic
+    const timerDisplay = document.getElementById('timerClock');
+    const btnToggleTimer = document.getElementById('btnToggleTimer');
+    const btnResetTimer = document.getElementById('btnResetTimer');
+
+    const TOTAL_SECONDS = 300; // 5 minutos = 300 segundos
+    let secondsLeft = TOTAL_SECONDS;
+    let timerInterval = null;
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60).toString().padStart(2, '0');
+      const s = (secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateTimerUI() {
+      timerDisplay.textContent = formatTime(secondsLeft);
+
+      timerDisplay.classList.remove('warning', 'danger');
+      if (secondsLeft <= 60 && secondsLeft > 30) {
+        timerDisplay.classList.add('warning');
+      } else if (secondsLeft <= 30) {
+        timerDisplay.classList.add('danger');
+      }
+    }
+
+    function startTimer() {
+      if (timerInterval) return;
+      btnToggleTimer.textContent = '⏸ Pausar';
+      btnToggleTimer.style.color = '#38bdf8';
+      timerInterval = setInterval(() => {
+        if (secondsLeft > 0) {
+          secondsLeft--;
+          updateTimerUI();
+        } else {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          btnToggleTimer.textContent = '▶ Iniciar';
+          timerDisplay.textContent = '00:00';
+          timerDisplay.classList.add('danger');
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (!timerInterval) return;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      btnToggleTimer.textContent = '▶ Continuar';
+      btnToggleTimer.style.color = '#94a3b8';
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      secondsLeft = TOTAL_SECONDS;
+      btnToggleTimer.textContent = '▶ Iniciar';
+      updateTimerUI();
+    }
+
+    btnToggleTimer.addEventListener('click', () => {
+      if (timerInterval) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    });
+
+    btnResetTimer.addEventListener('click', resetTimer);
+
+    // Initialize Slide 1
+    showSlide(1);
+    buildModalSwitcher();
+  </script>
+</body>
+</html>

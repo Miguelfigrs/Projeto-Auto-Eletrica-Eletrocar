@@ -2,6 +2,10 @@
 node_modules/
 dist/
 build/
+.next/
+.turbo/
+out/
+coverage/
 
 # IDE e Sistema
 .vscode/
@@ -19,3 +23,9 @@ __pycache__/
 *.sqlite
 .env
 .venv/
+
+# Cobertura de testes
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml

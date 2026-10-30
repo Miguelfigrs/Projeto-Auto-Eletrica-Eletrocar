@@ -39,7 +39,7 @@ class TransicaoStatusInvalidaException(DomainException):
 
 
 class CaixaFechadoException(DomainException):
-    """Lançada quando uma movimentação financeira é tentada em um caixa fechado."""
+    """Lançada quando uma movimentação financeira é tentada sem caixa aberto."""
     pass
 
 
@@ -50,4 +50,33 @@ class EntidadeNaoEncontradaException(DomainException):
 
 class CredenciaisInvalidasException(DomainException):
     """Lançada quando credenciais de autenticação são inválidas."""
+    pass
+
+
+class AcessoNegadoException(DomainException):
+    """Lançada quando o usuário autenticado não possui o papel exigido para a operação."""
+    pass
+
+
+class AutorizacaoGerencialNecessariaException(DomainException):
+    """Lançada quando desconto/alteração de preço excede a alçada do operador e falta autorização do gestor."""
+    pass
+
+
+class LimiteTentativasExcedidoException(DomainException):
+    """Lançada quando o limite de tentativas incorretas (força bruta) é excedido."""
+    def __init__(self, segundos_restantes: int):
+        self.segundos_restantes = segundos_restantes
+        super().__init__(
+            f"Muitas tentativas incorretas. Tente novamente em {segundos_restantes} segundos."
+        )
+
+
+class ConflitoConcorrenciaException(DomainException):
+    """Lançada quando o registro foi alterado por outra transação (bloqueio otimista)."""
+    pass
+
+
+class IntegracaoExternaException(DomainException):
+    """Lançada quando um sistema externo (Telegram, Whisper, LLM, PIX) falha."""
     pass

@@ -1,13 +1,15 @@
 """
-Implementação SQLAlchemy do AuditoriaRepositoryInterface.
+Implementação SQLAlchemy do AuditoriaRepositoryInterface (somente inserção e leitura - logs imutáveis).
+O IP de origem é obtido do contexto da requisição HTTP quando o caso de uso não o informa.
 """
-from typing import List
+from typing import List, Optional
 import uuid
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.auditoria import LogAuditoria
 from src.domain.repositories.interfaces import AuditoriaRepositoryInterface
 from src.infra.database.models import LogAuditoriaModel
+from src.infra.web.contexto_requisicao import ip_requisicao
 
 
 class AuditoriaRepositorySQLAlchemy(AuditoriaRepositoryInterface):
@@ -15,31 +17,31 @@ class AuditoriaRepositorySQLAlchemy(AuditoriaRepositoryInterface):
         self.session = session
 
     async def registrar(self, log: LogAuditoria) -> None:
-        model = LogAuditoriaModel(
-            id=str(log.id),
-            usuario_id=str(log.usuario_id) if log.usuario_id else None,
+        self.session.add(LogAuditoriaModel(
+            id=log.id,
+            usuario_id=log.usuario_id,
             origem=log.origem,
             acao=log.acao,
             detalhes=log.detalhes,
-            ip_address=log.ip_address,
+            payload_antes=log.payload_antes,
+            payload_depois=log.payload_depois,
+            ip_address=log.ip_address or ip_requisicao.get(),
             timestamp=log.timestamp
-        )
-        self.session.add(model)
+        ))
         await self.session.flush()
 
-    async def listar_ultimos(self, limite: int = 100) -> List[LogAuditoria]:
+    async def listar_ultimos(self, limite: int = 100, acao: Optional[str] = None,
+                             usuario_id: Optional[uuid.UUID] = None) -> List[LogAuditoria]:
         stmt = select(LogAuditoriaModel).order_by(LogAuditoriaModel.timestamp.desc()).limit(limite)
-        res = await self.session.execute(stmt)
-        models = res.scalars().all()
+        if acao:
+            stmt = stmt.where(LogAuditoriaModel.acao == acao.upper())
+        if usuario_id:
+            stmt = stmt.where(LogAuditoriaModel.usuario_id == usuario_id)
         return [
             LogAuditoria(
-                id=uuid.UUID(m.id),
-                usuario_id=uuid.UUID(m.usuario_id) if m.usuario_id else None,
-                origem=m.origem,
-                acao=m.acao,
-                detalhes=m.detalhes or {},
-                ip_address=m.ip_address,
-                timestamp=m.timestamp
+                id=m.id, usuario_id=m.usuario_id, origem=m.origem, acao=m.acao, detalhes=m.detalhes or {},
+                payload_antes=m.payload_antes, payload_depois=m.payload_depois,
+                ip_address=m.ip_address, timestamp=m.timestamp
             )
-            for m in models
+            for m in (await self.session.execute(stmt)).scalars().all()
         ]

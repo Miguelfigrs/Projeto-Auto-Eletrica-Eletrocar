@@ -1,42 +1,28 @@
-# Eletrocar.Database - Módulo de Banco de Dados Isolado
+# Eletrocar.Database - Banco de Dados
 Auto Elétrica Eletrocar
 
-Este diretório contém a infraestrutura e os scripts do banco de dados, mantidos **100% desacoplados e fora da aplicação API** (`Eletrocar.API`).
+O PostgreSQL 16 sobe pelo `docker-compose.yml` da raiz do projeto, junto com a API e o pgAdmin.
 
----
+## 📜 Arquivos
 
-## 🐘 1. Executando com PostgreSQL 16 (Recomendado / Produção)
+| Arquivo | Uso |
+|---|---|
+| `init.sql` | Executado na criação do volume: extensões `pg_trgm` e `pgcrypto` e o banco de testes `eletrocar_test` |
+| `seed_completo.sql` | Carga de demonstração (usuários, peças, clientes, OS, vendas, caixa, títulos). Aplicada pela API quando `SEED_DADOS_DEMO=true` e o banco não tem usuários |
+| `servers.json` | Conexão pré-configurada do pgAdmin |
 
-Para subir o banco de dados oficial em contêiner Docker:
+O **esquema** (tabelas, constraints, índices B-Tree/GIN e o trigger que torna `logs_auditoria` imutável)
+é versionado pelas migrações Alembic em `Eletrocar.API/src/infra/database/migracoes/` e aplicado
+automaticamente quando a API inicia.
+
+## 🔁 Recriar o banco do zero
 
 ```powershell
-docker compose up -d
+docker compose down -v
+docker compose up -d --build
 ```
 
-- **PostgreSQL 16**: `localhost:5432`
-  - Usuário: `postgres`
-  - Senha: `eletrocar2026`
-  - Banco de Dados: `eletrocar_db`
-- **pgAdmin 4 (Interface Web)**: [http://localhost:5050](http://localhost:5050)
-  - Login: `admin@eletrocar.com.br`
-  - Senha: `admin`
+## 🔑 Acesso
 
-Para parar o contêiner:
-```powershell
-docker compose down
-```
-
----
-
-## 📁 2. Modo Local sem Docker (`./data/`)
-
-Caso esteja executando sem Docker em ambiente de desenvolvimento leve, o sistema direciona automaticamente os arquivos SQLite para este diretório externo:
-- `Eletrocar.Database/data/eletrocar.db`
-
-Desta forma, **nenhum arquivo de banco de dados fica dentro da pasta da API**.
-
----
-
-## 📜 3. Scripts SQL
-
-- `init.sql`: Contém o script DDL com todas as tabelas relacionais, chaves estrangeiras (`ON DELETE CASCADE`), campos JSONB e índices otimizados (B-Tree) para buscas instantâneas por Código de Barras, SKU, Placa e CPF.
+- PostgreSQL: `localhost:5432` · usuário `postgres` · senha `eletrocar2026` · banco `eletrocar_db`
+- pgAdmin: [http://localhost:5050](http://localhost:5050) · `admin@eletrocar.com.br` / `admin` · host `postgres`

@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from src.domain.value_objects.tempo import agora_utc
 
 router = APIRouter(prefix="/hardware", tags=["Hardware & Leitores"])
 
@@ -26,5 +27,5 @@ async def status_hardware():
         suporte_webserial=True,
         protocolo_recomendado="BUFFER_TEMPORAL_GLOBAL",
         intervalo_limite_leitor_ms=30,  # Leitor emite chars com intervalo < 30ms; digitação humana > 80ms
-        data_servidor=datetime.utcnow()
+        data_servidor=agora_utc()
     )

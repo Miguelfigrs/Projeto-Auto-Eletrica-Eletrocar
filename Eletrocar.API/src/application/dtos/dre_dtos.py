@@ -10,8 +10,7 @@ from decimal import Decimal
 class PeriodoDREInputDTO:
     data_inicio: date
     data_fim: date
-    despesas_fixas: Decimal = Decimal("0.00")
-    despesas_variaveis: Decimal = Decimal("0.00")
+    percentual_custo_mao_obra: Decimal = Decimal("40")  # Repasse/comissão do eletricista sobre a mão de obra
 
 
 @dataclass
@@ -20,6 +19,8 @@ class RelatorioDREOutputDTO:
     receita_vendas_produtos: Decimal
     receita_servicos_os: Decimal
     receita_bruta_total: Decimal
+    deducoes_descontos: Decimal
+    receita_liquida: Decimal
     custo_mercadorias_vendidas: Decimal
     custo_mao_obra_direta: Decimal
     custos_diretos_total: Decimal
@@ -30,3 +31,5 @@ class RelatorioDREOutputDTO:
     despesas_totais: Decimal
     lucro_liquido: Decimal
     margem_lucro_liquido_percentual: Decimal
+    quantidade_vendas: int
+    quantidade_os: int
