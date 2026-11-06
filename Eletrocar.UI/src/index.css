@@ -1,228 +1,437 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
 
-:root {
-  --bg-main: #070a12;
-  --bg-card: rgba(14, 20, 36, 0.85);
-  --bg-card-hover: rgba(20, 28, 50, 0.95);
-  --bg-input: #0a0f1d;
-  
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-cyan: rgba(0, 229, 255, 0.25);
-  --border-cyan-glow: 0 0 16px rgba(0, 229, 255, 0.2);
+/* ==========================================================================
+   Eletrocar • Design tokens
+   Identidade: vermelho (marca/ação) + grafite (superfícies).
+   Para ajustar o tom da marca quando a logo chegar, altere apenas --color-brand*.
+   ========================================================================== */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Barlow Condensed", "Inter Variable", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, monospace;
 
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
+  /* Marca */
+  --color-brand: #e11d2a;
+  --color-brand-hover: #f0313d;
+  --color-brand-press: #c3121e;
+  --color-brand-fg: #ffffff;
+  --color-brand-soft: rgb(225 29 42 / 0.12);
+  --color-brand-line: rgb(225 29 42 / 0.4);
+  --color-brand-text: #ff6b73;
 
-  --cyan-primary: #00e5ff;
-  --cyan-dark: #0099b8;
-  --emerald-success: #10b981;
-  --amber-warning: #f59e0b;
-  --rose-danger: #ef4444;
-  --purple-accent: #a855f7;
+  /* Grafite */
+  --color-canvas: #111113;
+  --color-sidebar: #0b0b0d;
+  --color-surface: #1a1a1e;
+  --color-surface-2: #222227;
+  --color-surface-3: #2b2b31;
+  --color-line: #2c2c33;
+  --color-line-strong: #3a3a42;
 
-  --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Texto */
+  --color-fg: #f4f4f5;
+  --color-fg-muted: #a1a1aa;
+  --color-fg-subtle: #71717a;
 
-  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-full: 9999px;
+  /* Semânticas */
+  --color-ok: #22c55e;
+  --color-ok-text: #4ade80;
+  --color-ok-soft: rgb(34 197 94 / 0.12);
+  --color-warn: #f59e0b;
+  --color-warn-text: #fbbf24;
+  --color-warn-soft: rgb(245 158 11 / 0.12);
+  --color-neg-text: #fb7185;
+  --color-neg-soft: rgb(244 63 94 / 0.12);
+  --color-info-text: #60a5fa;
+  --color-info-soft: rgb(59 130 246 / 0.12);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--color-brand);
+    color: var(--color-brand-fg);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-surface-3);
+    border-radius: 999px;
+    border: 2px solid var(--color-canvas);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-line-strong);
+  }
 }
 
-body {
-  font-family: var(--font-main);
-  background-color: var(--bg-main);
-  color: var(--text-main);
-  min-height: 100vh;
-  overflow-x: hidden;
-  background-image: 
-    radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.04) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.02) 0%, transparent 60%);
-  -webkit-font-smoothing: antialiased;
+@layer components {
+  /* ---------- Superfícies ---------- */
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+
+  .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-fg-subtle);
+  }
+
+  .money {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* ---------- Botões ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    user-select: none;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-brand);
+    color: var(--color-brand-fg);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 6px 16px -6px rgb(225 29 42 / 0.6);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-brand-hover);
+  }
+  .btn-primary:active:not(:disabled) {
+    background: var(--color-brand-press);
+  }
+
+  .btn-secondary {
+    background: var(--color-surface-2);
+    border-color: var(--color-line-strong);
+    color: var(--color-fg);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-surface-3);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-fg-muted);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-surface-2);
+    color: var(--color-fg);
+  }
+
+  .btn-danger {
+    background: var(--color-neg-soft);
+    border-color: rgb(244 63 94 / 0.3);
+    color: var(--color-neg-text);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: rgb(244 63 94 / 0.2);
+  }
+
+  .btn-sm {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+  .btn-lg {
+    height: 52px;
+    padding: 0 22px;
+    font-size: 1rem;
+    border-radius: 12px;
+  }
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+  }
+
+  /* ---------- Formulários ---------- */
+  .label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-fg-muted);
+  }
+
+  .field {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    background: var(--color-canvas);
+    border: 1px solid var(--color-line-strong);
+    border-radius: 10px;
+    color: var(--color-fg);
+    font-size: 0.9rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  textarea.field {
+    height: auto;
+    padding: 10px 12px;
+    resize: vertical;
+  }
+  .field::placeholder {
+    color: var(--color-fg-subtle);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px var(--color-brand-soft);
+  }
+
+  /* ---------- Chips, badges, teclas ---------- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-surface-2);
+    color: var(--color-fg-muted);
+  }
+  .chip-ok {
+    background: var(--color-ok-soft);
+    border-color: rgb(34 197 94 / 0.25);
+    color: var(--color-ok-text);
+  }
+  .chip-warn {
+    background: var(--color-warn-soft);
+    border-color: rgb(245 158 11 / 0.25);
+    color: var(--color-warn-text);
+  }
+  .chip-neg {
+    background: var(--color-neg-soft);
+    border-color: rgb(244 63 94 / 0.25);
+    color: var(--color-neg-text);
+  }
+  .chip-brand {
+    background: var(--color-brand-soft);
+    border-color: var(--color-brand-line);
+    color: var(--color-brand-text);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 5px;
+    border: 1px solid var(--color-line-strong);
+    border-bottom-width: 2px;
+    background: var(--color-surface-2);
+    color: var(--color-fg-muted);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+
+  /* Filtros em pílula (status, fabricante) */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: transparent;
+    color: var(--color-fg-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .pill:hover {
+    border-color: var(--color-line-strong);
+    color: var(--color-fg);
+  }
+  .pill[data-active="true"] {
+    background: var(--color-fg);
+    border-color: var(--color-fg);
+    color: var(--color-canvas);
+    font-weight: 600;
+  }
+
+  /* ---------- Tabelas ---------- */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  .table thead th {
+    padding: 10px 20px;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-fg-subtle);
+    background: var(--color-surface-2);
+    border-bottom: 1px solid var(--color-line);
+  }
+  .table tbody td {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--color-line);
+    vertical-align: middle;
+  }
+  .table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table tbody tr:hover td {
+    background: rgb(255 255 255 / 0.015);
+  }
+
+  /* ---------- Alertas ---------- */
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid;
+    font-size: 0.875rem;
+    font-weight: 500;
+    animation: slide-down 0.2s ease-out;
+  }
+  .alert-ok {
+    background: var(--color-ok-soft);
+    border-color: rgb(34 197 94 / 0.25);
+    color: var(--color-ok-text);
+  }
+  .alert-neg {
+    background: var(--color-neg-soft);
+    border-color: rgb(244 63 94 / 0.25);
+    color: var(--color-neg-text);
+  }
+
+  /* ---------- Modais ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgb(5 5 6 / 0.75);
+    backdrop-filter: blur(6px);
+    animation: fade-in 0.15s ease-out;
+  }
+  .modal {
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line-strong);
+    border-radius: 18px;
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.8);
+    animation: pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Faixa vermelha característica da marca (topo de cards de destaque) */
+  .brand-stripe {
+    position: relative;
+    overflow: hidden;
+  }
+  .brand-stripe::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--color-brand);
+  }
 }
 
-input, button, select, textarea {
-  font-family: inherit;
-}
-
-/* Scrollbar customizada */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-main);
-}
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
-
-/* Efeito Glassmorphism Utilitário */
-.glass-panel {
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-}
-
-.glass-panel:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-/* Badge de Hardware e Status */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.badge-connected {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.badge-standby {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.badge-disconnected {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-/* Botões Modernos */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: linear-gradient(135deg, var(--cyan-primary) 0%, var(--cyan-dark) 100%);
-  color: #030712;
-  font-weight: 700;
-  font-size: 0.9rem;
-  padding: 10px 18px;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.3);
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 229, 255, 0.45);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-main);
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 10px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-danger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  font-weight: 600;
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.25);
-}
-
-/* Modais Glassmorphism */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(3, 7, 18, 0.82);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  padding: 20px;
-  animation: fadeIn 0.18s ease-out;
-}
-
-.modal-content {
-  background: #0e1526;
-  border: 1px solid var(--border-cyan);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), var(--border-cyan-glow);
-  width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes fadeIn {
+@keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
-
-/* Animação de pulso elétrico */
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.9; }
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
 }

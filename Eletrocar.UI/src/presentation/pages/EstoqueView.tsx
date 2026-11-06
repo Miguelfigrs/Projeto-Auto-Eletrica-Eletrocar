@@ -4,25 +4,17 @@
  * e visualização de códigos de barras (EAN-13, SKU).
  */
 import React, { useState, useEffect } from "react";
-import {
-  Package,
-  Search,
-  Barcode,
-  AlertTriangle,
-  Tag,
-  MapPin,
-  Layers,
-  Copy,
-  Check,
-} from "lucide-react";
+import { Package, Search, Barcode, AlertTriangle, MapPin, Layers, Copy, Check } from "lucide-react";
 import { Peca } from "../../domain/entities/Peca";
 import { container } from "../../infra/di/container";
+import { EmptyState, Page, PageHeader, StatCard } from "../components/ui";
+import { cn } from "../../lib/utils";
 
 interface EstoqueViewProps {
   onBiparPecaNoBalcao: (codigo: string) => void;
 }
 
-export const EstoqueView: React.FC<EstoqueViewProps> = ({ onBiparPecaNoBalcao }) => {
+export const EstoqueView: React.FC<EstoqueViewProps> = () => {
   const [pecas, setPecas] = useState<Peca[]>([]);
   const [termoBusca, setTermoBusca] = useState("");
   const [fabricanteFiltro, setFabricanteFiltro] = useState<string>("TODOS");
@@ -53,209 +45,113 @@ export const EstoqueView: React.FC<EstoqueViewProps> = ({ onBiparPecaNoBalcao })
     return matchTermo && matchFabricante;
   });
 
-  return (
-    <div style={{ padding: "24px", maxWidth: "1500px", margin: "0 auto" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "24px",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <div>
-          <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginBottom: "4px" }}>
-            Catálogo de Peças & Gestão de Estoque
-          </h2>
-          <p style={{ fontSize: "0.82rem", color: "var(--text-dim)" }}>
-            Controle de saldo em tempo real, localização de prateleira e códigos originais.
-          </p>
-        </div>
+  const totalUnidades = pecas.reduce((acc, p) => acc + p.estoqueAtual, 0);
+  const emReposicao = pecas.filter((p) => p.estoqueBaixo).length;
 
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <div style={{ position: "relative", minWidth: "320px" }}>
-            <Search size={18} color="var(--text-dim)" style={{ position: "absolute", left: "12px", top: "12px" }} />
+  return (
+    <Page>
+      <PageHeader
+        title="Peças & estoque"
+        description="Saldo em tempo real, localização na prateleira e códigos de barras."
+        actions={
+          <div className="relative w-full sm:w-80">
+            <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input
               type="text"
               placeholder="Buscar por descrição, código, SKU, aplicação..."
               value={termoBusca}
               onChange={(e) => setTermoBusca(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 10px 10px 38px",
-                background: "var(--bg-input)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "8px",
-                color: "var(--text-main)",
-              }}
+              className="field pl-10"
             />
           </div>
-        </div>
+        }
+      />
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <StatCard label="Itens no catálogo" value={pecas.length} icon={Package} />
+        <StatCard label="Unidades em estoque" value={totalUnidades} icon={Layers} />
+        <StatCard
+          label="Abaixo do mínimo"
+          value={emReposicao}
+          icon={AlertTriangle}
+          tone={emReposicao > 0 ? "neg" : "ok"}
+          hint={emReposicao > 0 ? "Precisam de reposição" : "Tudo em dia"}
+        />
       </div>
 
-      {/* Filtros por Fabricante */}
-      <div style={{ display: "flex", gap: "6px", marginBottom: "20px", overflowX: "auto" }}>
-        {fabricantes.map((fab) => {
-          const ativo = fabricanteFiltro === fab;
-          return (
-            <button
-              key={fab}
-              onClick={() => setFabricanteFiltro(fab)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "6px",
-                background: ativo ? "rgba(0, 229, 255, 0.15)" : "rgba(255, 255, 255, 0.03)",
-                border: ativo ? "1px solid var(--border-cyan)" : "1px solid var(--border-subtle)",
-                color: ativo ? "var(--cyan-primary)" : "var(--text-muted)",
-                fontSize: "0.8rem",
-                fontWeight: ativo ? 700 : 500,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {fab}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Grid de Cards de Peças */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "18px" }}>
-        {pecasFiltradas.map((peca) => (
-          <div
-            key={peca.id}
-            className="glass-panel"
-            style={{
-              padding: "20px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              borderTop: peca.estoqueBaixo ? "3px solid #f87171" : "3px solid var(--border-cyan)",
-            }}
+      <div className="-mx-1 mb-6 flex gap-2 overflow-x-auto px-1 pb-1">
+        {fabricantes.map((fab) => (
+          <button
+            key={fab}
+            onClick={() => setFabricanteFiltro(fab)}
+            data-active={fabricanteFiltro === fab}
+            className="pill"
           >
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                <span
-                  style={{
-                    background: "rgba(255, 255, 255, 0.06)",
-                    color: "var(--cyan-primary)",
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    fontFamily: "var(--font-mono)",
-                  }}
-                >
-                  {peca.sku}
-                </span>
+            {fab === "TODOS" ? "Todos os fabricantes" : fab}
+          </button>
+        ))}
+      </div>
 
-                <span
-                  style={{
-                    background: "rgba(255, 255, 255, 0.04)",
-                    color: "var(--text-muted)",
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                    fontSize: "0.72rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  {peca.marcaFabricante}
-                </span>
+      {pecasFiltradas.length === 0 ? (
+        <div className="card">
+          <EmptyState icon={Package} title="Nenhuma peça encontrada" description="Ajuste a busca ou o filtro de fabricante." />
+        </div>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {pecasFiltradas.map((peca) => (
+            <div key={peca.id} className="card flex flex-col p-5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs font-semibold text-fg-muted">{peca.sku}</span>
+                <span className="chip h-6 px-2">{peca.marcaFabricante}</span>
               </div>
 
-              <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "8px", lineHeight: 1.3 }}>
-                {peca.descricao}
-              </h3>
+              <h3 className="mt-3 text-base font-semibold leading-snug text-fg">{peca.descricao}</h3>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.82rem", color: "var(--text-dim)", marginBottom: "14px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Layers size={14} />
-                  <span>Aplicação: <strong style={{ color: "var(--text-muted)" }}>{peca.aplicacaoVeicular}</strong></span>
+              <div className="mt-3 flex flex-col gap-1.5 text-xs text-fg-muted">
+                <div className="flex items-center gap-2">
+                  <Layers size={13} className="shrink-0 text-fg-subtle" />
+                  <span className="truncate">{peca.aplicacaoVeicular}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <MapPin size={14} />
-                  <span>Localização: <strong style={{ color: "var(--text-muted)" }}>{peca.localizacao}</strong></span>
+                <div className="flex items-center gap-2">
+                  <MapPin size={13} className="shrink-0 text-fg-subtle" />
+                  <span className="truncate">{peca.localizacao}</span>
                 </div>
               </div>
-            </div>
 
-            <div>
-              {/* Código de barras com botão de cópia */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  background: "rgba(0, 0, 0, 0.25)",
-                  padding: "8px 12px",
-                  borderRadius: "6px",
-                  marginBottom: "14px",
-                  fontSize: "0.78rem",
-                  fontFamily: "var(--font-mono)",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Barcode size={15} color="var(--cyan-primary)" />
-                  <span>{peca.codigoBarras.valor}</span>
-                </div>
+              <div className="mt-4 flex items-center justify-between rounded-lg border border-line bg-canvas px-3 py-2 font-mono text-xs text-fg-muted">
+                <span className="flex items-center gap-2">
+                  <Barcode size={14} className="text-fg-subtle" />
+                  {peca.codigoBarras.valor}
+                </span>
                 <button
                   type="button"
                   onClick={() => copiarCodigo(peca.codigoBarras.valor, peca.id)}
-                  style={{ background: "none", border: "none", color: "var(--cyan-primary)", cursor: "pointer" }}
+                  className="rounded p-1 text-fg-subtle hover:text-fg"
                   title="Copiar código de barras"
                 >
-                  {copiadoId === peca.id ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+                  {copiadoId === peca.id ? <Check size={14} className="text-ok-text" /> : <Copy size={14} />}
                 </button>
               </div>
 
-              {/* Preço e Estoque */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-end",
-                  borderTop: "1px solid var(--border-subtle)",
-                  paddingTop: "12px",
-                }}
-              >
+              <div className="mt-auto flex items-end justify-between gap-3 pt-5">
                 <div>
-                  <div style={{ fontSize: "0.72rem", color: "var(--text-dim)" }}>Preço Venda Balcão:</div>
-                  <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#34d399", fontFamily: "var(--font-mono)" }}>
-                    {peca.precoVenda.formatar()}
-                  </div>
+                  <div className="eyebrow">Preço balcão</div>
+                  <div className="money mt-1 text-2xl font-semibold text-fg">{peca.precoVenda.formatar()}</div>
                 </div>
-
-                <div style={{ textAlign: "right" }}>
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      background: peca.estoqueBaixo ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)",
-                      color: peca.estoqueBaixo ? "#f87171" : "#34d399",
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      fontSize: "0.78rem",
-                      fontWeight: 700,
-                    }}
-                  >
+                <div className="text-right">
+                  <span className={cn("chip", peca.estoqueBaixo ? "chip-neg" : "chip-ok")}>
                     {peca.estoqueBaixo && <AlertTriangle size={12} />}
-                    {peca.estoqueAtual} un em estoque
-                  </div>
+                    {peca.estoqueAtual} un
+                  </span>
                   {peca.estoqueBaixo && (
-                    <div style={{ fontSize: "0.68rem", color: "#f87171", marginTop: "2px" }}>
-                      Ponto de reposição atingido (mín: {peca.estoqueMinimo})
-                    </div>
+                    <div className="mt-1 text-[0.68rem] text-neg-text">Mínimo: {peca.estoqueMinimo}</div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
+          ))}
+        </div>
+      )}
+    </Page>
   );
 };

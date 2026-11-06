@@ -5,7 +5,7 @@
  */
 import React, { useState, useRef, useEffect } from "react";
 import {
-  Barcode,
+  ScanBarcode,
   Search,
   ShoppingCart,
   Trash2,
@@ -15,23 +15,33 @@ import {
   QrCode,
   Banknote,
   FileText,
-  AlertCircle,
   CheckCircle2,
   X,
   Keyboard,
   Printer,
+  Receipt,
 } from "lucide-react";
 import { useVendaBalcao } from "../../adapters/view-models/useVendaBalcao";
 import { FormaPagamento } from "../../domain/value-objects/Enums";
 import { Dinheiro } from "../../domain/value-objects/Dinheiro";
+import { Alerts, EmptyState, Modal, Page } from "../components/ui";
+import { cn } from "../../lib/utils";
 
 interface BalcaoPDVViewProps {
   operadorNome: string;
 }
 
+const FORMAS = [
+  { id: FormaPagamento.DINHEIRO, label: "Dinheiro", icon: Banknote },
+  { id: FormaPagamento.PIX, label: "PIX", icon: QrCode },
+  { id: FormaPagamento.CARTAO_CREDITO, label: "Crédito", icon: CreditCard },
+  { id: FormaPagamento.CARTAO_DEBITO, label: "Débito", icon: CreditCard },
+  { id: FormaPagamento.BOLETO, label: "Boleto", icon: FileText },
+  { id: FormaPagamento.FATURADO, label: "Faturado", icon: FileText },
+];
+
 export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({ operadorNome }) => {
   const {
-    venda,
     itens,
     subtotal,
     desconto,
@@ -85,79 +95,30 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({ operadorNome }) =>
   // Cálculo de troco
   const valorRecebido = parseFloat(valorRecebidoInput.replace(",", ".")) || 0;
   const trocoCalculado = valorRecebido > total.valor ? valorRecebido - total.valor : 0;
+  const qtdTotal = itens.reduce((acc, i) => acc + i.quantidade, 0);
+
+  const catalogoFiltrado = catalogo.filter(
+    (p) =>
+      !filtroBusca ||
+      p.descricao.toLowerCase().includes(filtroBusca.toLowerCase()) ||
+      p.sku.toLowerCase().includes(filtroBusca.toLowerCase()) ||
+      p.aplicacaoVeicular.toLowerCase().includes(filtroBusca.toLowerCase())
+  );
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1500px", margin: "0 auto" }}>
-      {/* Alertas de Notificação */}
-      {mensagemSucesso && (
-        <div
-          style={{
-            background: "rgba(16, 185, 129, 0.15)",
-            border: "1px solid rgba(16, 185, 129, 0.3)",
-            color: "#34d399",
-            padding: "12px 18px",
-            borderRadius: "10px",
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            fontSize: "0.9rem",
-            fontWeight: 600,
-          }}
-        >
-          <CheckCircle2 size={18} />
-          {mensagemSucesso}
-        </div>
-      )}
+    <Page>
+      <Alerts sucesso={mensagemSucesso} erro={mensagemErro} onFecharErro={() => setMensagemErro(null)} />
 
-      {mensagemErro && (
-        <div
-          style={{
-            background: "rgba(239, 68, 68, 0.15)",
-            border: "1px solid rgba(239, 68, 68, 0.3)",
-            color: "#f87171",
-            padding: "12px 18px",
-            borderRadius: "10px",
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            fontSize: "0.9rem",
-            fontWeight: 600,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <AlertCircle size={18} />
-            {mensagemErro}
-          </div>
-          <button
-            onClick={() => setMensagemErro(null)}
-            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer" }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Grid Principal: 2 Colunas (Itens à Esquerda, Totais à Direita) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "24px" }}>
-        {/* Coluna Esquerda: Entrada de Leitor & Tabela de Itens */}
-        <div>
-          {/* Caixa de Entrada Rápida com Leitor */}
-          <div className="glass-panel" style={{ padding: "16px 20px", marginBottom: "20px" }}>
-            <form onSubmit={handleSubmeterCodigo} style={{ display: "flex", gap: "12px" }}>
-              <div
-                style={{
-                  position: "relative",
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Barcode
-                  size={20}
-                  color="var(--cyan-primary)"
-                  style={{ position: "absolute", left: "14px" }}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        {/* Coluna esquerda */}
+        <div className="flex min-w-0 flex-col gap-5">
+          {/* Entrada do leitor */}
+          <div className="card p-4 sm:p-5">
+            <form onSubmit={handleSubmeterCodigo} className="flex flex-col gap-3 sm:flex-row">
+              <div className="relative flex-1">
+                <ScanBarcode
+                  size={22}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-brand"
                 />
                 <input
                   ref={inputRef}
@@ -165,77 +126,37 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({ operadorNome }) =>
                   placeholder="Escaneie o código de barras ou digite o SKU/Código (ex: 7891049281023)..."
                   value={codigoInput}
                   onChange={(e) => setCodigoInput(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "14px 14px 14px 46px",
-                    background: "var(--bg-input)",
-                    border: "1px solid var(--border-cyan)",
-                    borderRadius: "8px",
-                    color: "var(--text-main)",
-                    fontSize: "1rem",
-                    fontFamily: "var(--font-mono)",
-                    outline: "none",
-                    boxShadow: "0 0 12px rgba(0, 229, 255, 0.1)",
-                  }}
+                  className="field h-14 pl-13 font-mono text-base"
                 />
               </div>
-
-              <button type="submit" className="btn-primary" style={{ padding: "0 22px" }}>
-                Adicionar
+              <button type="submit" className="btn btn-primary h-14 px-6">
+                <Plus size={18} /> Adicionar
               </button>
-
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn btn-secondary h-14"
                 onClick={() => setModalBuscaAberto(true)}
                 title="Buscar peça no catálogo (F4)"
               >
-                <Search size={16} /> F4 Catálogo
+                <Search size={17} /> Catálogo <span className="kbd">F4</span>
               </button>
             </form>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginTop: "12px",
-                fontSize: "0.78rem",
-                color: "var(--text-dim)",
-              }}
-            >
-              <span>
-                💡 O leitor físico USB/Bluetooth injeta direto aqui <strong>mesmo sem clicar na caixa</strong>.
-              </span>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <span style={{ color: "var(--text-muted)" }}>Atalhos de Teste Rápido:</span>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-fg-subtle">
+              <span>O leitor USB/Bluetooth envia o código direto para cá, mesmo sem clicar no campo.</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span>Teste rápido:</span>
                 <button
                   type="button"
                   onClick={() => biparOuBuscarCodigo("7891049281023")}
-                  style={{
-                    background: "rgba(0, 229, 255, 0.1)",
-                    border: "none",
-                    color: "var(--cyan-primary)",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    fontSize: "0.75rem",
-                    cursor: "pointer",
-                  }}
+                  className="chip hover:border-brand-line hover:text-fg"
                 >
                   Regulador Bosch
                 </button>
                 <button
                   type="button"
                   onClick={() => biparOuBuscarCodigo("7898237461928")}
-                  style={{
-                    background: "rgba(0, 229, 255, 0.1)",
-                    border: "none",
-                    color: "var(--cyan-primary)",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    fontSize: "0.75rem",
-                    cursor: "pointer",
-                  }}
+                  className="chip hover:border-brand-line hover:text-fg"
                 >
                   Bateria Moura 60A
                 </button>
@@ -243,135 +164,76 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({ operadorNome }) =>
             </div>
           </div>
 
-          {/* Tabela de Itens Adicionados no Carrinho */}
-          <div className="glass-panel" style={{ overflow: "hidden" }}>
-            <div
-              style={{
-                padding: "16px 20px",
-                borderBottom: "1px solid var(--border-subtle)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <ShoppingCart size={18} color="var(--cyan-primary)" />
-                <h2 style={{ fontSize: "1.05rem", fontWeight: 700 }}>
-                  Itens da Venda ({itens.length})
-                </h2>
+          {/* Itens */}
+          <div className="card overflow-hidden">
+            <div className="card-header">
+              <div className="card-title">
+                <ShoppingCart size={18} className="text-brand" />
+                Itens da venda
+                <span className="chip h-6 px-2">{itens.length}</span>
               </div>
-              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                Operador: <strong>{operadorNome}</strong>
+              <span className="text-xs text-fg-muted">
+                Operador: <strong className="text-fg">{operadorNome}</strong>
               </span>
             </div>
 
             {itens.length === 0 ? (
-              <div
-                style={{
-                  padding: "60px 20px",
-                  textAlign: "center",
-                  color: "var(--text-dim)",
-                }}
-              >
-                <Barcode size={48} style={{ opacity: 0.3, marginBottom: "12px" }} />
-                <p style={{ fontSize: "1rem", fontWeight: 500, color: "var(--text-muted)" }}>
-                  Carrinho Vazio
-                </p>
-                <p style={{ fontSize: "0.82rem" }}>
-                  Aproxime o leitor de código de barras da peça para registrar o item no balcão.
-                </p>
-              </div>
+              <EmptyState
+                icon={ScanBarcode}
+                title="Nenhum item na venda"
+                description="Passe o leitor no código de barras da peça para adicioná-la."
+              />
             ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.88rem" }}>
+              <div className="overflow-x-auto">
+                <table className="table">
                   <thead>
-                    <tr
-                      style={{
-                        background: "rgba(255, 255, 255, 0.02)",
-                        borderBottom: "1px solid var(--border-subtle)",
-                        textAlign: "left",
-                        color: "var(--text-muted)",
-                        fontSize: "0.78rem",
-                      }}
-                    >
-                      <th style={{ padding: "12px 18px" }}>#</th>
-                      <th style={{ padding: "12px 18px" }}>SKU / Código</th>
-                      <th style={{ padding: "12px 18px" }}>Descrição da Peça</th>
-                      <th style={{ padding: "12px 18px", textAlign: "center" }}>Quantidade</th>
-                      <th style={{ padding: "12px 18px", textAlign: "right" }}>Preço Un.</th>
-                      <th style={{ padding: "12px 18px", textAlign: "right" }}>Subtotal</th>
-                      <th style={{ padding: "12px 18px", textAlign: "center" }}>Ação</th>
+                    <tr>
+                      <th className="w-10">#</th>
+                      <th>Peça</th>
+                      <th className="text-center!">Qtd.</th>
+                      <th className="text-right!">Preço un.</th>
+                      <th className="text-right!">Subtotal</th>
+                      <th className="w-12" />
                     </tr>
                   </thead>
                   <tbody>
                     {itens.map((item, idx) => {
                       const itemSubtotal = item.precoUnitario.multiplicar(item.quantidade);
                       return (
-                        <tr
-                          key={item.id}
-                          style={{
-                            borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
-                            transition: "background 0.15s ease",
-                          }}
-                        >
-                          <td style={{ padding: "14px 18px", color: "var(--text-dim)", fontWeight: 600 }}>
-                            {idx + 1}
+                        <tr key={item.id}>
+                          <td className="text-fg-subtle">{idx + 1}</td>
+                          <td>
+                            <div className="font-medium text-fg">{item.descricao}</div>
+                            <div className="mt-0.5 font-mono text-xs text-fg-subtle">{item.sku}</div>
                           </td>
-                          <td style={{ padding: "14px 18px", fontFamily: "var(--font-mono)", color: "var(--cyan-primary)" }}>
-                            {item.sku}
-                          </td>
-                          <td style={{ padding: "14px 18px", fontWeight: 600 }}>
-                            {item.descricao}
-                          </td>
-                          <td style={{ padding: "14px 18px", textAlign: "center" }}>
-                            <div
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "8px",
-                                background: "rgba(255, 255, 255, 0.05)",
-                                padding: "4px 8px",
-                                borderRadius: "6px",
-                              }}
-                            >
+                          <td className="text-center">
+                            <div className="inline-flex items-center rounded-lg border border-line bg-canvas">
                               <button
                                 type="button"
                                 onClick={() => alterarQuantidade(item.id, item.quantidade - 1)}
-                                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+                                className="grid h-8 w-8 place-items-center text-fg-muted hover:text-fg"
+                                aria-label="Diminuir quantidade"
                               >
-                                <Minus size={13} />
+                                <Minus size={14} />
                               </button>
-                              <span style={{ fontWeight: 700, minWidth: "20px", textAlign: "center" }}>
-                                {item.quantidade}
-                              </span>
+                              <span className="money min-w-7 text-center font-semibold">{item.quantidade}</span>
                               <button
                                 type="button"
                                 onClick={() => alterarQuantidade(item.id, item.quantidade + 1)}
-                                style={{ background: "none", border: "none", color: "var(--cyan-primary)", cursor: "pointer" }}
+                                className="grid h-8 w-8 place-items-center text-fg-muted hover:text-fg"
+                                aria-label="Aumentar quantidade"
                               >
-                                <Plus size={13} />
+                                <Plus size={14} />
                               </button>
                             </div>
                           </td>
-                          <td style={{ padding: "14px 18px", textAlign: "right", fontFamily: "var(--font-mono)" }}>
-                            {item.precoUnitario.formatar()}
-                          </td>
-                          <td
-                            style={{
-                              padding: "14px 18px",
-                              textAlign: "right",
-                              fontFamily: "var(--font-mono)",
-                              fontWeight: 700,
-                              color: "#34d399",
-                            }}
-                          >
-                            {itemSubtotal.formatar()}
-                          </td>
-                          <td style={{ padding: "14px 18px", textAlign: "center" }}>
+                          <td className="money text-right text-fg-muted">{item.precoUnitario.formatar()}</td>
+                          <td className="money text-right font-semibold text-fg">{itemSubtotal.formatar()}</td>
+                          <td className="text-right">
                             <button
                               type="button"
                               onClick={() => removerItem(item.id)}
-                              style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer" }}
+                              className="btn btn-ghost btn-icon hover:text-neg-text!"
                               title="Remover peça do carrinho"
                             >
                               <Trash2 size={16} />
@@ -387,353 +249,232 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({ operadorNome }) =>
           </div>
         </div>
 
-        {/* Coluna Direita: Painel Financeiro e Fechamento */}
+        {/* Coluna direita: resumo */}
         <div>
-          <div className="glass-panel" style={{ padding: "24px", position: "sticky", top: "110px" }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "20px", color: "var(--text-main)" }}>
-              Resumo do Atendimento
-            </h3>
+          <div className="card brand-stripe sticky top-[96px] p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="card-title">
+                <Receipt size={18} className="text-brand" /> Resumo
+              </h3>
+              <span className="text-xs text-fg-subtle">{qtdTotal} un.</span>
+            </div>
 
-            {/* Linhas de Valores */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.95rem" }}>
-                <span>Subtotal Itens:</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--text-main)" }}>
-                  {subtotal.formatar()}
-                </span>
+            <div className="mt-5 flex flex-col gap-3 text-sm">
+              <div className="flex justify-between text-fg-muted">
+                <span>Subtotal</span>
+                <span className="money text-fg">{subtotal.formatar()}</span>
               </div>
 
-              {/* Formulário de Desconto */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>Desconto (R$):</span>
-                <form onSubmit={handleAplicarDesconto} style={{ display: "flex", gap: "6px" }}>
+              <form onSubmit={handleAplicarDesconto} className="flex items-center justify-between gap-3">
+                <span className="text-fg-muted">Desconto (R$)</span>
+                <div className="flex gap-2">
                   <input
                     type="text"
+                    inputMode="decimal"
                     placeholder="0,00"
                     value={descontoInput}
                     onChange={(e) => setDescontoInput(e.target.value)}
-                    style={{
-                      width: "80px",
-                      padding: "6px 8px",
-                      background: "var(--bg-input)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "6px",
-                      color: "var(--text-main)",
-                      fontSize: "0.85rem",
-                      textAlign: "right",
-                      fontFamily: "var(--font-mono)",
-                    }}
+                    className="field money h-9 w-24 text-right"
                   />
-                  <button type="submit" className="btn-secondary" style={{ padding: "6px 10px", fontSize: "0.75rem" }}>
+                  <button type="submit" className="btn btn-secondary btn-sm h-9">
                     Aplicar
                   </button>
-                </form>
-              </div>
+                </div>
+              </form>
 
               {desconto.maiorQue(Dinheiro.zero()) && (
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#f87171", fontSize: "0.85rem" }}>
-                  <span>Desconto Concedido:</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                    - {desconto.formatar()}
-                  </span>
+                <div className="flex justify-between text-neg-text">
+                  <span>Desconto concedido</span>
+                  <span className="money">- {desconto.formatar()}</span>
                 </div>
               )}
-
-              <div
-                style={{
-                  borderTop: "1px solid var(--border-subtle)",
-                  paddingTop: "16px",
-                  marginTop: "6px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                }}
-              >
-                <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>Total a Pagar:</span>
-                <span
-                  style={{
-                    fontSize: "1.75rem",
-                    fontWeight: 800,
-                    color: "var(--cyan-primary)",
-                    fontFamily: "var(--font-mono)",
-                    textShadow: "0 0 20px rgba(0, 229, 255, 0.3)",
-                  }}
-                >
-                  {total.formatar()}
-                </span>
-              </div>
             </div>
 
-            {/* Botões de Ação */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="mt-5 rounded-xl border border-line bg-canvas px-5 py-4">
+              <div className="eyebrow">Total a pagar</div>
+              <div className="money mt-1 text-4xl font-semibold text-fg">{total.formatar()}</div>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
-                className="btn-primary"
+                className="btn btn-primary btn-lg w-full"
                 onClick={() => setModalPagamentoAberto(true)}
                 disabled={itens.length === 0}
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  fontSize: "1.05rem",
-                  opacity: itens.length === 0 ? 0.4 : 1,
-                  cursor: itens.length === 0 ? "not-allowed" : "pointer",
-                }}
               >
                 <CheckCircle2 size={20} /> Finalizar Venda (F9)
               </button>
-
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn btn-ghost w-full"
                 onClick={cancelarVenda}
                 disabled={itens.length === 0}
-                style={{ width: "100%", padding: "12px", opacity: itens.length === 0 ? 0.4 : 1 }}
               >
-                <X size={16} /> Cancelar / Limpar (ESC)
+                <X size={16} /> Cancelar venda
               </button>
             </div>
 
-            {/* Barra de Atalhos */}
-            <div
-              style={{
-                marginTop: "24px",
-                paddingTop: "16px",
-                borderTop: "1px solid rgba(255, 255, 255, 0.06)",
-                fontSize: "0.74rem",
-                color: "var(--text-dim)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                <Keyboard size={13} color="var(--cyan-primary)" />
-                <strong>Atalhos do Teclado:</strong>
+            <div className="mt-6 border-t border-line pt-5">
+              <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-fg-muted">
+                <Keyboard size={14} /> Atalhos do Teclado
               </div>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "4px" }}>
-                <li><code>[F4]</code> Abrir busca de catálogo de peças</li>
-                <li><code>[F9]</code> Concluir pagamento e emitir cupom</li>
-                <li><code>[F12]</code> Bloqueio / Troca rápida de operador</li>
-                <li><code>[ESC]</code> Cancelar atendimento</li>
+              <ul className="flex flex-col gap-2 text-xs text-fg-subtle">
+                {[
+                  ["F4", "Buscar no catálogo"],
+                  ["F9", "Concluir pagamento"],
+                  ["F12", "Trocar operador"],
+                  ["ESC", "Cancelar atendimento"],
+                ].map(([k, t]) => (
+                  <li key={k} className="flex items-center justify-between">
+                    <span>{t}</span>
+                    <span className="kbd">{k}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Modal de Pagamento & Checkout (F9) */}
-      {modalPagamentoAberto && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "520px", padding: "28px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Concluir Venda no Balcão</h2>
-              <button
-                onClick={() => setModalPagamentoAberto(false)}
-                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div
-              style={{
-                background: "rgba(0, 229, 255, 0.08)",
-                border: "1px solid var(--border-cyan)",
-                borderRadius: "10px",
-                padding: "16px",
-                textAlign: "center",
-                marginBottom: "20px",
-              }}
-            >
-              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Valor Total:</span>
-              <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--cyan-primary)", fontFamily: "var(--font-mono)" }}>
-                {total.formatar()}
-              </div>
-            </div>
-
-            {/* Seleção do Meio de Pagamento */}
-            <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "8px" }}>
-              Selecione o Meio de Pagamento:
-            </label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
-              {[
-                { id: FormaPagamento.DINHEIRO, label: "Dinheiro", icon: Banknote },
-                { id: FormaPagamento.PIX, label: "PIX Dinâmico", icon: QrCode },
-                { id: FormaPagamento.CARTAO_CREDITO, label: "Crédito", icon: CreditCard },
-                { id: FormaPagamento.CARTAO_DEBITO, label: "Débito", icon: CreditCard },
-                { id: FormaPagamento.BOLETO, label: "Boleto", icon: FileText },
-                { id: FormaPagamento.FATURADO, label: "Faturado (Frota)", icon: FileText },
-              ].map((item) => {
-                const Icon = item.icon;
-                const selecionado = formaSelecionada === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setFormaSelecionada(item.id)}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "12px 8px",
-                      borderRadius: "8px",
-                      background: selecionado ? "rgba(0, 229, 255, 0.18)" : "rgba(255, 255, 255, 0.04)",
-                      border: selecionado ? "1px solid var(--cyan-primary)" : "1px solid var(--border-subtle)",
-                      color: selecionado ? "var(--cyan-primary)" : "var(--text-main)",
-                      fontSize: "0.78rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <Icon size={18} />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Detalhes específicos de Dinheiro (Troco) */}
-            {formaSelecionada === FormaPagamento.DINHEIRO && (
-              <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "14px", borderRadius: "8px", marginBottom: "20px" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "8px" }}>
-                  <label style={{ fontSize: "0.85rem", color: "var(--text-muted)", flex: 1 }}>
-                    Valor em Dinheiro Recebido:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="R$ 0,00"
-                    value={valorRecebidoInput}
-                    onChange={(e) => setValorRecebidoInput(e.target.value)}
-                    style={{
-                      width: "120px",
-                      padding: "8px",
-                      background: "var(--bg-input)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "6px",
-                      color: "var(--text-main)",
-                      fontFamily: "var(--font-mono)",
-                      textAlign: "right",
-                    }}
-                  />
-                </div>
-                {trocoCalculado > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", color: "#34d399", fontWeight: 700, fontSize: "0.95rem" }}>
-                    <span>Troco a Devolver:</span>
-                    <span style={{ fontFamily: "var(--font-mono)" }}>
-                      {new Dinheiro(trocoCalculado, false).formatar()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Detalhes específicos de PIX */}
-            {formaSelecionada === FormaPagamento.PIX && (
-              <div style={{ background: "rgba(0, 229, 255, 0.05)", border: "1px solid var(--border-cyan)", padding: "16px", borderRadius: "8px", marginBottom: "20px", textAlign: "center" }}>
-                <QrCode size={64} color="var(--cyan-primary)" style={{ margin: "0 auto 8px" }} />
-                <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-main)", marginBottom: "4px" }}>
-                  QR Code PIX com Conciliação Automática
-                </p>
-                <p style={{ fontSize: "0.75rem", color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
-                  txid: eletrocar-{Date.now().toString().slice(-8)} • Chave: pix@eletrocar.com.br
-                </p>
-              </div>
-            )}
-
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => finalizarVenda(formaSelecionada)}
-              disabled={processando}
-              style={{ width: "100%", padding: "14px", fontSize: "1rem" }}
-            >
-              <Printer size={18} /> {processando ? "Processando..." : "Confirmar Recebimento e Baixa"}
-            </button>
-          </div>
+      {/* Modal de Pagamento (F9) */}
+      <Modal
+        aberto={modalPagamentoAberto}
+        onFechar={() => setModalPagamentoAberto(false)}
+        titulo="Concluir venda"
+        descricao="Escolha a forma de pagamento e confirme o recebimento."
+        icon={Receipt}
+        largura={520}
+      >
+        <div className="mb-5 rounded-xl border border-brand-line bg-brand-soft px-5 py-4 text-center">
+          <div className="eyebrow text-brand-text!">Valor total</div>
+          <div className="money mt-1 text-4xl font-semibold text-fg">{total.formatar()}</div>
         </div>
-      )}
 
-      {/* Modal de Busca Manual no Catálogo (F4) */}
-      {modalBuscaAberto && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "680px", padding: "24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>Catálogo de Peças (F4)</h2>
+        <div className="label">Forma de pagamento</div>
+        <div className="mb-5 grid grid-cols-3 gap-2">
+          {FORMAS.map((item) => {
+            const Icon = item.icon;
+            const selecionado = formaSelecionada === item.id;
+            return (
               <button
-                onClick={() => setModalBuscaAberto(false)}
-                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+                key={item.id}
+                type="button"
+                onClick={() => setFormaSelecionada(item.id)}
+                className={cn(
+                  "flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-xs font-semibold transition-colors",
+                  selecionado
+                    ? "border-brand bg-brand-soft text-fg"
+                    : "border-line bg-surface-2 text-fg-muted hover:border-line-strong hover:text-fg"
+                )}
               >
-                <X size={20} />
+                <Icon size={19} className={selecionado ? "text-brand" : undefined} />
+                {item.label}
               </button>
-            </div>
+            );
+          })}
+        </div>
 
-            <div style={{ position: "relative", marginBottom: "16px" }}>
-              <Search size={18} color="var(--text-dim)" style={{ position: "absolute", left: "12px", top: "12px" }} />
+        {formaSelecionada === FormaPagamento.DINHEIRO && (
+          <div className="mb-5 rounded-xl border border-line bg-canvas p-4">
+            <div className="flex items-center justify-between gap-3">
+              <label className="text-sm text-fg-muted" htmlFor="valor-recebido">
+                Valor recebido
+              </label>
               <input
+                id="valor-recebido"
                 type="text"
-                placeholder="Filtrar por nome, SKU, aplicação veicular ou fabricante (Bosch, Valeo...)"
-                value={filtroBusca}
-                onChange={(e) => setFiltroBusca(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 10px 10px 38px",
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border-subtle)",
-                  borderRadius: "8px",
-                  color: "var(--text-main)",
-                }}
+                inputMode="decimal"
+                placeholder="R$ 0,00"
+                value={valorRecebidoInput}
+                onChange={(e) => setValorRecebidoInput(e.target.value)}
+                className="field money w-36 text-right"
               />
             </div>
+            {trocoCalculado > 0 && (
+              <div className="mt-3 flex justify-between border-t border-line pt-3 text-sm font-semibold text-ok-text">
+                <span>Troco</span>
+                <span className="money">{new Dinheiro(trocoCalculado, false).formatar()}</span>
+              </div>
+            )}
+          </div>
+        )}
 
-            <div style={{ maxHeight: "360px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
-              {catalogo
-                .filter(
-                  (p) =>
-                    !filtroBusca ||
-                    p.descricao.toLowerCase().includes(filtroBusca.toLowerCase()) ||
-                    p.sku.toLowerCase().includes(filtroBusca.toLowerCase()) ||
-                    p.aplicacaoVeicular.toLowerCase().includes(filtroBusca.toLowerCase())
-                )
-                .map((peca) => (
-                  <div
-                    key={peca.id}
-                    onClick={() => {
-                      biparOuBuscarCodigo(peca.sku);
-                      setModalBuscaAberto(false);
-                    }}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px 14px",
-                      borderRadius: "8px",
-                      background: "rgba(255, 255, 255, 0.03)",
-                      border: "1px solid var(--border-subtle)",
-                      cursor: "pointer",
-                      transition: "all 0.1s ease",
-                    }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(0, 229, 255, 0.08)")}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255, 255, 255, 0.03)")}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{peca.descricao}</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
-                        SKU: {peca.sku} • EAN: {peca.codigoBarras.valor} • {peca.aplicacaoVeicular}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ color: "#34d399", fontWeight: 700, fontFamily: "var(--font-mono)" }}>
-                        {peca.precoVenda.formatar()}
-                      </div>
-                      <div style={{ fontSize: "0.72rem", color: peca.estoqueBaixo ? "#f87171" : "var(--text-dim)" }}>
-                        Estoque: {peca.estoqueAtual} un
-                      </div>
-                    </div>
-                  </div>
-                ))}
+        {formaSelecionada === FormaPagamento.PIX && (
+          <div className="mb-5 flex items-center gap-4 rounded-xl border border-line bg-canvas p-4">
+            <div className="grid h-20 w-20 shrink-0 place-items-center rounded-lg bg-white text-canvas">
+              <QrCode size={60} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-fg">QR Code PIX com conciliação automática</p>
+              <p className="mt-1 truncate font-mono text-xs text-fg-subtle">
+                txid: eletrocar-{Date.now().toString().slice(-8)}
+              </p>
+              <p className="truncate font-mono text-xs text-fg-subtle">pix@eletrocar.com.br</p>
             </div>
           </div>
+        )}
+
+        <button
+          type="button"
+          className="btn btn-primary btn-lg w-full"
+          onClick={() => finalizarVenda(formaSelecionada)}
+          disabled={processando}
+        >
+          <Printer size={18} /> {processando ? "Processando..." : "Confirmar recebimento"}
+        </button>
+      </Modal>
+
+      {/* Modal de Busca no Catálogo (F4) */}
+      <Modal
+        aberto={modalBuscaAberto}
+        onFechar={() => setModalBuscaAberto(false)}
+        titulo="Catálogo de peças"
+        descricao="Clique em uma peça para adicioná-la à venda."
+        icon={Search}
+        largura={680}
+      >
+        <div className="relative mb-4">
+          <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
+          <input
+            type="text"
+            autoFocus
+            placeholder="Nome, SKU, aplicação ou fabricante (Bosch, Valeo...)"
+            value={filtroBusca}
+            onChange={(e) => setFiltroBusca(e.target.value)}
+            className="field pl-10"
+          />
         </div>
-      )}
-    </div>
+
+        <div className="-mx-2 flex max-h-[380px] flex-col overflow-y-auto">
+          {catalogoFiltrado.map((peca) => (
+            <button
+              key={peca.id}
+              type="button"
+              onClick={() => {
+                biparOuBuscarCodigo(peca.sku);
+                setModalBuscaAberto(false);
+              }}
+              className="flex items-center justify-between gap-4 rounded-xl px-3 py-3 text-left transition-colors hover:bg-surface-2"
+            >
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-fg">{peca.descricao}</div>
+                <div className="mt-0.5 truncate font-mono text-xs text-fg-subtle">
+                  {peca.sku} · {peca.codigoBarras.valor} · {peca.aplicacaoVeicular}
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="money text-sm font-semibold text-fg">{peca.precoVenda.formatar()}</div>
+                <div className={cn("text-xs", peca.estoqueBaixo ? "text-neg-text" : "text-fg-subtle")}>
+                  {peca.estoqueAtual} em estoque
+                </div>
+              </div>
+            </button>
+          ))}
+          {catalogoFiltrado.length === 0 && (
+            <p className="py-10 text-center text-sm text-fg-subtle">Nenhuma peça encontrada.</p>
+          )}
+        </div>
+      </Modal>
+    </Page>
   );
 };

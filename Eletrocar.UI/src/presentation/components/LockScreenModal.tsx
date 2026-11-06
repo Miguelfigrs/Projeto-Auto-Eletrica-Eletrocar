@@ -4,7 +4,8 @@
  * Permite alternar o operador no balcão sem fechar o turno ou sair do sistema.
  */
 import React, { useState } from "react";
-import { Lock, ShieldCheck, KeyRound, X } from "lucide-react";
+import { Delete, Lock, X } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 interface LockScreenModalProps {
   aberto: boolean;
@@ -24,6 +25,13 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
 
   if (!aberto) return null;
 
+  const submeterPin = async (valorPin: string) => {
+    setEnviando(true);
+    await onAutenticarPorPin(valorPin);
+    setEnviando(false);
+    setPin("");
+  };
+
   const handleDigito = (digito: string) => {
     if (pin.length < 6) {
       const novo = pin + digito;
@@ -34,187 +42,72 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
     }
   };
 
-  const handleLimpar = () => {
-    setPin("");
-  };
-
-  const handleBackspace = () => {
-    setPin((prev) => prev.slice(0, -1));
-  };
-
-  const submeterPin = async (valorPin: string) => {
-    setEnviando(true);
-    const sucesso = await onAutenticarPorPin(valorPin);
-    setEnviando(false);
-    if (sucesso) {
-      setPin("");
-    } else {
-      setPin("");
-    }
-  };
+  const teclaBase =
+    "h-14 rounded-xl border border-line bg-surface-2 text-xl font-semibold text-fg transition-colors hover:bg-surface-3 active:scale-95 disabled:opacity-50";
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: "380px", padding: "28px", textAlign: "center" }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "4px" }}>
-          <button
-            onClick={onFechar}
-            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
-          >
-            <X size={18} />
-          </button>
+      <div className="modal relative max-w-[360px] px-7 pb-7 pt-9 text-center">
+        <button
+          type="button"
+          onClick={onFechar}
+          className="btn btn-ghost btn-icon absolute right-3 top-3"
+          aria-label="Fechar"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-brand-text">
+          <Lock size={24} />
         </div>
 
-        <div
-          style={{
-            width: "56px",
-            height: "56px",
-            borderRadius: "50%",
-            background: "rgba(0, 229, 255, 0.12)",
-            color: "var(--cyan-primary)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 16px",
-            border: "1px solid var(--border-cyan)",
-          }}
-        >
-          <Lock size={26} />
+        <h2 className="text-xl font-semibold text-fg">Troca rápida de operador</h2>
+        <p className="mt-1 text-sm text-fg-muted">Digite seu PIN de 4 dígitos</p>
+
+        <div className="my-6 flex justify-center gap-3">
+          {[0, 1, 2, 3].map((idx) => (
+            <div
+              key={idx}
+              className={cn(
+                "h-3.5 w-3.5 rounded-full border-2 transition-all",
+                pin.length > idx ? "scale-110 border-brand bg-brand" : "border-line-strong"
+              )}
+            />
+          ))}
         </div>
 
-        <h2 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: "4px" }}>
-          Troca Rápida de Operador
-        </h2>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "20px" }}>
-          Digite o PIN numérico do seu crachá/cadastro
-        </p>
+        {erro && <div className="alert alert-neg mb-5 justify-center text-xs">{erro}</div>}
 
-        {/* Indicadores Visuais de PIN */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "12px",
-            marginBottom: "24px",
-          }}
-        >
-          {[0, 1, 2, 3].map((idx) => {
-            const preenchido = pin.length > idx;
-            return (
-              <div
-                key={idx}
-                style={{
-                  width: "16px",
-                  height: "16px",
-                  borderRadius: "50%",
-                  border: "2px solid var(--border-cyan)",
-                  background: preenchido ? "var(--cyan-primary)" : "transparent",
-                  boxShadow: preenchido ? "0 0 10px rgba(0, 229, 255, 0.5)" : "none",
-                  transition: "all 0.15s ease",
-                }}
-              />
-            );
-          })}
-        </div>
-
-        {erro && (
-          <div
-            style={{
-              background: "rgba(239, 68, 68, 0.15)",
-              color: "#f87171",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              padding: "8px",
-              borderRadius: "8px",
-              fontSize: "0.8rem",
-              marginBottom: "16px",
-            }}
-          >
-            {erro}
-          </div>
-        )}
-
-        {/* Teclado Numérico */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "10px",
-            maxWidth: "240px",
-            margin: "0 auto 16px",
-          }}
-        >
+        <div className="mx-auto grid max-w-[252px] grid-cols-3 gap-2.5">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((n) => (
-            <button
-              key={n}
-              onClick={() => handleDigito(n)}
-              disabled={enviando}
-              style={{
-                background: "rgba(255, 255, 255, 0.05)",
-                border: "1px solid var(--border-subtle)",
-                color: "var(--text-main)",
-                fontSize: "1.25rem",
-                fontWeight: 600,
-                padding: "14px 0",
-                borderRadius: "10px",
-                cursor: "pointer",
-                transition: "all 0.1s ease",
-              }}
-              onMouseDown={(e) => ((e.currentTarget as HTMLElement).style.transform = "scale(0.95)")}
-              onMouseUp={(e) => ((e.currentTarget as HTMLElement).style.transform = "scale(1)")}
-            >
+            <button key={n} type="button" onClick={() => handleDigito(n)} disabled={enviando} className={teclaBase}>
               {n}
             </button>
           ))}
           <button
-            onClick={handleLimpar}
-            style={{
-              background: "rgba(255, 255, 255, 0.03)",
-              border: "1px solid var(--border-subtle)",
-              color: "var(--text-muted)",
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              padding: "14px 0",
-              borderRadius: "10px",
-              cursor: "pointer",
-            }}
+            type="button"
+            onClick={() => setPin("")}
+            className={cn(teclaBase, "bg-transparent text-xs font-semibold uppercase tracking-wider text-fg-muted")}
           >
-            LIMPAR
+            Limpar
           </button>
-          <button
-            onClick={() => handleDigito("0")}
-            disabled={enviando}
-            style={{
-              background: "rgba(255, 255, 255, 0.05)",
-              border: "1px solid var(--border-subtle)",
-              color: "var(--text-main)",
-              fontSize: "1.25rem",
-              fontWeight: 600,
-              padding: "14px 0",
-              borderRadius: "10px",
-              cursor: "pointer",
-            }}
-          >
+          <button type="button" onClick={() => handleDigito("0")} disabled={enviando} className={teclaBase}>
             0
           </button>
           <button
-            onClick={handleBackspace}
-            style={{
-              background: "rgba(255, 255, 255, 0.03)",
-              border: "1px solid var(--border-subtle)",
-              color: "var(--text-muted)",
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              padding: "14px 0",
-              borderRadius: "10px",
-              cursor: "pointer",
-            }}
+            type="button"
+            onClick={() => setPin((prev) => prev.slice(0, -1))}
+            className={cn(teclaBase, "grid place-items-center bg-transparent text-fg-muted")}
+            aria-label="Apagar dígito"
           >
-            ⌫
+            <Delete size={20} />
           </button>
         </div>
 
-        <p style={{ fontSize: "0.72rem", color: "var(--text-dim)" }}>
-          Dica para teste rápido: <strong>1234</strong> (Admin), <strong>1122</strong> (Carlos), <strong>4321</strong> (Márcio)
+        <p className="mt-6 text-xs text-fg-subtle">
+          PINs de teste: <strong className="text-fg-muted">1234</strong> (Admin) ·{" "}
+          <strong className="text-fg-muted">1122</strong> (Carlos) ·{" "}
+          <strong className="text-fg-muted">4321</strong> (Márcio)
         </p>
       </div>
     </div>

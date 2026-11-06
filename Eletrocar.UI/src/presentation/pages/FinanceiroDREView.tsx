@@ -4,16 +4,43 @@
  * Espelha fielmente o serviço de domínio src/domain/services/calculadora_dre_service.py.
  */
 import React from "react";
-import {
-  TrendingUp,
-  DollarSign,
-  PieChart,
-  ArrowUpRight,
-  ArrowDownRight,
-  ShieldCheck,
-  Calendar,
-} from "lucide-react";
+import { TrendingUp, DollarSign, PieChart, Calendar } from "lucide-react";
 import { Dinheiro } from "../../domain/value-objects/Dinheiro";
+import { Page, PageHeader, StatCard } from "../components/ui";
+import { cn } from "../../lib/utils";
+
+type LinhaTipo = "grupo" | "detalhe" | "subtotal" | "resultado";
+
+const Linha: React.FC<{
+  tipo: LinhaTipo;
+  rotulo: React.ReactNode;
+  valor: Dinheiro;
+  negativo?: boolean;
+  destaque?: "ok";
+}> = ({ tipo, rotulo, valor, negativo, destaque }) => (
+  <div
+    className={cn(
+      "flex items-center justify-between gap-4 border-b border-line px-6",
+      tipo === "grupo" && "py-3.5 text-sm font-semibold text-fg",
+      tipo === "detalhe" && "py-2.5 pl-11 text-sm text-fg-muted",
+      tipo === "subtotal" && "bg-surface-2 py-3.5 text-sm font-semibold text-fg",
+      tipo === "resultado" && "brand-stripe border-b-0 bg-brand-soft py-5 text-base font-semibold text-fg",
+      destaque === "ok" && "text-ok-text"
+    )}
+  >
+    <span>{rotulo}</span>
+    <span
+      className={cn(
+        "money shrink-0",
+        negativo && "text-neg-text",
+        tipo === "resultado" && "text-2xl"
+      )}
+    >
+      {negativo ? "- " : ""}
+      {valor.formatar()}
+    </span>
+  </div>
+);
 
 export const FinanceiroDREView: React.FC = () => {
   // Valores consolidados do período corrente (exemplo do mês corrente da oficina)
@@ -38,172 +65,96 @@ export const FinanceiroDREView: React.FC = () => {
   const lucroLiquido = lucroBruto.subtrair(despesasTotais);
   const margemLiquidaPercentual = ((lucroLiquido.valor / receitaLiquida.valor) * 100).toFixed(1);
 
+  // Composição da receita (barra proporcional)
+  const pctProdutos = (receitaProdutos.valor / receitaBrutaTotal.valor) * 100;
+
   return (
-    <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "24px",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <div>
-          <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginBottom: "4px" }}>
-            DRE Gerencial • Performance Financeira
-          </h2>
-          <p style={{ fontSize: "0.82rem", color: "var(--text-dim)" }}>
-            Demonstrativo estruturado do resultado operacional: Receita, CMV de Peças, Mão de Obra e Lucro Líquido.
-          </p>
-        </div>
+    <Page className="max-w-[1280px]">
+      <PageHeader
+        title="Financeiro & DRE"
+        description="Resultado do mês: receitas, custos de peças e mão de obra, despesas e lucro."
+        actions={
+          <span className="chip h-9 px-4 text-xs">
+            <Calendar size={14} /> Competência: mês atual
+          </span>
+        }
+      />
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "rgba(255, 255, 255, 0.04)",
-            padding: "8px 14px",
-            borderRadius: "8px",
-            border: "1px solid var(--border-subtle)",
-            fontSize: "0.82rem",
-            color: "var(--text-muted)",
-          }}
-        >
-          <Calendar size={15} color="var(--cyan-primary)" />
-          <span>Competência: <strong>Mês Atual (Tempo Real)</strong></span>
-        </div>
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
+        <StatCard
+          label="Receita líquida"
+          value={receitaLiquida.formatar()}
+          icon={DollarSign}
+          hint="Peças de balcão + mão de obra"
+        />
+        <StatCard
+          label="Lucro bruto"
+          value={lucroBruto.formatar()}
+          icon={TrendingUp}
+          tone="ok"
+          hint={`Margem bruta de ${margemBrutaPercentual}%`}
+        />
+        <StatCard
+          label="Lucro líquido"
+          value={lucroLiquido.formatar()}
+          icon={PieChart}
+          tone="brand"
+          hint={`Margem líquida de ${margemLiquidaPercentual}%`}
+        />
       </div>
 
-      {/* Cards de Indicadores Principais */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "18px", marginBottom: "24px" }}>
-        <div className="glass-panel" style={{ padding: "20px" }}>
-          <span style={{ fontSize: "0.78rem", color: "var(--text-dim)", textTransform: "uppercase", fontWeight: 700 }}>
-            Receita Líquida Total
-          </span>
-          <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--text-main)", fontFamily: "var(--font-mono)", marginTop: "6px" }}>
-            {receitaLiquida.formatar()}
-          </div>
-          <span style={{ fontSize: "0.72rem", color: "#34d399", display: "flex", alignItems: "center", gap: "4px", marginTop: "4px" }}>
-            <ArrowUpRight size={13} /> Peças de Balcão + Mão de Obra
-          </span>
+      <div className="card mb-6 p-5">
+        <div className="mb-3 flex items-center justify-between text-sm">
+          <span className="font-semibold text-fg">Composição da receita bruta</span>
+          <span className="money text-fg-muted">{receitaBrutaTotal.formatar()}</span>
         </div>
-
-        <div className="glass-panel" style={{ padding: "20px" }}>
-          <span style={{ fontSize: "0.78rem", color: "var(--text-dim)", textTransform: "uppercase", fontWeight: 700 }}>
-            Lucro Bruto (Margem de Contribuição)
-          </span>
-          <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#34d399", fontFamily: "var(--font-mono)", marginTop: "6px" }}>
-            {lucroBruto.formatar()}
-          </div>
-          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-            Margem Bruta: <strong>{margemBrutaPercentual}%</strong>
-          </span>
+        <div className="flex h-3 overflow-hidden rounded-full bg-surface-3">
+          <div className="h-full bg-brand" style={{ width: `${pctProdutos}%` }} />
+          <div className="h-full bg-fg-subtle" style={{ width: `${100 - pctProdutos}%` }} />
         </div>
-
-        <div className="glass-panel" style={{ padding: "20px", border: "1px solid var(--border-cyan)" }}>
-          <span style={{ fontSize: "0.78rem", color: "var(--cyan-primary)", textTransform: "uppercase", fontWeight: 700 }}>
-            Resultado Líquido do Exercício
+        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-fg-muted">
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-sm bg-brand" /> Peças (balcão) {pctProdutos.toFixed(0)}%
           </span>
-          <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--cyan-primary)", fontFamily: "var(--font-mono)", marginTop: "6px" }}>
-            {lucroLiquido.formatar()}
-          </div>
-          <span style={{ fontSize: "0.72rem", color: "#34d399", fontWeight: 600 }}>
-            Margem Líquida Real: {margemLiquidaPercentual}%
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-sm bg-fg-subtle" /> Serviços (OS) {(100 - pctProdutos).toFixed(0)}%
           </span>
         </div>
       </div>
 
-      {/* Tabela Estruturada do DRE */}
-      <div className="glass-panel" style={{ overflow: "hidden" }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: "8px" }}>
-          <PieChart size={18} color="var(--cyan-primary)" />
-          <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Linhas do DRE Contábil / Gerencial</h3>
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <h3 className="card-title">
+            <PieChart size={18} className="text-brand" /> Demonstrativo de resultado
+          </h3>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {/* 1. Receita Bruta */}
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(255, 255, 255, 0.04)", display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "0.95rem" }}>
-            <span>(+) RECEITA OPERACIONAL BRUTA</span>
-            <span style={{ fontFamily: "var(--font-mono)", color: "#34d399" }}>{receitaBrutaTotal.formatar()}</span>
-          </div>
-          <div style={{ padding: "10px 20px 10px 40px", borderBottom: "1px solid rgba(255, 255, 255, 0.02)", display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            <span>• Venda de Peças e Componentes Elétricos (Balcão)</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>{receitaProdutos.formatar()}</span>
-          </div>
-          <div style={{ padding: "10px 20px 10px 40px", borderBottom: "1px solid rgba(255, 255, 255, 0.02)", display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            <span>• Prestação de Serviços & Mão de Obra (Ordens de Serviço)</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>{receitaServicosOS.formatar()}</span>
-          </div>
+        <Linha tipo="grupo" rotulo="(+) Receita operacional bruta" valor={receitaBrutaTotal} />
+        <Linha tipo="detalhe" rotulo="Venda de peças e componentes (balcão)" valor={receitaProdutos} />
+        <Linha tipo="detalhe" rotulo="Serviços e mão de obra (ordens de serviço)" valor={receitaServicosOS} />
+        <Linha tipo="grupo" rotulo="(−) Deduções e descontos concedidos" valor={deducoesDescontos} negativo />
+        <Linha tipo="subtotal" rotulo="(=) Receita operacional líquida" valor={receitaLiquida} />
 
-          {/* 2. Deduções */}
-          <div style={{ padding: "12px 20px 12px 30px", borderBottom: "1px solid rgba(255, 255, 255, 0.04)", display: "flex", justifyContent: "space-between", color: "#f87171", fontSize: "0.88rem" }}>
-            <span>(-) Deduções da Receita e Descontos Concedidos</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>- {deducoesDescontos.formatar()}</span>
-          </div>
+        <Linha tipo="grupo" rotulo="(−) Custos dos serviços e mercadorias" valor={custosDiretosTotal} negativo />
+        <Linha tipo="detalhe" rotulo="Custo das peças vendidas (CMV)" valor={cmvPecas} />
+        <Linha tipo="detalhe" rotulo="Custo direto com eletricistas" valor={custoMaoObra} />
+        <Linha
+          tipo="subtotal"
+          rotulo={`(=) Lucro bruto · margem ${margemBrutaPercentual}%`}
+          valor={lucroBruto}
+          destaque="ok"
+        />
 
-          {/* 3. Receita Líquida */}
-          <div style={{ padding: "14px 20px", background: "rgba(255, 255, 255, 0.02)", borderBottom: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "1rem" }}>
-            <span>(=) RECEITA OPERACIONAL LÍQUIDA</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>{receitaLiquida.formatar()}</span>
-          </div>
+        <Linha tipo="grupo" rotulo="(−) Despesas operacionais" valor={despesasTotais} negativo />
+        <Linha tipo="detalhe" rotulo="Fixas (aluguel, energia, internet, software)" valor={despesasFixas} />
+        <Linha tipo="detalhe" rotulo="Variáveis (insumos, taxas de cartão/PIX)" valor={despesasVariaveis} />
 
-          {/* 4. Custos Diretos */}
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(255, 255, 255, 0.04)", display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "0.95rem", color: "#f87171" }}>
-            <span>(-) CUSTOS DOS SERVIÇOS E MERCADORIAS (CMV)</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>- {custosDiretosTotal.formatar()}</span>
-          </div>
-          <div style={{ padding: "10px 20px 10px 40px", borderBottom: "1px solid rgba(255, 255, 255, 0.02)", display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            <span>• Custo de Mercadorias Vendidas (CMV Peças Bosch, Valeo, Moura...)</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>{cmvPecas.formatar()}</span>
-          </div>
-          <div style={{ padding: "10px 20px 10px 40px", borderBottom: "1px solid rgba(255, 255, 255, 0.02)", display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            <span>• Custo Direto com Eletricistas e Executores Técnicos</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>{custoMaoObra.formatar()}</span>
-          </div>
-
-          {/* 5. Lucro Bruto */}
-          <div style={{ padding: "14px 20px", background: "rgba(16, 185, 129, 0.08)", borderBottom: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "1rem", color: "#34d399" }}>
-            <span>(=) LUCRO BRUTO (Margem Bruta {margemBrutaPercentual}%)</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>{lucroBruto.formatar()}</span>
-          </div>
-
-          {/* 6. Despesas Operacionais */}
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(255, 255, 255, 0.04)", display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "0.95rem", color: "#f87171" }}>
-            <span>(-) DESPESAS OPERACIONAIS</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>- {despesasTotais.formatar()}</span>
-          </div>
-          <div style={{ padding: "10px 20px 10px 40px", borderBottom: "1px solid rgba(255, 255, 255, 0.02)", display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            <span>• Despesas Fixas (Aluguel da oficina, energia trifásica, internet, software)</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>{despesasFixas.formatar()}</span>
-          </div>
-          <div style={{ padding: "10px 20px 10px 40px", borderBottom: "1px solid rgba(255, 255, 255, 0.02)", display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            <span>• Despesas Variáveis (Insumos solda/estanho, fitas, taxas de cartão/PIX)</span>
-            <span style={{ fontFamily: "var(--font-mono)" }}>{despesasVariaveis.formatar()}</span>
-          </div>
-
-          {/* 7. Lucro Líquido Final */}
-          <div
-            style={{
-              padding: "18px 20px",
-              background: "rgba(0, 229, 255, 0.12)",
-              borderTop: "2px solid var(--cyan-primary)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              fontWeight: 800,
-              fontSize: "1.15rem",
-              color: "var(--cyan-primary)",
-            }}
-          >
-            <span>(=) LUCRO LÍQUIDO FINAL (Margem Líquida {margemLiquidaPercentual}%)</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "1.5rem" }}>{lucroLiquido.formatar()}</span>
-          </div>
-        </div>
+        <Linha
+          tipo="resultado"
+          rotulo={`(=) Lucro líquido · margem ${margemLiquidaPercentual}%`}
+          valor={lucroLiquido}
+        />
       </div>
-    </div>
+    </Page>
   );
 };

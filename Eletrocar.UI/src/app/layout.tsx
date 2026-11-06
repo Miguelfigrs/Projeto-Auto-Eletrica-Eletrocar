@@ -1,37 +1,26 @@
-import type { Metadata } from "next";
-import { Outfit, JetBrains_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/jetbrains-mono";
+import "@fontsource/barlow-condensed/600.css";
+import "@fontsource/barlow-condensed/700.css";
+import "@fontsource/barlow-condensed/800.css";
 import "../index.css";
 import { Providers } from "./providers";
 
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "Auto Elétrica Eletrocar • Sistema Operacional & Balcão PDV",
+  title: "Eletrocar • Auto Elétrica",
   description:
-    "Sistema integrado de gestão operacional, balcão PDV e ordens de serviço da Auto Elétrica Eletrocar com Clean Architecture, DDD, Next.js 16 e leitura de código de barras USB/Bluetooth.",
-  keywords: [
-    "auto elétrica",
-    "eletrocar",
-    "balcão pdv",
-    "ordens de serviço",
-    "clean architecture",
-    "leitor código de barras",
-  ],
+    "Sistema integrado de gestão operacional, balcão PDV e ordens de serviço da Auto Elétrica Eletrocar.",
+  keywords: ["auto elétrica", "eletrocar", "balcão pdv", "ordens de serviço"],
   authors: [{ name: "Auto Elétrica Eletrocar" }],
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.svg",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#111113",
 };
 
 export default function RootLayout({
@@ -40,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={`${outfit.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-[#070a12] text-slate-100 min-h-screen antialiased selection:bg-cyan-500 selection:text-slate-950">
+    <html lang="pt-BR">
+      <body className="min-h-screen bg-canvas text-fg antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

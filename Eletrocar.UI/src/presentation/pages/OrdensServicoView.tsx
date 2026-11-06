@@ -4,33 +4,62 @@
  * checklist elétrico e simulação do Telegram Voice Bot com Whisper & IA.
  */
 import React, { useState } from "react";
-import {
-  Wrench,
-  Mic,
-  Plus,
-  Car,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Play,
-  Check,
-  Send,
-  Zap,
-  Activity,
-  FileText,
-  X,
-} from "lucide-react";
+import { Wrench, Mic, Plus, Car, Check, Send, ArrowRight, Ban } from "lucide-react";
 import { useOrdensServico } from "../../adapters/view-models/useOrdensServico";
 import { StatusOS, OrigemOS, PrioridadeOS } from "../../domain/value-objects/Enums";
 import { OrdemServicoStateMachine } from "../../domain/entities/OrdemServico";
+import { Alerts, EmptyState, Modal, Page, PageHeader } from "../components/ui";
+import { cn } from "../../lib/utils";
+
+const STATUS_INFO: Record<StatusOS, { label: string; cor: string }> = {
+  [StatusOS.TRIAGEM]: { label: "Triagem", cor: "#a78bfa" },
+  [StatusOS.ORCAMENTO_PENDENTE]: { label: "Orçamento pendente", cor: "#fbbf24" },
+  [StatusOS.APROVADO]: { label: "Aprovado", cor: "#38bdf8" },
+  [StatusOS.EM_EXECUCAO]: { label: "Em execução", cor: "#60a5fa" },
+  [StatusOS.AGUARDANDO_PECA]: { label: "Aguardando peça", cor: "#fb923c" },
+  [StatusOS.TESTES_ELETRICOS]: { label: "Testes elétricos", cor: "#facc15" },
+  [StatusOS.FINALIZADO]: { label: "Finalizado", cor: "#4ade80" },
+  [StatusOS.ENTREGUE]: { label: "Entregue", cor: "#4ade80" },
+  [StatusOS.CANCELADO]: { label: "Cancelado", cor: "#a1a1aa" },
+};
+
+const CHECKLIST_LABEL: Record<string, string> = {
+  bateria: "Bateria",
+  alternador: "Alternador",
+  motorPartida: "Motor de partida",
+  iluminacao: "Iluminação",
+  injecao: "Injeção",
+  injecaoEletronica: "Injeção eletrônica",
+};
+
+const FILTROS: (StatusOS | "TODOS")[] = [
+  "TODOS",
+  StatusOS.TRIAGEM,
+  StatusOS.ORCAMENTO_PENDENTE,
+  StatusOS.APROVADO,
+  StatusOS.EM_EXECUCAO,
+  StatusOS.TESTES_ELETRICOS,
+  StatusOS.FINALIZADO,
+];
+
+const StatusBadge: React.FC<{ status: StatusOS }> = ({ status }) => {
+  const info = STATUS_INFO[status];
+  return (
+    <span
+      className="chip"
+      style={{ color: info.cor, borderColor: `${info.cor}40`, background: `${info.cor}14` }}
+    >
+      <span className="dot" />
+      {info.label}
+    </span>
+  );
+};
 
 export const OrdensServicoView: React.FC = () => {
   const {
     ordens,
     filtroStatus,
     setFiltroStatus,
-    osSelecionada,
-    setOsSelecionada,
     avancarStatus,
     criarOS,
     simularEnvioAudioTelegram,
@@ -55,21 +84,21 @@ export const OrdensServicoView: React.FC = () => {
   const cenariosVoz = [
     {
       titulo: "Alternador Gol do Carlos",
-      eletricista: "Márcio (Baia 01)",
+      eletricista: "Márcio · Baia 01",
       audioTexto: "Gol do seu Carlos, alternador com defeito, bateria não carrega. Trocar regulador de voltagem.",
       cliente: "Carlos Alberto",
       carro: "Gol 1.6 MSI",
     },
     {
       titulo: "Motor de Partida Strada",
-      eletricista: "Roberto (Baia 02)",
+      eletricista: "Roberto · Baia 02",
       audioTexto: "Strada do seu Julio, motor de partida tá estalando pesado e sem arranque. Verificar automático.",
       cliente: "Julio Mendes",
       carro: "Fiat Strada 1.4 Fire",
     },
     {
       titulo: "Faróis LED Hilux Frota",
-      eletricista: "Márcio (Baia 01)",
+      eletricista: "Márcio · Baia 01",
       audioTexto: "Hilux da transportadora, instalar chicote elétrico dos faróis de milha de LED e relé duplo.",
       cliente: "Transportadora Rápido Vale",
       carro: "Hilux 2.8 D-4D",
@@ -93,473 +122,256 @@ export const OrdensServicoView: React.FC = () => {
     setNovoSintomas("");
   };
 
-  const getStatusCor = (status: StatusOS) => {
-    switch (status) {
-      case StatusOS.TRIAGEM:
-        return "#a855f7"; // Roxo
-      case StatusOS.ORCAMENTO_PENDENTE:
-        return "#f59e0b"; // Âmbar
-      case StatusOS.APROVADO:
-        return "#00e5ff"; // Ciano
-      case StatusOS.EM_EXECUCAO:
-        return "#3b82f6"; // Azul
-      case StatusOS.AGUARDANDO_PECA:
-        return "#f97316"; // Laranja
-      case StatusOS.TESTES_ELETRICOS:
-        return "#eab308"; // Amarelo
-      case StatusOS.FINALIZADO:
-      case StatusOS.ENTREGUE:
-        return "#10b981"; // Verde
-      case StatusOS.CANCELADO:
-        return "#ef4444"; // Vermelho
-    }
-  };
-
   return (
-    <div style={{ padding: "24px", maxWidth: "1500px", margin: "0 auto" }}>
-      {/* Alertas */}
-      {mensagemSucesso && (
-        <div
-          style={{
-            background: "rgba(16, 185, 129, 0.15)",
-            border: "1px solid rgba(16, 185, 129, 0.3)",
-            color: "#34d399",
-            padding: "12px 18px",
-            borderRadius: "10px",
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            fontWeight: 600,
-          }}
-        >
-          <CheckCircle2 size={18} />
-          {mensagemSucesso}
-        </div>
-      )}
+    <Page>
+      <Alerts sucesso={mensagemSucesso} erro={mensagemErro} onFecharErro={() => setMensagemErro(null)} />
 
-      {mensagemErro && (
-        <div
-          style={{
-            background: "rgba(239, 68, 68, 0.15)",
-            border: "1px solid rgba(239, 68, 68, 0.3)",
-            color: "#f87171",
-            padding: "12px 18px",
-            borderRadius: "10px",
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            fontWeight: 600,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <AlertTriangle size={18} />
-            {mensagemErro}
-          </div>
-          <button
-            onClick={() => setMensagemErro(null)}
-            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer" }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Barra de Ações do Topo */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <div>
-          <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginBottom: "4px" }}>
-            Fila de Oficina & Ordens de Serviço
-          </h2>
-          <p style={{ fontSize: "0.82rem", color: "var(--text-dim)" }}>
-            Máquina de estados finitos com transições auditadas e abertura por voz no Telegram.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            onClick={() => setModalTelegramAberto(true)}
-            className="btn-primary"
-            style={{
-              background: "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)",
-              boxShadow: "0 4px 14px rgba(168, 85, 247, 0.3)",
-            }}
-          >
-            <Mic size={18} /> Simular Voz Telegram
-          </button>
-
-          <button onClick={() => setModalNovaOSAberto(true)} className="btn-secondary">
-            <Plus size={18} /> Nova OS Manual
-          </button>
-        </div>
-      </div>
-
-      {/* Filtros por Status (Tabs) */}
-      <div
-        style={{
-          display: "flex",
-          gap: "6px",
-          overflowX: "auto",
-          paddingBottom: "12px",
-          marginBottom: "20px",
-        }}
-      >
-        {[
-          "TODOS",
-          StatusOS.TRIAGEM,
-          StatusOS.ORCAMENTO_PENDENTE,
-          StatusOS.APROVADO,
-          StatusOS.EM_EXECUCAO,
-          StatusOS.TESTES_ELETRICOS,
-          StatusOS.FINALIZADO,
-        ].map((st) => {
-          const ativo = filtroStatus === st;
-          return (
-            <button
-              key={st}
-              onClick={() => setFiltroStatus(st as StatusOS | "TODOS")}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "8px",
-                background: ativo ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.03)",
-                border: ativo ? "1px solid var(--border-cyan)" : "1px solid var(--border-subtle)",
-                color: ativo ? "var(--text-main)" : "var(--text-muted)",
-                fontSize: "0.82rem",
-                fontWeight: ativo ? 700 : 500,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s ease",
-              }}
-            >
-              {st}
+      <PageHeader
+        title="Ordens de serviço"
+        description="Acompanhe a fila da oficina e avance cada OS pelas etapas do atendimento."
+        actions={
+          <>
+            <button onClick={() => setModalTelegramAberto(true)} className="btn btn-secondary">
+              <Mic size={17} /> Simular voz Telegram
             </button>
-          );
-        })}
+            <button onClick={() => setModalNovaOSAberto(true)} className="btn btn-primary">
+              <Plus size={18} /> Nova OS
+            </button>
+          </>
+        }
+      />
+
+      {/* Filtros por status */}
+      <div className="-mx-1 mb-6 flex gap-2 overflow-x-auto px-1 pb-1">
+        {FILTROS.map((st) => (
+          <button
+            key={st}
+            onClick={() => setFiltroStatus(st)}
+            data-active={filtroStatus === st}
+            className="pill"
+          >
+            {st === "TODOS" ? "Todas" : STATUS_INFO[st].label}
+          </button>
+        ))}
       </div>
 
-      {/* Grid de Cards de Ordens de Serviço */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))", gap: "20px" }}>
-        {ordens.map((os) => {
-          const destinosPermitidos = OrdemServicoStateMachine.TRANSICOES_PERMITIDAS[os.status] || [];
-          return (
-            <div
-              key={os.id}
-              className="glass-panel"
-              style={{
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                position: "relative",
-                overflow: "hidden",
-                borderLeft: `4px solid ${getStatusCor(os.status)}`,
-              }}
-            >
-              <div>
-                {/* Header do Card */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "1.1rem", fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--text-main)" }}>
-                        {os.numeroOS}
-                      </span>
-                      {os.origem === OrigemOS.TELEGRAM_VOICE && (
-                        <span
-                          title="Aberta via comando de voz no Telegram"
-                          style={{
-                            background: "rgba(168, 85, 247, 0.15)",
-                            color: "#c084fc",
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            fontSize: "0.7rem",
-                            fontWeight: 700,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <Mic size={10} /> Telegram Voz
+      {ordens.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon={Wrench}
+            title="Nenhuma OS nesta etapa"
+            description="Troque o filtro ou abra uma nova ordem de serviço."
+          />
+        </div>
+      ) : (
+        <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+          {ordens.map((os) => {
+            const destinosPermitidos = OrdemServicoStateMachine.TRANSICOES_PERMITIDAS[os.status] || [];
+            const cor = STATUS_INFO[os.status].cor;
+            return (
+              <div key={os.id} className="card relative flex flex-col overflow-hidden">
+                <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: cor }} />
+
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-base font-semibold text-fg">{os.numeroOS}</span>
+                        {os.origem === OrigemOS.TELEGRAM_VOICE && (
+                          <span className="chip h-6 px-2" title="Aberta via comando de voz no Telegram">
+                            <Mic size={11} /> Voz
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 truncate text-sm text-fg-muted">{os.clienteNome}</div>
+                    </div>
+                    <StatusBadge status={os.status} />
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-canvas px-3 py-2.5">
+                    <Car size={17} className="shrink-0 text-fg-subtle" />
+                    <span className="truncate text-sm font-medium text-fg">{os.carroModelo}</span>
+                    <span className="ml-auto shrink-0 rounded-md border border-line-strong bg-surface-2 px-2 py-0.5 font-mono text-xs font-semibold tracking-wider text-fg">
+                      {os.carroPlaca}
+                    </span>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-relaxed text-fg-muted">{os.sintomas}</p>
+
+                  <div className="mb-5 mt-4">
+                    <div className="eyebrow mb-2">Checklist elétrico</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(os.checklistEletrico).map(([chave, checado]) => (
+                        <span key={chave} className={cn("chip h-6 px-2", checado && "chip-ok")}>
+                          {checado && <Check size={11} />}
+                          {CHECKLIST_LABEL[chave] ?? chave}
                         </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-4">
+                    <div className="text-xs text-fg-subtle">
+                      <div>Peças {os.subtotalPecas.formatar()}</div>
+                      <div>Serviços {os.subtotalServicos.formatar()}</div>
+                    </div>
+                    <div className="money text-xl font-semibold text-fg">{os.total.formatar()}</div>
+                  </div>
+                </div>
+
+                <div className="border-t border-line bg-surface-2/50 px-5 py-3">
+                  {destinosPermitidos.length === 0 ? (
+                    <span className="text-xs text-fg-subtle">OS concluída — sem próximas etapas.</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {destinosPermitidos.map((dest) =>
+                        dest === StatusOS.CANCELADO ? (
+                          <button
+                            key={dest}
+                            onClick={() => avancarStatus(os.id, dest)}
+                            className="btn btn-ghost btn-sm ml-auto hover:text-neg-text!"
+                          >
+                            <Ban size={13} /> Cancelar
+                          </button>
+                        ) : (
+                          <button
+                            key={dest}
+                            onClick={() => avancarStatus(os.id, dest)}
+                            className="btn btn-secondary btn-sm"
+                          >
+                            {STATUS_INFO[dest].label} <ArrowRight size={13} />
+                          </button>
+                        )
                       )}
                     </div>
-                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "2px" }}>
-                      Cliente: <strong style={{ color: "var(--text-main)" }}>{os.clienteNome}</strong>
-                    </div>
-                  </div>
-
-                  <span
-                    style={{
-                      background: `${getStatusCor(os.status)}22`,
-                      color: getStatusCor(os.status),
-                      border: `1px solid ${getStatusCor(os.status)}44`,
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      fontSize: "0.72rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {os.status.replace("_", " ")}
-                  </span>
-                </div>
-
-                {/* Veículo & Placa */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    background: "rgba(255, 255, 255, 0.03)",
-                    padding: "8px 12px",
-                    borderRadius: "6px",
-                    fontSize: "0.85rem",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <Car size={16} color="var(--cyan-primary)" />
-                  <span style={{ fontWeight: 600 }}>{os.carroModelo}</span>
-                  <span style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: "0.78rem" }}>
-                    • {os.carroPlaca}
-                  </span>
-                </div>
-
-                {/* Sintomas Relatados */}
-                <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "14px", lineHeight: 1.4 }}>
-                  <strong style={{ color: "var(--text-main)" }}>Sintomas: </strong>
-                  {os.sintomas}
-                </div>
-
-                {/* Checklist Elétrico */}
-                <div style={{ marginBottom: "16px" }}>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "6px", fontWeight: 600 }}>
-                    CHECKLIST DE COMPONENTES ELÉTRICOS:
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {Object.entries(os.checklistEletrico).map(([chave, checado]) => (
-                      <span
-                        key={chave}
-                        style={{
-                          background: checado ? "rgba(0, 229, 255, 0.15)" : "rgba(255, 255, 255, 0.04)",
-                          color: checado ? "var(--cyan-primary)" : "var(--text-dim)",
-                          border: checado ? "1px solid var(--border-cyan)" : "1px solid var(--border-subtle)",
-                          padding: "3px 8px",
-                          borderRadius: "4px",
-                          fontSize: "0.72rem",
-                          fontWeight: checado ? 700 : 500,
-                        }}
-                      >
-                        {chave === "bateria"
-                          ? "Bateria"
-                          : chave === "alternador"
-                          ? "Alternador"
-                          : chave === "motorPartida"
-                          ? "Motor Partida"
-                          : chave === "iluminacao"
-                          ? "Iluminação"
-                          : "Injeção"}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Resumo Financeiro da OS */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    borderTop: "1px solid var(--border-subtle)",
-                    paddingTop: "12px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                    Peças: {os.subtotalPecas.formatar()} • Serviços: {os.subtotalServicos.formatar()}
-                  </span>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--cyan-primary)", fontFamily: "var(--font-mono)" }}>
-                    {os.total.formatar()}
-                  </div>
-                </div>
-              </div>
-
-              {/* Botões de Transição da State Machine */}
-              <div>
-                <div style={{ fontSize: "0.72rem", color: "var(--text-dim)", marginBottom: "6px" }}>
-                  Avançar Ciclo de Vida:
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {destinosPermitidos.map((dest) => (
-                    <button
-                      key={dest}
-                      onClick={() => avancarStatus(os.id, dest)}
-                      className={dest === StatusOS.CANCELADO ? "btn-danger" : "btn-secondary"}
-                      style={{ fontSize: "0.75rem", padding: "6px 10px" }}
-                    >
-                      <Play size={10} /> {dest.replace("_", " ")}
-                    </button>
-                  ))}
-                  {destinosPermitidos.length === 0 && (
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-dim)", fontStyle: "italic" }}>
-                      OS em estado terminal concluída.
-                    </span>
                   )}
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Modal Simulação Telegram Voice Bot */}
-      {modalTelegramAberto && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "560px", padding: "26px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <Mic size={20} color="#c084fc" />
-                <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>Telegram Voice Bot • Oficina</h2>
+      {/* Modal Telegram Voice Bot */}
+      <Modal
+        aberto={modalTelegramAberto}
+        onFechar={() => setModalTelegramAberto(false)}
+        titulo="Abertura de OS por voz"
+        descricao="O eletricista grava um áudio no Telegram; o sistema transcreve e abre a OS sozinho."
+        icon={Mic}
+        largura={560}
+      >
+        <div className="flex flex-col gap-3">
+          {cenariosVoz.map((cenario, i) => (
+            <div key={i} className="rounded-xl border border-line bg-canvas p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold text-fg">{cenario.titulo}</span>
+                <span className="text-xs text-fg-subtle">{cenario.eletricista}</span>
               </div>
+              <p className="mt-2 text-sm italic text-fg-muted">“{cenario.audioTexto}”</p>
               <button
-                onClick={() => setModalTelegramAberto(false)}
-                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+                onClick={() => simularEnvioAudioTelegram(cenario.audioTexto, cenario.cliente, cenario.carro)}
+                disabled={simulandoAudio}
+                className="btn btn-secondary btn-sm mt-3 w-full"
               >
-                <X size={20} />
+                <Send size={13} /> {simulandoAudio ? "Transcrevendo áudio..." : "Enviar áudio"}
               </button>
             </div>
+          ))}
+        </div>
+      </Modal>
 
-            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "18px" }}>
-              O eletricista na baia de trabalho grava uma mensagem de voz no Telegram. O backend recebe o webhook, transcreve com Whisper ASR e extrai entidades com LLM:
-            </p>
+      {/* Modal Nova OS */}
+      <Modal
+        aberto={modalNovaOSAberto}
+        onFechar={() => setModalNovaOSAberto(false)}
+        titulo="Nova ordem de serviço"
+        descricao="Registre o veículo e o relato do cliente."
+        icon={Wrench}
+        largura={520}
+      >
+        <form onSubmit={handleCriarOSManual} className="flex flex-col gap-4">
+          <div>
+            <label className="label" htmlFor="os-cliente">Cliente</label>
+            <input
+              id="os-cliente"
+              type="text"
+              required
+              placeholder="Ex: Carlos Alberto"
+              value={novoCliente}
+              onChange={(e) => setNovoCliente(e.target.value)}
+              className="field"
+            />
+          </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
-              {cenariosVoz.map((cenario, i) => (
-                <div
-                  key={i}
-                  style={{
-                    background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid var(--border-subtle)",
-                    borderRadius: "10px",
-                    padding: "14px",
-                  }}
+          <div className="grid grid-cols-[1fr_130px] gap-3">
+            <div>
+              <label className="label" htmlFor="os-carro">Veículo / modelo</label>
+              <input
+                id="os-carro"
+                type="text"
+                required
+                placeholder="Ex: Gol 1.6 MSI"
+                value={novoCarro}
+                onChange={(e) => setNovoCarro(e.target.value)}
+                className="field"
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="os-placa">Placa</label>
+              <input
+                id="os-placa"
+                type="text"
+                placeholder="FXT-4E12"
+                value={novaPlaca}
+                onChange={(e) => setNovaPlaca(e.target.value.toUpperCase())}
+                className="field font-mono uppercase"
+              />
+            </div>
+          </div>
+
+          <div>
+            <span className="label">Prioridade</span>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { v: PrioridadeOS.BAIXA, t: "Baixa" },
+                { v: PrioridadeOS.MEDIA, t: "Média" },
+                { v: PrioridadeOS.ALTA, t: "Alta" },
+              ].map(({ v, t }) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setNovaPrioridade(v)}
+                  className={cn(
+                    "h-10 rounded-xl border text-sm font-medium transition-colors",
+                    novaPrioridade === v
+                      ? "border-brand bg-brand-soft text-fg"
+                      : "border-line bg-surface-2 text-fg-muted hover:text-fg"
+                  )}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                    <span style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-main)" }}>
-                      {cenario.titulo}
-                    </span>
-                    <span style={{ fontSize: "0.75rem", color: "#c084fc", fontWeight: 600 }}>
-                      {cenario.eletricista}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontStyle: "italic", marginBottom: "10px" }}>
-                    "{cenario.audioTexto}"
-                  </p>
-                  <button
-                    onClick={() => simularEnvioAudioTelegram(cenario.audioTexto, cenario.cliente, cenario.carro)}
-                    disabled={simulandoAudio}
-                    className="btn-primary"
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      fontSize: "0.8rem",
-                      background: "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)",
-                    }}
-                  >
-                    <Send size={14} /> {simulandoAudio ? "Transcrevendo Whisper..." : "Disparar Áudio do Mecânico"}
-                  </button>
-                </div>
+                  {t}
+                </button>
               ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Modal Nova OS Manual */}
-      {modalNovaOSAberto && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "500px", padding: "26px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>Abertura de Ordem de Serviço</h2>
-              <button
-                onClick={() => setModalNovaOSAberto(false)}
-                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCriarOSManual} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div>
-                <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
-                  Nome do Cliente:
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Carlos Alberto"
-                  value={novoCliente}
-                  onChange={(e) => setNovoCliente(e.target.value)}
-                  style={{ width: "100%", padding: "10px", background: "var(--bg-input)", border: "1px solid var(--border-subtle)", borderRadius: "8px", color: "var(--text-main)" }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: "10px" }}>
-                <div>
-                  <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
-                    Veículo / Modelo:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Gol 1.6 MSI"
-                    value={novoCarro}
-                    onChange={(e) => setNovoCarro(e.target.value)}
-                    style={{ width: "100%", padding: "10px", background: "var(--bg-input)", border: "1px solid var(--border-subtle)", borderRadius: "8px", color: "var(--text-main)" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
-                    Placa:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="FXT-4E12"
-                    value={novaPlaca}
-                    onChange={(e) => setNovaPlaca(e.target.value)}
-                    style={{ width: "100%", padding: "10px", background: "var(--bg-input)", border: "1px solid var(--border-subtle)", borderRadius: "8px", color: "var(--text-main)", fontFamily: "var(--font-mono)" }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
-                  Sintomas e Relato do Cliente:
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Ex: Carro não dá partida, luz de bateria acesa..."
-                  value={novoSintomas}
-                  onChange={(e) => setNovoSintomas(e.target.value)}
-                  style={{ width: "100%", padding: "10px", background: "var(--bg-input)", border: "1px solid var(--border-subtle)", borderRadius: "8px", color: "var(--text-main)", resize: "vertical" }}
-                />
-              </div>
-
-              <button type="submit" className="btn-primary" style={{ marginTop: "10px", padding: "12px" }}>
-                <Check size={18} /> Confirmar Abertura de OS
-              </button>
-            </form>
+          <div>
+            <label className="label" htmlFor="os-sintomas">Sintomas e relato do cliente</label>
+            <textarea
+              id="os-sintomas"
+              rows={3}
+              placeholder="Ex: Carro não dá partida, luz de bateria acesa..."
+              value={novoSintomas}
+              onChange={(e) => setNovoSintomas(e.target.value)}
+              className="field"
+            />
           </div>
-        </div>
-      )}
-    </div>
+
+          <button type="submit" className="btn btn-primary btn-lg mt-1 w-full">
+            <Check size={18} /> Abrir OS
+          </button>
+        </form>
+      </Modal>
+    </Page>
   );
 };
