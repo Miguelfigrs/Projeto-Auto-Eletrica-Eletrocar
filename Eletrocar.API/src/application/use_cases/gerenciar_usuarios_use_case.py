@@ -116,6 +116,14 @@ class GerenciarUsuariosUseCase:
         await self.usuario_repo.salvar(usuario)
         await self._auditar(executor_id, "USUARIO_PIN_DEFINIDO", usuario)
 
+    async def remover(self, usuario_id: uuid.UUID, executor_id: uuid.UUID) -> None:
+        if usuario_id == executor_id:
+            raise RegraNegocioException("O usuário não pode remover a própria conta.")
+        usuario = await self._obter(usuario_id)
+        antes = self._resumo(usuario)
+        await self.usuario_repo.remover(usuario_id)
+        await self._auditar(executor_id, "USUARIO_REMOVIDO", usuario, antes=antes)
+
     async def listar(self) -> List[UsuarioOutputDTO]:
         usuarios = await self.usuario_repo.listar_todos()
         return [UsuarioOutputDTO.de(u) for u in sorted(usuarios, key=lambda u: u.nome.lower())]

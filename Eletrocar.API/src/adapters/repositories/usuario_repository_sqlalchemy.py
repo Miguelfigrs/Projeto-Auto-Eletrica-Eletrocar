@@ -5,11 +5,20 @@ from datetime import datetime
 from typing import List, Optional
 import uuid
 from sqlalchemy import select, or_, func, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.usuario import Usuario
 from src.domain.entities.sessao import SessaoRefresh
+from src.domain.exceptions.domain_exceptions import RegraNegocioException
 from src.domain.repositories.interfaces import UsuarioRepositoryInterface, SessaoRepositoryInterface
-from src.infra.database.models import UsuarioModel, UsuarioPapelModel, SessaoRefreshModel
+from src.infra.database.models import (
+    UsuarioModel,
+    UsuarioPapelModel,
+    SessaoRefreshModel,
+    OrdemServicoModel,
+    VendaBalcaoModel,
+    CaixaDiarioModel,
+)
 from src.infra.database.papeis import PAPEIS_CATALOGO, PAPEL_POR_ID
 
 
@@ -61,6 +70,37 @@ class UsuarioRepositorySQLAlchemy(UsuarioRepositoryInterface):
 
     async def contar(self) -> int:
         return (await self.session.execute(select(func.count(UsuarioModel.id)))).scalar_one()
+
+    async def remover(self, usuario_id: uuid.UUID) -> None:
+        model = await self.session.get(UsuarioModel, usuario_id)
+        if not model:
+            return
+
+        tem_os = (await self.session.execute(
+            select(OrdemServicoModel.id).where(OrdemServicoModel.usuario_id == usuario_id).limit(1)
+        )).scalar_one_or_none()
+        tem_venda = (await self.session.execute(
+            select(VendaBalcaoModel.id).where(
+                or_(VendaBalcaoModel.operador_id == usuario_id, VendaBalcaoModel.autorizado_por_id == usuario_id)
+            ).limit(1)
+        )).scalar_one_or_none()
+        tem_caixa = (await self.session.execute(
+            select(CaixaDiarioModel.id).where(CaixaDiarioModel.operador_id == usuario_id).limit(1)
+        )).scalar_one_or_none()
+
+        if tem_os or tem_venda or tem_caixa:
+            raise RegraNegocioException(
+                "Não é possível remover este usuário pois há ordens de serviço, vendas ou caixas vinculados. Desative a conta para bloquear o acesso."
+            )
+
+        try:
+            async with self.session.begin_nested():
+                await self.session.delete(model)
+                await self.session.flush()
+        except IntegrityError as exc:
+            raise RegraNegocioException(
+                "Não é possível remover este usuário pois existem registros vinculados. Desative a conta."
+            ) from exc
 
     async def _um(self, stmt) -> Optional[Usuario]:
         model = (await self.session.execute(stmt)).scalar_one_or_none()

@@ -1,26 +1,45 @@
 /**
  * View: OrdensServicoView
- * Gestão de Ordens de Serviço, ciclo de vida por Máquina de Estados,
- * checklist elétrico e simulação do Telegram Voice Bot com Whisper & IA.
+ * Gestão de Ordens de Serviço, pipeline visual da Máquina de Estados,
+ * checklist elétrico interativo e simulação do Telegram Voice Bot (Whisper + Claude IA).
  */
-import React, { useState } from "react";
-import { Wrench, Mic, Plus, Car, Check, Send, ArrowRight, Ban } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  ArrowRight,
+  Ban,
+  Car,
+  Check,
+  Eye,
+  Mic,
+  Plus,
+  Send,
+  Sparkles,
+  Wrench,
+  HandCoins,
+} from "lucide-react";
 import { useOrdensServico } from "../../adapters/view-models/useOrdensServico";
-import { StatusOS, OrigemOS, PrioridadeOS } from "../../domain/value-objects/Enums";
-import { OrdemServicoStateMachine } from "../../domain/entities/OrdemServico";
-import { Alerts, EmptyState, Modal, Page, PageHeader } from "../components/ui";
+import { FormaPagamento, StatusOS, OrigemOS, PrioridadeOS } from "../../domain/value-objects/Enums";
+import { OrdemServico, OrdemServicoStateMachine } from "../../domain/entities/OrdemServico";
+import { Dinheiro } from "../../domain/value-objects/Dinheiro";
+import { container } from "../../infra/di/container";
+import { Alerts, DidacticBanner, EmptyState, Modal, Page, PageHeader } from "../components/ui";
 import { cn } from "../../lib/utils";
+import { ROTULO_FORMA_PAGAMENTO } from "../components/DetalhamentoDREPanel";
 
-const STATUS_INFO: Record<StatusOS, { label: string; cor: string }> = {
-  [StatusOS.TRIAGEM]: { label: "Triagem", cor: "#a78bfa" },
-  [StatusOS.ORCAMENTO_PENDENTE]: { label: "Orçamento pendente", cor: "#fbbf24" },
-  [StatusOS.APROVADO]: { label: "Aprovado", cor: "#38bdf8" },
-  [StatusOS.EM_EXECUCAO]: { label: "Em execução", cor: "#60a5fa" },
-  [StatusOS.AGUARDANDO_PECA]: { label: "Aguardando peça", cor: "#fb923c" },
-  [StatusOS.TESTES_ELETRICOS]: { label: "Testes elétricos", cor: "#facc15" },
-  [StatusOS.FINALIZADO]: { label: "Finalizado", cor: "#4ade80" },
-  [StatusOS.ENTREGUE]: { label: "Entregue", cor: "#4ade80" },
-  [StatusOS.CANCELADO]: { label: "Cancelado", cor: "#a1a1aa" },
+interface OrdensServicoViewProps {
+  modoDidatico?: boolean;
+}
+
+const STATUS_INFO: Record<StatusOS, { label: string; cor: string; resumo: string }> = {
+  [StatusOS.TRIAGEM]: { label: "Triagem", cor: "#a78bfa", resumo: "Veículo recebido para diagnóstico inicial." },
+  [StatusOS.ORCAMENTO_PENDENTE]: { label: "Orçamento", cor: "#fbbf24", resumo: "Aguardando aprovação de preço pelo cliente." },
+  [StatusOS.APROVADO]: { label: "Aprovado", cor: "#38bdf8", resumo: "Cliente aprovou; liberado para o eletricista." },
+  [StatusOS.EM_EXECUCAO]: { label: "Em execução", cor: "#60a5fa", resumo: "Reparo elétrico em andamento na bancada/baia." },
+  [StatusOS.AGUARDANDO_PECA]: { label: "Aguard. peça", cor: "#fb923c", resumo: "Aguardando chegada ou reserva de componente." },
+  [StatusOS.TESTES_ELETRICOS]: { label: "Testes elétricos", cor: "#facc15", resumo: "Validação de carga, tensão e partida antes da entrega." },
+  [StatusOS.FINALIZADO]: { label: "Finalizado", cor: "#34d399", resumo: "Pronto para faturamento no caixa e retirada." },
+  [StatusOS.ENTREGUE]: { label: "Entregue", cor: "#34d399", resumo: "Veículo pago e entregue ao cliente." },
+  [StatusOS.CANCELADO]: { label: "Cancelado", cor: "#9aa5b5", resumo: "Atendimento encerrado sem execução." },
 };
 
 const CHECKLIST_LABEL: Record<string, string> = {
@@ -38,8 +57,20 @@ const FILTROS: (StatusOS | "TODOS")[] = [
   StatusOS.ORCAMENTO_PENDENTE,
   StatusOS.APROVADO,
   StatusOS.EM_EXECUCAO,
+  StatusOS.AGUARDANDO_PECA,
   StatusOS.TESTES_ELETRICOS,
   StatusOS.FINALIZADO,
+  StatusOS.ENTREGUE,
+];
+
+const PIPELINE_ORDEM: StatusOS[] = [
+  StatusOS.TRIAGEM,
+  StatusOS.ORCAMENTO_PENDENTE,
+  StatusOS.APROVADO,
+  StatusOS.EM_EXECUCAO,
+  StatusOS.TESTES_ELETRICOS,
+  StatusOS.FINALIZADO,
+  StatusOS.ENTREGUE,
 ];
 
 const StatusBadge: React.FC<{ status: StatusOS }> = ({ status }) => {
@@ -47,7 +78,7 @@ const StatusBadge: React.FC<{ status: StatusOS }> = ({ status }) => {
   return (
     <span
       className="chip"
-      style={{ color: info.cor, borderColor: `${info.cor}40`, background: `${info.cor}14` }}
+      style={{ color: info.cor, borderColor: `${info.cor}45`, background: `${info.cor}16` }}
     >
       <span className="dot" />
       {info.label}
@@ -55,12 +86,15 @@ const StatusBadge: React.FC<{ status: StatusOS }> = ({ status }) => {
   );
 };
 
-export const OrdensServicoView: React.FC = () => {
+export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidatico = true }) => {
   const {
     ordens,
     filtroStatus,
     setFiltroStatus,
+    osSelecionada,
+    setOsSelecionada,
     avancarStatus,
+    entregarOS,
     criarOS,
     simularEnvioAudioTelegram,
     modalNovaOSAberto,
@@ -73,14 +107,27 @@ export const OrdensServicoView: React.FC = () => {
     simulandoAudio,
   } = useOrdensServico();
 
-  // Estados do formulário de nova OS manual
+  const [todasOrdens, setTodasOrdens] = useState<OrdemServico[]>([]);
   const [novoCliente, setNovoCliente] = useState("");
   const [novoCarro, setNovoCarro] = useState("");
   const [novaPlaca, setNovaPlaca] = useState("");
+  const [novaMarca, setNovaMarca] = useState("");
+  const [osParaEntrega, setOsParaEntrega] = useState<OrdemServico | null>(null);
+  const [formaEntrega, setFormaEntrega] = useState<FormaPagamento>(FormaPagamento.PIX);
+  const [entregando, setEntregando] = useState(false);
   const [novoSintomas, setNovoSintomas] = useState("");
   const [novaPrioridade, setNovaPrioridade] = useState<PrioridadeOS>(PrioridadeOS.MEDIA);
 
-  // Cenários do Telegram Voice Bot
+  const [novoServicoDesc, setNovoServicoDesc] = useState("");
+  const [novoServicoValor, setNovoServicoValor] = useState("");
+
+  useEffect(() => {
+    container.osRepository
+      .listar()
+      .then(setTodasOrdens)
+      .catch(() => setTodasOrdens([]));
+  }, [ordens]);
+
   const cenariosVoz = [
     {
       titulo: "Alternador Gol do Carlos",
@@ -111,15 +158,59 @@ export const OrdensServicoView: React.FC = () => {
     criarOS({
       clienteNome: novoCliente,
       carroModelo: novoCarro,
-      carroPlaca: novaPlaca || "ABC-1234",
+      carroMarca: novaMarca || undefined,
+      carroPlaca: novaPlaca || undefined,
       sintomas: novoSintomas || "Revisão geral da parte elétrica",
       prioridade: novaPrioridade,
       origem: OrigemOS.BALCAO,
     });
     setNovoCliente("");
     setNovoCarro("");
+    setNovaMarca("");
     setNovaPlaca("");
     setNovoSintomas("");
+  };
+
+  const alternarChecklist = async (os: OrdemServico, chave: string) => {
+    try {
+      setMensagemErro(null);
+      const atualizada = await container.osRepository.atualizarChecklist(os.id, {
+        ...os.checklistEletrico,
+        [chave]: !os.checklistEletrico[chave],
+      });
+      setOsSelecionada(new OrdemServico({ ...atualizada, checklistEletrico: { ...atualizada.checklistEletrico } }));
+      setTodasOrdens(await container.osRepository.listar());
+    } catch (err: unknown) {
+      setMensagemErro(err instanceof Error ? err.message : "Erro ao atualizar o checklist.");
+    }
+  };
+
+  const confirmarEntrega = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!osParaEntrega) return;
+    setEntregando(true);
+    const ok = await entregarOS(osParaEntrega.id, formaEntrega);
+    setEntregando(false);
+    if (ok) setOsParaEntrega(null);
+  };
+
+  const adicionarMaoDeObra = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!osSelecionada || !novoServicoDesc.trim()) return;
+    const valorNum = parseFloat(novoServicoValor.replace(",", ".")) || 0;
+    try {
+      setMensagemErro(null);
+      const atualizada = await container.osRepository.adicionarServico(osSelecionada.id, {
+        descricao: novoServicoDesc.trim(),
+        valor: new Dinheiro(valorNum, false),
+      });
+      setOsSelecionada(atualizada);
+      setTodasOrdens(await container.osRepository.listar());
+      setNovoServicoDesc("");
+      setNovoServicoValor("");
+    } catch (err: unknown) {
+      setMensagemErro(err instanceof Error ? err.message : "Erro ao adicionar a mão de obra.");
+    }
   };
 
   return (
@@ -127,8 +218,9 @@ export const OrdensServicoView: React.FC = () => {
       <Alerts sucesso={mensagemSucesso} erro={mensagemErro} onFecharErro={() => setMensagemErro(null)} />
 
       <PageHeader
+        eyebrow="Oficina & Máquina de Estados"
         title="Ordens de serviço"
-        description="Acompanhe a fila da oficina e avance cada OS pelas etapas do atendimento."
+        description="Acompanhe a fila da oficina e avance cada veículo pelas etapas controladas de manutenção."
         actions={
           <>
             <button onClick={() => setModalTelegramAberto(true)} className="btn btn-secondary">
@@ -141,7 +233,70 @@ export const OrdensServicoView: React.FC = () => {
         }
       />
 
-      {/* Filtros por status */}
+      <DidacticBanner
+        visivel={modoDidatico}
+        titulo="Como funciona a Máquina de Estados da OS"
+        resumo="Para evitar esquecimentos na oficina, nenhuma OS pode pular etapas (ex: ir direto da Triagem para Finalizado sem orçamento e testes elétricos)."
+        passos={[
+          "Clique nos filtros da linha do tempo abaixo para enxergar quantos veículos estão em cada etapa.",
+          "Use 'Detalhes & Checklist' em qualquer OS para marcar bateria, alternador, arranque e lançar mão de obra.",
+          "Experimente 'Simular voz Telegram' para ver como o eletricista abre uma OS falando pelo celular com as mãos sujas.",
+        ]}
+        regraNegocio="Transições inválidas são bloqueadas pela entidade de domínio OrdemServicoStateMachine."
+      />
+
+      {/* Pipeline visual da Máquina de Estados */}
+      <div className="card mb-6 p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <span className="eyebrow">Fluxo da Oficina (clique na etapa para filtrar)</span>
+          <button
+            type="button"
+            onClick={() => setFiltroStatus("TODOS")}
+            className={cn(
+              "text-xs font-semibold transition-colors",
+              filtroStatus === "TODOS" ? "text-brand-text" : "text-fg-muted hover:text-fg"
+            )}
+          >
+            Mostrar todas ({todasOrdens.length})
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+          {PIPELINE_ORDEM.map((st, idx) => {
+            const info = STATUS_INFO[st];
+            const qtd = todasOrdens.filter((o) => o.status === st).length;
+            const ativo = filtroStatus === st;
+            return (
+              <button
+                key={st}
+                type="button"
+                onClick={() => setFiltroStatus(ativo ? "TODOS" : st)}
+                className={cn(
+                  "flex flex-col rounded-xl border p-2.5 text-left transition-all",
+                  ativo
+                    ? "border-brand-line bg-brand-soft"
+                    : "border-line bg-canvas/60 hover:border-line-strong"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[0.65rem] text-fg-subtle">
+                    0{idx + 1}
+                  </span>
+                  <span
+                    className="money rounded-full px-2 py-0.5 text-xs font-bold"
+                    style={{ background: `${info.cor}22`, color: info.cor }}
+                  >
+                    {qtd}
+                  </span>
+                </div>
+                <div className="mt-1.5 truncate text-xs font-semibold text-fg">{info.label}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Filtros rápidos em pílula */}
       <div className="-mx-1 mb-6 flex gap-2 overflow-x-auto px-1 pb-1">
         {FILTROS.map((st) => (
           <button
@@ -169,18 +324,21 @@ export const OrdensServicoView: React.FC = () => {
             const destinosPermitidos = OrdemServicoStateMachine.TRANSICOES_PERMITIDAS[os.status] || [];
             const cor = STATUS_INFO[os.status].cor;
             return (
-              <div key={os.id} className="card relative flex flex-col overflow-hidden">
+              <div key={os.id} className="card card-interactive relative flex flex-col overflow-hidden">
                 <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: cor }} />
 
                 <div className="flex flex-1 flex-col p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-base font-semibold text-fg">{os.numeroOS}</span>
                         {os.origem === OrigemOS.TELEGRAM_VOICE && (
-                          <span className="chip h-6 px-2" title="Aberta via comando de voz no Telegram">
-                            <Mic size={11} /> Voz
+                          <span className="chip chip-brand h-6 px-2" title="Aberta via comando de voz no Telegram">
+                            <Mic size={11} /> Voz IA
                           </span>
+                        )}
+                        {os.prioridade === PrioridadeOS.ALTA && (
+                          <span className="chip chip-neg h-6 px-2">Alta</span>
                         )}
                       </div>
                       <div className="mt-1 truncate text-sm text-fg-muted">{os.clienteNome}</div>
@@ -188,7 +346,7 @@ export const OrdensServicoView: React.FC = () => {
                     <StatusBadge status={os.status} />
                   </div>
 
-                  <div className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-canvas px-3 py-2.5">
+                  <div className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-canvas/80 px-3 py-2.5">
                     <Car size={17} className="shrink-0 text-fg-subtle" />
                     <span className="truncate text-sm font-medium text-fg">{os.carroModelo}</span>
                     <span className="ml-auto shrink-0 rounded-md border border-line-strong bg-surface-2 px-2 py-0.5 font-mono text-xs font-semibold tracking-wider text-fg">
@@ -219,32 +377,45 @@ export const OrdensServicoView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="border-t border-line bg-surface-2/50 px-5 py-3">
-                  {destinosPermitidos.length === 0 ? (
-                    <span className="text-xs text-fg-subtle">OS concluída — sem próximas etapas.</span>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {destinosPermitidos.map((dest) =>
-                        dest === StatusOS.CANCELADO ? (
-                          <button
-                            key={dest}
-                            onClick={() => avancarStatus(os.id, dest)}
-                            className="btn btn-ghost btn-sm ml-auto hover:text-neg-text!"
-                          >
-                            <Ban size={13} /> Cancelar
-                          </button>
-                        ) : (
-                          <button
-                            key={dest}
-                            onClick={() => avancarStatus(os.id, dest)}
-                            className="btn btn-secondary btn-sm"
-                          >
-                            {STATUS_INFO[dest].label} <ArrowRight size={13} />
-                          </button>
-                        )
-                      )}
-                    </div>
-                  )}
+                <div className="border-t border-line bg-surface-2/60 px-5 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOsSelecionada(os)}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      <Eye size={13} /> Detalhes
+                    </button>
+
+                    {destinosPermitidos.map((dest) =>
+                      dest === StatusOS.CANCELADO ? (
+                        <button
+                          key={dest}
+                          onClick={() => avancarStatus(os.id, dest)}
+                          className="btn btn-ghost btn-sm ml-auto hover:text-neg-text!"
+                        >
+                          <Ban size={13} /> Cancelar
+                        </button>
+                      ) : dest === StatusOS.ENTREGUE ? (
+                        <button
+                          key={dest}
+                          onClick={() => setOsParaEntrega(os)}
+                          className="btn btn-primary btn-sm"
+                          title="Receber o pagamento e liberar o veículo"
+                        >
+                          <HandCoins size={13} /> Faturar e entregar
+                        </button>
+                      ) : (
+                        <button
+                          key={dest}
+                          onClick={() => avancarStatus(os.id, dest)}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          {STATUS_INFO[dest].label} <ArrowRight size={13} />
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -252,15 +423,148 @@ export const OrdensServicoView: React.FC = () => {
         </div>
       )}
 
+      {/* Modal Detalhes da OS & Checklist Interativo */}
+      <Modal
+        aberto={Boolean(osSelecionada)}
+        onFechar={() => setOsSelecionada(null)}
+        titulo={osSelecionada ? `${osSelecionada.numeroOS} · ${osSelecionada.carroModelo}` : ""}
+        descricao={osSelecionada ? `${osSelecionada.clienteNome} · Placa ${osSelecionada.carroPlaca}` : ""}
+        icon={Wrench}
+        largura={640}
+      >
+        {osSelecionada && (
+          <div className="flex flex-col gap-5">
+            <div className="rounded-xl border border-line bg-canvas p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="eyebrow">Etapa atual na Máquina de Estados</span>
+                <StatusBadge status={osSelecionada.status} />
+              </div>
+              <p className="mt-2 text-xs text-fg-muted">
+                {STATUS_INFO[osSelecionada.status].resumo}
+              </p>
+
+              {/* Stepper visual da OS */}
+              <div className="mt-4 flex items-center gap-1 overflow-x-auto pb-1">
+                {PIPELINE_ORDEM.map((st, idx) => {
+                  const atualIdx = PIPELINE_ORDEM.indexOf(osSelecionada.status);
+                  const passado = atualIdx > idx;
+                  const atual = st === osSelecionada.status;
+                  return (
+                    <div
+                      key={st}
+                      className={cn(
+                        "flex-1 rounded-lg border px-2 py-1.5 text-center text-[0.68rem] font-semibold",
+                        atual
+                          ? "border-brand-line bg-brand-soft text-fg"
+                          : passado
+                          ? "border-ok/30 bg-ok-soft text-ok-text"
+                          : "border-line bg-surface-2/40 text-fg-subtle"
+                      )}
+                    >
+                      {STATUS_INFO[st].label}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {osSelecionada.hipoteseDiagnostica && (
+              <div className="rounded-xl border border-brand-line bg-brand-soft p-3.5 text-xs">
+                <div className="flex items-center gap-1.5 font-semibold text-brand-text">
+                  <Sparkles size={13} /> Hipótese diagnóstica preliminar
+                </div>
+                <p className="mt-1 text-fg-muted">{osSelecionada.hipoteseDiagnostica}</p>
+              </div>
+            )}
+
+            <div>
+              <div className="eyebrow mb-2">
+                Checklist Elétrico Interativo (clique para marcar/desmarcar)
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(osSelecionada.checklistEletrico).map(([chave, checado]) => (
+                  <button
+                    key={chave}
+                    type="button"
+                    onClick={() => alternarChecklist(osSelecionada, chave)}
+                    className={cn(
+                      "chip h-8 px-3 transition-colors",
+                      checado ? "chip-ok" : "hover:border-line-strong hover:text-fg"
+                    )}
+                  >
+                    {checado && <Check size={12} />}
+                    {CHECKLIST_LABEL[chave] ?? chave}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Adicionar Mão de Obra */}
+            <form
+              onSubmit={adicionarMaoDeObra}
+              className="rounded-xl border border-line bg-canvas p-4"
+            >
+              <div className="eyebrow mb-2">Adicionar serviço / mão de obra na OS</div>
+              <div className="grid gap-2 sm:grid-cols-[1fr_110px_auto]">
+                <input
+                  type="text"
+                  placeholder="Ex: Teste de fuga de corrente"
+                  value={novoServicoDesc}
+                  onChange={(e) => setNovoServicoDesc(e.target.value)}
+                  className="field h-9 text-xs"
+                />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Valor R$"
+                  value={novoServicoValor}
+                  onChange={(e) => setNovoServicoValor(e.target.value)}
+                  className="field money h-9 text-right text-xs"
+                />
+                <button type="submit" className="btn btn-secondary btn-sm h-9">
+                  <Plus size={14} /> Incluir
+                </button>
+              </div>
+            </form>
+
+            <div className="flex items-center justify-between border-t border-line pt-4">
+              <div className="text-xs text-fg-muted">
+                Peças: <strong className="money text-fg">{osSelecionada.subtotalPecas.formatar()}</strong> ·
+                Serviços:{" "}
+                <strong className="money text-fg">{osSelecionada.subtotalServicos.formatar()}</strong>
+              </div>
+              <div className="money text-2xl font-semibold text-fg">
+                {osSelecionada.total.formatar()}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Modal Telegram Voice Bot */}
       <Modal
         aberto={modalTelegramAberto}
         onFechar={() => setModalTelegramAberto(false)}
-        titulo="Abertura de OS por voz"
-        descricao="O eletricista grava um áudio no Telegram; o sistema transcreve e abre a OS sozinho."
+        titulo="Abertura de OS por voz (Telegram + IA)"
+        descricao="Fluxo multimodal criado para o eletricista operar sem digitar com as mãos sujas de graxa."
         icon={Mic}
-        largura={560}
+        largura={590}
       >
+        <div className="mb-4 grid grid-cols-3 gap-2 rounded-xl border border-line bg-canvas p-3 text-center text-[0.72rem]">
+          <div>
+            <div className="font-semibold text-brand-text">1. Áudio no Pátio</div>
+            <div className="mt-0.5 text-fg-muted">Eletricista envia voz no bot</div>
+          </div>
+          <div>
+            <div className="font-semibold text-fg">2. Whisper ASR</div>
+            <div className="mt-0.5 text-fg-muted">Transcreve termos automotivos</div>
+          </div>
+          <div>
+            <div className="font-semibold text-ok-text">3. Extração LLM</div>
+            <div className="mt-0.5 text-fg-muted">Preenche checklist e abre OS</div>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-3">
           {cenariosVoz.map((cenario, i) => (
             <div key={i} className="rounded-xl border border-line bg-canvas p-4">
@@ -270,15 +574,64 @@ export const OrdensServicoView: React.FC = () => {
               </div>
               <p className="mt-2 text-sm italic text-fg-muted">“{cenario.audioTexto}”</p>
               <button
-                onClick={() => simularEnvioAudioTelegram(cenario.audioTexto, cenario.cliente, cenario.carro)}
+                onClick={() =>
+                  simularEnvioAudioTelegram(cenario.audioTexto, cenario.cliente, cenario.carro)
+                }
                 disabled={simulandoAudio}
-                className="btn btn-secondary btn-sm mt-3 w-full"
+                className="btn btn-primary btn-sm mt-3 w-full"
               >
-                <Send size={13} /> {simulandoAudio ? "Transcrevendo áudio..." : "Enviar áudio"}
+                <Send size={13} />{" "}
+                {simulandoAudio ? "Transcrevendo e extraindo dados..." : "Simular envio de áudio"}
               </button>
             </div>
           ))}
         </div>
+      </Modal>
+
+      {/* Modal Faturar e entregar */}
+      <Modal
+        aberto={Boolean(osParaEntrega)}
+        onFechar={() => setOsParaEntrega(null)}
+        titulo={osParaEntrega ? `Faturar e entregar · ${osParaEntrega.numeroOS}` : ""}
+        descricao={osParaEntrega ? `${osParaEntrega.clienteNome} · ${osParaEntrega.carroModelo}` : ""}
+        icon={HandCoins}
+        largura={460}
+      >
+        {osParaEntrega && (
+          <form onSubmit={confirmarEntrega} className="flex flex-col gap-4">
+            <div className="rounded-xl border border-brand-line bg-brand-soft/60 p-4 text-center">
+              <div className="eyebrow">Total a receber</div>
+              <div className="money mt-1 text-3xl font-semibold text-fg">{osParaEntrega.total.formatar()}</div>
+            </div>
+            <div>
+              <span className="label">Forma de pagamento</span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {Object.values(FormaPagamento).map((forma) => (
+                  <button
+                    key={forma}
+                    type="button"
+                    onClick={() => setFormaEntrega(forma)}
+                    aria-pressed={formaEntrega === forma}
+                    className={cn(
+                      "h-10 rounded-xl border text-sm font-medium transition-colors",
+                      formaEntrega === forma
+                        ? "border-brand-hover bg-brand-soft text-fg"
+                        : "border-line bg-surface-2 text-fg-muted hover:text-fg"
+                    )}
+                  >
+                    {ROTULO_FORMA_PAGAMENTO[forma] ?? forma}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-fg-subtle">
+                À vista entra no caixa aberto; Boleto e Faturado geram conta a receber do cliente.
+              </p>
+            </div>
+            <button type="submit" className="btn btn-primary btn-lg w-full" disabled={entregando}>
+              <Check size={18} /> {entregando ? "Faturando..." : "Confirmar pagamento e entrega"}
+            </button>
+          </form>
+        )}
       </Modal>
 
       {/* Modal Nova OS */}
@@ -292,7 +645,9 @@ export const OrdensServicoView: React.FC = () => {
       >
         <form onSubmit={handleCriarOSManual} className="flex flex-col gap-4">
           <div>
-            <label className="label" htmlFor="os-cliente">Cliente</label>
+            <label className="label" htmlFor="os-cliente">
+              Cliente
+            </label>
             <input
               id="os-cliente"
               type="text"
@@ -304,9 +659,24 @@ export const OrdensServicoView: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-[1fr_130px] gap-3">
+          <div className="grid gap-3 sm:grid-cols-[110px_1fr_120px]">
             <div>
-              <label className="label" htmlFor="os-carro">Veículo / modelo</label>
+              <label className="label" htmlFor="os-marca">
+                Marca
+              </label>
+              <input
+                id="os-marca"
+                type="text"
+                placeholder="Ex: VW"
+                value={novaMarca}
+                onChange={(e) => setNovaMarca(e.target.value)}
+                className="field"
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="os-carro">
+                Veículo / modelo
+              </label>
               <input
                 id="os-carro"
                 type="text"
@@ -318,7 +688,9 @@ export const OrdensServicoView: React.FC = () => {
               />
             </div>
             <div>
-              <label className="label" htmlFor="os-placa">Placa</label>
+              <label className="label" htmlFor="os-placa">
+                Placa
+              </label>
               <input
                 id="os-placa"
                 type="text"
@@ -345,7 +717,7 @@ export const OrdensServicoView: React.FC = () => {
                   className={cn(
                     "h-10 rounded-xl border text-sm font-medium transition-colors",
                     novaPrioridade === v
-                      ? "border-brand bg-brand-soft text-fg"
+                      ? "border-brand-hover bg-brand-soft text-fg"
                       : "border-line bg-surface-2 text-fg-muted hover:text-fg"
                   )}
                 >
@@ -356,7 +728,9 @@ export const OrdensServicoView: React.FC = () => {
           </div>
 
           <div>
-            <label className="label" htmlFor="os-sintomas">Sintomas e relato do cliente</label>
+            <label className="label" htmlFor="os-sintomas">
+              Sintomas e relato do cliente
+            </label>
             <textarea
               id="os-sintomas"
               rows={3}

@@ -45,6 +45,8 @@ services:
     restart: always
     environment:
       AMBIENTE: ${AMBIENTE:-desenvolvimento}
+      # Fuso da oficina: define o "dia" nos relatórios (DRE, histórico de estoque)
+      FUSO_HORARIO: ${FUSO_HORARIO:-America/Sao_Paulo}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-eletrocar2026}@postgres:5432/${POSTGRES_DB:-eletrocar_db}
       # Banco exclusivo dos testes de integração (criado pelo init.sql)
       TEST_POSTGRES_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-eletrocar2026}@postgres:5432/eletrocar_test
@@ -57,8 +59,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:-eletrocar_dev_secret_troque_em_producao}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
-      URL_PAINEL: ${URL_PAINEL:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
+      URL_PAINEL: ${URL_PAINEL:-http://localhost:3000}
       LIMITE_DESCONTO_SEM_AUTORIZACAO_PERCENTUAL: ${LIMITE_DESCONTO_SEM_AUTORIZACAO_PERCENTUAL:-5}
       # Telegram Voice Bot -> Whisper ASR -> LLM (Claude)
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}

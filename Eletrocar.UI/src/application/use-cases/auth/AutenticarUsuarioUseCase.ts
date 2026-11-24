@@ -8,9 +8,13 @@ export class AutenticarUsuarioUseCase {
     private readonly soundGateway: ISoundEffectGateway
   ) {}
 
-  public async executar(usernameOuEmail: string, senha: string): Promise<Usuario> {
+  public async executar(
+    usernameOuEmail: string,
+    senha: string,
+    lembrarSessao = false
+  ): Promise<Usuario> {
     try {
-      const usuario = await this.authRepo.login(usernameOuEmail, senha);
+      const usuario = await this.authRepo.login(usernameOuEmail, senha, lembrarSessao);
       this.soundGateway.tocarBipSucesso();
       return usuario;
     } catch (err) {
@@ -26,9 +30,9 @@ export class TrocarOperadorPorPinUseCase {
     private readonly soundGateway: ISoundEffectGateway
   ) {}
 
-  public async executar(pin: string): Promise<Usuario> {
+  public async executar(pin: string, usuarioId?: string): Promise<Usuario> {
     try {
-      const usuario = await this.authRepo.verificarPin(pin);
+      const usuario = await this.authRepo.verificarPin(pin, usuarioId);
       this.soundGateway.tocarBipSucesso();
       return usuario;
     } catch (err) {

@@ -1,49 +1,48 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Eletrocar • Design tokens
-   Identidade: vermelho (marca/ação) + grafite (superfícies).
-   Para ajustar o tom da marca quando a logo chegar, altere apenas --color-brand*.
+   Eletrocar • Design Tokens (Chumbo Metálico + Vermelho Escuro Automotivo)
    ========================================================================== */
 @theme {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Barlow Condensed", "Inter Variable", ui-sans-serif, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, monospace;
 
-  /* Marca */
-  --color-brand: #e11d2a;
-  --color-brand-hover: #f0313d;
-  --color-brand-press: #c3121e;
-  --color-brand-fg: #ffffff;
-  --color-brand-soft: rgb(225 29 42 / 0.12);
-  --color-brand-line: rgb(225 29 42 / 0.4);
-  --color-brand-text: #ff6b73;
+  /* Marca — Vermelho Escuro (Carmesim / Rubi Automotivo) */
+  --color-brand: #9e1b24;
+  --color-brand-hover: #b6222c;
+  --color-brand-press: #7c131a;
+  --color-brand-deep: #640e14;
+  --color-brand-fg: #f8fafc;
+  --color-brand-soft: rgb(158 27 36 / 0.18);
+  --color-brand-line: rgb(182 34 44 / 0.48);
+  --color-brand-text: #e25b65;
 
-  /* Grafite */
-  --color-canvas: #111113;
-  --color-sidebar: #0b0b0d;
-  --color-surface: #1a1a1e;
-  --color-surface-2: #222227;
-  --color-surface-3: #2b2b31;
-  --color-line: #2c2c33;
-  --color-line-strong: #3a3a42;
+  /* Superfícies — Chumbo (Lead / Gunmetal Slate) */
+  --color-canvas: #16191e;
+  --color-sidebar: #101318;
+  --color-surface: #1e232b;
+  --color-surface-2: #252b35;
+  --color-surface-3: #303744;
+  --color-line: #2d3440;
+  --color-line-strong: #3f4858;
 
-  /* Texto */
-  --color-fg: #f4f4f5;
-  --color-fg-muted: #a1a1aa;
-  --color-fg-subtle: #71717a;
+  /* Texto sobre Chumbo */
+  --color-fg: #f1f4f8;
+  --color-fg-muted: #9aa5b5;
+  --color-fg-subtle: #6e7a8c;
 
   /* Semânticas */
-  --color-ok: #22c55e;
-  --color-ok-text: #4ade80;
-  --color-ok-soft: rgb(34 197 94 / 0.12);
+  --color-ok: #10b981;
+  --color-ok-text: #34d399;
+  --color-ok-soft: rgb(16 185 129 / 0.13);
   --color-warn: #f59e0b;
   --color-warn-text: #fbbf24;
-  --color-warn-soft: rgb(245 158 11 / 0.12);
+  --color-warn-soft: rgb(245 158 11 / 0.13);
   --color-neg-text: #fb7185;
-  --color-neg-soft: rgb(244 63 94 / 0.12);
+  --color-neg-soft: rgb(225 29 72 / 0.14);
   --color-info-text: #60a5fa;
-  --color-info-soft: rgb(59 130 246 / 0.12);
+  --color-info-soft: rgb(56 189 248 / 0.13);
 }
 
 @layer base {
@@ -53,6 +52,10 @@
 
   body {
     background-color: var(--color-canvas);
+    background-image:
+      radial-gradient(900px 500px at 85% -10%, rgb(158 27 36 / 0.11), transparent 60%),
+      radial-gradient(700px 460px at 10% 100%, rgb(63 72 88 / 0.14), transparent 60%);
+    background-attachment: fixed;
     color: var(--color-fg);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -69,7 +72,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--color-brand-hover);
     outline-offset: 2px;
   }
 
@@ -91,11 +94,24 @@
 }
 
 @layer components {
-  /* ---------- Superfícies ---------- */
+  /* ---------- Superfícies Chumbo ---------- */
   .card {
-    background: var(--color-surface);
+    background: linear-gradient(180deg, rgb(34 40 49 / 0.92) 0%, var(--color-surface) 100%);
     border: 1px solid var(--color-line);
-    border-radius: 14px;
+    border-radius: 16px;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.045),
+      0 14px 30px -20px rgb(0 0 0 / 0.78);
+  }
+
+  .card-interactive {
+    transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+  }
+  .card-interactive:hover {
+    border-color: var(--color-line-strong);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 18px 36px -18px rgb(0 0 0 / 0.85);
   }
 
   .card-header {
@@ -105,6 +121,7 @@
     gap: 12px;
     padding: 16px 20px;
     border-bottom: 1px solid var(--color-line);
+    background: rgb(255 255 255 / 0.015);
   }
 
   .card-title {
@@ -118,8 +135,8 @@
 
   .eyebrow {
     font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    font-weight: 700;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
     color: var(--color-fg-subtle);
   }
@@ -127,7 +144,16 @@
   .money {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
+  }
+
+  /* Bloco Didático Chumbo + Borda Vermelho Escuro */
+  .didactic-box {
+    background: linear-gradient(135deg, rgb(158 27 36 / 0.12) 0%, rgb(37 43 53 / 0.75) 65%);
+    border: 1px solid var(--color-line-strong);
+    border-left: 3px solid var(--color-brand-hover);
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   }
 
   /* ---------- Botões ---------- */
@@ -143,24 +169,30 @@
     font-size: 0.875rem;
     font-weight: 600;
     white-space: nowrap;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s, box-shadow 0.15s;
     user-select: none;
   }
   .btn:active:not(:disabled) {
     transform: translateY(1px);
   }
   .btn:disabled {
-    opacity: 0.4;
+    opacity: 0.42;
     cursor: not-allowed;
   }
 
   .btn-primary {
-    background: var(--color-brand);
+    background: linear-gradient(180deg, var(--color-brand-hover) 0%, var(--color-brand) 55%, var(--color-brand-press) 100%);
+    border-color: rgb(255 255 255 / 0.1);
     color: var(--color-brand-fg);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 6px 16px -6px rgb(225 29 42 / 0.6);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      0 8px 22px -8px rgb(158 27 36 / 0.85);
   }
   .btn-primary:hover:not(:disabled) {
-    background: var(--color-brand-hover);
+    background: linear-gradient(180deg, #c72833 0%, var(--color-brand-hover) 60%, var(--color-brand) 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      0 10px 26px -8px rgb(182 34 44 / 0.9);
   }
   .btn-primary:active:not(:disabled) {
     background: var(--color-brand-press);
@@ -170,9 +202,11 @@
     background: var(--color-surface-2);
     border-color: var(--color-line-strong);
     color: var(--color-fg);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   }
   .btn-secondary:hover:not(:disabled) {
     background: var(--color-surface-3);
+    border-color: #4f5a6d;
   }
 
   .btn-ghost {
@@ -186,11 +220,11 @@
 
   .btn-danger {
     background: var(--color-neg-soft);
-    border-color: rgb(244 63 94 / 0.3);
+    border-color: rgb(225 29 72 / 0.35);
     color: var(--color-neg-text);
   }
   .btn-danger:hover:not(:disabled) {
-    background: rgb(244 63 94 / 0.2);
+    background: rgb(225 29 72 / 0.22);
   }
 
   .btn-sm {
@@ -200,9 +234,9 @@
     border-radius: 8px;
   }
   .btn-lg {
-    height: 52px;
+    height: 50px;
     padding: 0 22px;
-    font-size: 1rem;
+    font-size: 0.95rem;
     border-radius: 12px;
   }
   .btn-icon {
@@ -224,12 +258,12 @@
     width: 100%;
     height: 42px;
     padding: 0 12px;
-    background: var(--color-canvas);
+    background: #12151a;
     border: 1px solid var(--color-line-strong);
     border-radius: 10px;
     color: var(--color-fg);
     font-size: 0.9rem;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
   }
   textarea.field {
     height: auto;
@@ -241,7 +275,8 @@
   }
   .field:focus {
     outline: none;
-    border-color: var(--color-brand);
+    background: #151920;
+    border-color: var(--color-brand-hover);
     box-shadow: 0 0 0 3px var(--color-brand-soft);
   }
 
@@ -262,23 +297,28 @@
   }
   .chip-ok {
     background: var(--color-ok-soft);
-    border-color: rgb(34 197 94 / 0.25);
+    border-color: rgb(16 185 129 / 0.28);
     color: var(--color-ok-text);
   }
   .chip-warn {
     background: var(--color-warn-soft);
-    border-color: rgb(245 158 11 / 0.25);
+    border-color: rgb(245 158 11 / 0.28);
     color: var(--color-warn-text);
   }
   .chip-neg {
     background: var(--color-neg-soft);
-    border-color: rgb(244 63 94 / 0.25);
+    border-color: rgb(225 29 72 / 0.3);
     color: var(--color-neg-text);
   }
   .chip-brand {
     background: var(--color-brand-soft);
     border-color: var(--color-brand-line);
     color: var(--color-brand-text);
+  }
+  .chip-info {
+    background: var(--color-info-soft);
+    border-color: rgb(56 189 248 / 0.28);
+    color: var(--color-info-text);
   }
 
   .dot {
@@ -306,7 +346,7 @@
     font-weight: 600;
   }
 
-  /* Filtros em pílula (status, fabricante) */
+  /* Filtros em pílula */
   .pill {
     display: inline-flex;
     align-items: center;
@@ -314,8 +354,8 @@
     height: 34px;
     padding: 0 14px;
     border-radius: 999px;
-    border: 1px solid var(--color-line);
-    background: transparent;
+    border: 1px solid var(--color-line-strong);
+    background: rgb(30 35 43 / 0.55);
     color: var(--color-fg-muted);
     font-size: 0.8rem;
     font-weight: 500;
@@ -323,14 +363,16 @@
     transition: all 0.15s;
   }
   .pill:hover {
-    border-color: var(--color-line-strong);
+    border-color: #535f73;
     color: var(--color-fg);
+    background: var(--color-surface-2);
   }
   .pill[data-active="true"] {
-    background: var(--color-fg);
-    border-color: var(--color-fg);
-    color: var(--color-canvas);
+    background: linear-gradient(180deg, var(--color-brand-hover) 0%, var(--color-brand) 100%);
+    border-color: var(--color-brand-line);
+    color: var(--color-brand-fg);
     font-weight: 600;
+    box-shadow: 0 6px 16px -6px rgb(158 27 36 / 0.8);
   }
 
   /* ---------- Tabelas ---------- */
@@ -340,10 +382,10 @@
     font-size: 0.875rem;
   }
   .table thead th {
-    padding: 10px 20px;
+    padding: 11px 20px;
     text-align: left;
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-fg-subtle);
@@ -359,7 +401,7 @@
     border-bottom: none;
   }
   .table tbody tr:hover td {
-    background: rgb(255 255 255 / 0.015);
+    background: rgb(255 255 255 / 0.02);
   }
 
   /* ---------- Alertas ---------- */
@@ -376,13 +418,18 @@
   }
   .alert-ok {
     background: var(--color-ok-soft);
-    border-color: rgb(34 197 94 / 0.25);
+    border-color: rgb(16 185 129 / 0.3);
     color: var(--color-ok-text);
   }
   .alert-neg {
     background: var(--color-neg-soft);
-    border-color: rgb(244 63 94 / 0.25);
+    border-color: rgb(225 29 72 / 0.35);
     color: var(--color-neg-text);
+  }
+  .alert-warn {
+    background: var(--color-warn-soft);
+    border-color: rgb(245 158 11 / 0.32);
+    color: var(--color-warn-text);
   }
 
   /* ---------- Modais ---------- */
@@ -394,22 +441,24 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgb(5 5 6 / 0.75);
-    backdrop-filter: blur(6px);
+    background: rgb(9 11 14 / 0.78);
+    backdrop-filter: blur(8px);
     animation: fade-in 0.15s ease-out;
   }
   .modal {
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
-    background: var(--color-surface);
+    background: linear-gradient(180deg, #222831 0%, var(--color-surface) 100%);
     border: 1px solid var(--color-line-strong);
     border-radius: 18px;
-    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.8);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 32px 84px -20px rgb(0 0 0 / 0.85);
     animation: pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* Faixa vermelha característica da marca (topo de cards de destaque) */
+  /* Faixa vermelho escuro característica da marca */
   .brand-stripe {
     position: relative;
     overflow: hidden;
@@ -419,7 +468,7 @@
     position: absolute;
     inset: 0 0 auto 0;
     height: 3px;
-    background: var(--color-brand);
+    background: linear-gradient(90deg, var(--color-brand-deep), var(--color-brand-hover), var(--color-brand));
   }
 }
 

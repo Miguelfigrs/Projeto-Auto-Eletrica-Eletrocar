@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Caixa } from "../../domain/entities/Caixa";
 import { Dinheiro } from "../../domain/value-objects/Dinheiro";
 import { container } from "../../infra/di/container";
+import type { ValoresContados } from "../../application/ports/repositories/ICaixaRepository";
 
 export function useCaixa(operadorNome: string) {
   const [caixa, setCaixa] = useState<Caixa | null>(null);
@@ -18,9 +19,13 @@ export function useCaixa(operadorNome: string) {
 
   const carregarCaixa = useCallback(async () => {
     setCarregando(true);
-    const atual = await container.caixaRepository.obterCaixaAberto();
-    setCaixa(atual);
-    setCarregando(false);
+    try {
+      setCaixa(await container.caixaRepository.obterCaixaAberto());
+    } catch (err: unknown) {
+      setMensagemErro(err instanceof Error ? err.message : "Não foi possível consultar o caixa.");
+    } finally {
+      setCarregando(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -37,19 +42,19 @@ export function useCaixa(operadorNome: string) {
       );
       setCaixa(novo);
       setModalAberturaAberto(false);
-      setMensagemSucesso(`Turno de Caixa #${novo.turnoNumero} aberto com sucesso!`);
+      setMensagemSucesso(`Turno de caixa ${novo.rotuloTurno} aberto com sucesso!`);
       setTimeout(() => setMensagemSucesso(null), 3000);
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao abrir caixa.");
     }
   };
 
-  const fecharTurno = async () => {
+  const fecharTurno = async (valoresContados?: ValoresContados) => {
     if (!caixa) return;
     try {
       setMensagemErro(null);
-      await container.operarCaixaUC.fecharCaixa(caixa.id);
-      setMensagemSucesso(`Turno #${caixa.turnoNumero} fechado com sucesso.`);
+      await container.operarCaixaUC.fecharCaixa(caixa.id, valoresContados);
+      setMensagemSucesso(`Turno ${caixa.rotuloTurno} fechado com sucesso.`);
       setTimeout(() => setMensagemSucesso(null), 3000);
       carregarCaixa();
     } catch (err: unknown) {

@@ -74,6 +74,9 @@ class FakeUsuarioRepository(UsuarioRepositoryInterface):
     async def contar(self) -> int:
         return len(self.usuarios)
 
+    async def remover(self, usuario_id: uuid.UUID) -> None:
+        self.usuarios.pop(usuario_id, None)
+
 
 class FakeSessaoRepository(SessaoRepositoryInterface):
     def __init__(self):
@@ -209,6 +212,9 @@ class FakeOrdemServicoRepository(OrdemServicoRepositoryInterface):
             if os.status == StatusOS.ENTREGUE and os.entregue_em and inicio <= os.entregue_em <= fim
         ]
 
+    async def listar_finalizadas_no_periodo(self, inicio: datetime, fim: datetime) -> List[OrdemServico]:
+        return [os for os in self.ordens.values() if os.finalizada_em and inicio <= os.finalizada_em <= fim]
+
     async def obter_proximo_numero_os(self) -> str:
         num = f"OS-2026-{self.sequencia:04d}"
         self.sequencia += 1
@@ -235,6 +241,12 @@ class FakeVendaBalcaoRepository(VendaBalcaoRepositoryInterface):
         return [
             v for v in self.vendas.values()
             if v.status == StatusVenda.CONCLUIDA and inicio <= v.created_at <= fim
+        ]
+
+    async def listar_movimentadas_no_periodo(self, inicio: datetime, fim: datetime) -> List[VendaBalcao]:
+        return [
+            v for v in self.vendas.values()
+            if inicio <= v.created_at <= fim or (v.cancelada_em and inicio <= v.cancelada_em <= fim)
         ]
 
     async def obter_proximo_numero_venda(self) -> str:
@@ -324,6 +336,15 @@ class FakeAuditoriaRepository(AuditoriaRepositoryInterface):
             if (acao is None or log.acao == acao) and (usuario_id is None or log.usuario_id == usuario_id)
         ]
         return logs[-limite:]
+
+    async def listar_por_acoes_no_periodo(
+        self, acoes: List[str], inicio: datetime, fim: datetime
+    ) -> List[LogAuditoria]:
+        alvo = {a.upper() for a in acoes}
+        return sorted(
+            (log for log in self.logs if log.acao in alvo and inicio <= log.timestamp <= fim),
+            key=lambda log: log.timestamp,
+        )
 
     def acoes(self) -> List[str]:
         return [log.acao for log in self.logs]

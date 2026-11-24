@@ -138,6 +138,11 @@ class GerenciarPecasUseCase:
             return []
         return [PecaOutputDTO.de(p) for p in await self.peca_repo.buscar_por_termo(termo.strip()) if p.ativo]
 
+    async def listar_catalogo(self) -> List[PecaOutputDTO]:
+        """Catálogo ativo completo, em ordem alfabética de descrição."""
+        pecas = [p for p in await self.peca_repo.listar_ativas() if p.ativo]
+        return [PecaOutputDTO.de(p) for p in sorted(pecas, key=lambda p: p.descricao.lower())]
+
     async def listar_baixo_estoque(self) -> List[PecaOutputDTO]:
         return [PecaOutputDTO.de(p) for p in await self.peca_repo.listar_baixo_estoque() if p.ativo]
 

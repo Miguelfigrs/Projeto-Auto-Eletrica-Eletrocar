@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from src.domain.entities.usuario import Usuario
 from src.domain.value_objects.enums import FormaPagamento, PrioridadeOS
 from src.application.dtos.os_dtos import (
+    AtualizarChecklistOSInputDTO,
     CriarOSBalcaoInputDTO, AtualizarStatusOSInputDTO, AlocarPecaOSInputDTO, AdicionarServicoOSInputDTO,
     AplicarDescontoOSInputDTO, FaturarOSInputDTO, OrdemServicoOutputDTO,
 )
@@ -38,6 +39,10 @@ class CriarOSRequest(BaseModel):
 
 class AtualizarStatusRequest(BaseModel):
     novo_status: str
+
+
+class ChecklistRequest(BaseModel):
+    checklist_eletrico: Dict[str, bool]
 
 
 class AlocarPecaRequest(BaseModel):
@@ -104,6 +109,14 @@ async def atualizar_status_os(os_id: uuid.UUID, body: AtualizarStatusRequest, us
     ))
     await manager.broadcast("STATUS_OS_ALTERADO", {"numero_os": os_atualizada.numero_os, "novo_status": os_atualizada.status})
     return os_atualizada
+
+
+@router.patch("/{os_id}/checklist", response_model=OrdemServicoOutputDTO, summary="Atualiza o checklist elétrico da OS")
+async def atualizar_checklist_os(os_id: uuid.UUID, body: ChecklistRequest, usuario: Usuario = Depends(operacional),
+                                 uc: GerenciarOrdemServicoUseCase = Depends(os_uc)):
+    return await uc.atualizar_checklist(AtualizarChecklistOSInputDTO(
+        os_id=os_id, checklist_eletrico=body.checklist_eletrico, usuario_id=usuario.id
+    ))
 
 
 @router.post("/{os_id}/pecas", response_model=OrdemServicoOutputDTO, summary="Aloca (reserva) peça do estoque na OS")

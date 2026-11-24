@@ -27,6 +27,7 @@ describe("Caso de Uso: AdicionarItemVendaUseCase (TDD & Regras de Balcão)", () 
       return null;
     }),
     atualizarEstoque: vi.fn(),
+    cadastrar: vi.fn(),
   };
 
   const fakeSoundGateway: ISoundEffectGateway = {

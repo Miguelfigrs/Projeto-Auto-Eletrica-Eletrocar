@@ -7,6 +7,7 @@ import anthropic
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.config import settings
+from src.domain.value_objects.tempo import hoje_local
 from src.infra.database.session import get_db_session
 from src.adapters.repositories.usuario_repository_sqlalchemy import UsuarioRepositorySQLAlchemy, SessaoRepositorySQLAlchemy
 from src.adapters.repositories.cliente_repository_sqlalchemy import ClienteRepositorySQLAlchemy
@@ -45,6 +46,7 @@ from src.application.use_cases.gerenciar_titulos_use_case import GerenciarTitulo
 from src.application.use_cases.pagamento_pix_use_case import PagamentoPixUseCase
 from src.application.use_cases.emitir_comprovante_use_case import EmitirComprovanteUseCase
 from src.application.use_cases.consultar_auditoria_use_case import ConsultarAuditoriaUseCase
+from src.application.use_cases.consultar_movimentacoes_estoque_use_case import ConsultarMovimentacoesEstoqueUseCase
 
 
 # ---- Gateways externos (substituíveis nos testes) ----------------------------------------------
@@ -180,20 +182,31 @@ def telegram_uc(
 
 
 def caixa_uc(session: AsyncSession = Depends(get_db_session)) -> OperarCaixaUseCase:
-    return OperarCaixaUseCase(CaixaRepositorySQLAlchemy(session), AuditoriaRepositorySQLAlchemy(session))
+    return OperarCaixaUseCase(
+        CaixaRepositorySQLAlchemy(session), AuditoriaRepositorySQLAlchemy(session), UsuarioRepositorySQLAlchemy(session)
+    )
 
 
 def dre_uc(session: AsyncSession = Depends(get_db_session)) -> GerarRelatorioDREUseCase:
     return GerarRelatorioDREUseCase(
         VendaBalcaoRepositorySQLAlchemy(session), OrdemServicoRepositorySQLAlchemy(session),
-        TituloFinanceiroRepositorySQLAlchemy(session)
+        TituloFinanceiroRepositorySQLAlchemy(session), UsuarioRepositorySQLAlchemy(session),
+        fuso=settings.FUSO_HORARIO,
+    )
+
+
+def movimentacoes_estoque_uc(session: AsyncSession = Depends(get_db_session)) -> ConsultarMovimentacoesEstoqueUseCase:
+    return ConsultarMovimentacoesEstoqueUseCase(
+        VendaBalcaoRepositorySQLAlchemy(session), OrdemServicoRepositorySQLAlchemy(session),
+        AuditoriaRepositorySQLAlchemy(session), PecaRepositorySQLAlchemy(session),
+        UsuarioRepositorySQLAlchemy(session), fuso=settings.FUSO_HORARIO,
     )
 
 
 def titulos_uc(session: AsyncSession = Depends(get_db_session)) -> GerenciarTitulosUseCase:
     return GerenciarTitulosUseCase(
         TituloFinanceiroRepositorySQLAlchemy(session), CaixaRepositorySQLAlchemy(session),
-        AuditoriaRepositorySQLAlchemy(session)
+        AuditoriaRepositorySQLAlchemy(session), hoje=lambda: hoje_local(settings.FUSO_HORARIO),
     )
 
 

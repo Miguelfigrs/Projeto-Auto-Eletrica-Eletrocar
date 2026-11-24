@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 import uuid
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.venda_balcao import VendaBalcao, ItemVenda
 from src.domain.value_objects.enums import FormaPagamento, StatusVenda
@@ -62,6 +62,15 @@ class VendaBalcaoRepositorySQLAlchemy(VendaBalcaoRepositoryInterface):
             VendaBalcaoModel.status == StatusVenda.CONCLUIDA.value,
             VendaBalcaoModel.created_at >= inicio,
             VendaBalcaoModel.created_at <= fim,
+        )
+        return [self._to_entity(m) for m in (await self.session.execute(stmt)).scalars().all()]
+
+    async def listar_movimentadas_no_periodo(self, inicio: datetime, fim: datetime) -> List[VendaBalcao]:
+        stmt = select(VendaBalcaoModel).where(
+            or_(
+                and_(VendaBalcaoModel.created_at >= inicio, VendaBalcaoModel.created_at <= fim),
+                and_(VendaBalcaoModel.cancelada_em >= inicio, VendaBalcaoModel.cancelada_em <= fim),
+            )
         )
         return [self._to_entity(m) for m in (await self.session.execute(stmt)).scalars().all()]
 

@@ -1,8 +1,20 @@
 import { Usuario } from "../../../domain/entities/Usuario";
 
+export interface OperadorRapidoInfo {
+  id: string;
+  nome: string;
+  username: string;
+  email: string;
+  papeis: Usuario["papeis"];
+  pinDemo: string;
+  senhaDemo: string;
+  descricaoAcesso: string;
+}
+
 export interface IAuthRepository {
-  login(usernameOuEmail: string, senha: string): Promise<Usuario>;
-  verificarPin(pin: string): Promise<Usuario>;
+  login(usernameOuEmail: string, senha: string, lembrarSessao?: boolean): Promise<Usuario>;
+  verificarPin(pin: string, usuarioId?: string): Promise<Usuario>;
   obterUsuarioAtual(): Promise<Usuario | null>;
+  listarOperadoresRapidos(): Promise<OperadorRapidoInfo[]>;
   logout(): Promise<void>;
 }

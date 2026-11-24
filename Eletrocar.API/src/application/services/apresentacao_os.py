@@ -10,8 +10,11 @@ async def montar_os_dto(os: OrdemServico, cliente_repo: ClienteRepositoryInterfa
     cliente = await cliente_repo.buscar_por_id(os.cliente_id)
     nome_cliente = cliente.nome if cliente else "Cliente Não Identificado"
     descricao_carro = "Veículo"
-    if cliente:
-        carro = cliente.buscar_carro_por_id(os.carro_id)
-        if carro:
-            descricao_carro = carro.formatar_descricao()
-    return OrdemServicoOutputDTO.de(os, nome_cliente, descricao_carro)
+    carro = cliente.buscar_carro_por_id(os.carro_id) if cliente else None
+    if carro:
+        descricao_carro = carro.formatar_descricao()
+    dto = OrdemServicoOutputDTO.de(os, nome_cliente, descricao_carro)
+    if carro:
+        dto.modelo_carro = f"{carro.marca} {carro.modelo}".strip()
+        dto.placa_carro = carro.placa
+    return dto

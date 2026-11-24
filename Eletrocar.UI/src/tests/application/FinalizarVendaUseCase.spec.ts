@@ -40,6 +40,7 @@ describe("Caso de Uso: FinalizarVendaUseCase (TDD & Conciliação)", () => {
     buscarPorId: vi.fn(),
     buscarPorCodigoOuBarcode: vi.fn(),
     atualizarEstoque: vi.fn(),
+    cadastrar: vi.fn(),
   };
 
   const fakeCaixaRepo: ICaixaRepository = {

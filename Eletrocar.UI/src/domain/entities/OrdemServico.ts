@@ -29,6 +29,8 @@ export interface OrdemServicoProps {
   clienteId: string;
   clienteNome: string;
   carroModelo: string;
+  /** Marca do veículo (usada ao cadastrar o carro no servidor). */
+  carroMarca?: string;
   carroPlaca?: string;
   usuarioId: string;
   status?: StatusOS;
@@ -74,6 +76,8 @@ export class OrdemServicoStateMachine {
   }
 }
 
+export const PLACA_NAO_INFORMADA = "Placa não informada";
+
 export class OrdemServico {
   public readonly id: string;
   public readonly numeroOS: string;
@@ -81,6 +85,7 @@ export class OrdemServico {
   public readonly clienteNome: string;
   public readonly carroModelo: string;
   public readonly carroPlaca: string;
+  public readonly carroMarca?: string;
   public readonly usuarioId: string;
   public status: StatusOS;
   public readonly origem: OrigemOS;
@@ -102,7 +107,8 @@ export class OrdemServico {
     this.clienteId = props.clienteId;
     this.clienteNome = props.clienteNome;
     this.carroModelo = props.carroModelo;
-    this.carroPlaca = props.carroPlaca || "Placa não informada";
+    this.carroPlaca = props.carroPlaca || PLACA_NAO_INFORMADA;
+    this.carroMarca = props.carroMarca;
     this.usuarioId = props.usuarioId;
     this.status = props.status || StatusOS.TRIAGEM;
     this.origem = props.origem || OrigemOS.BALCAO;

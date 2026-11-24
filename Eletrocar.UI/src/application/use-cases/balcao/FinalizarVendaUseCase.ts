@@ -35,26 +35,34 @@ export class FinalizarVendaUseCase {
     venda.formaPagamento = formaPagamento;
     venda.status = StatusVenda.CONCLUIDA;
 
-    // 3. Atualiza o estoque de cada peça
-    for (const item of venda.itens) {
+    // 3. Grava a venda ANTES dos efeitos locais: com a API, o servidor valida o saldo, baixa o estoque,
+    //    registra o pagamento e numera a venda numa única transação; se recusar, nada local muda.
+    let vendaSalva: VendaBalcao;
+    try {
+      vendaSalva = await this.vendaRepo.salvar(venda);
+    } catch (erro) {
+      this.soundGateway.tocarAlertaErro();
+      throw erro;
+    }
+
+    // 4. Atualiza o estoque de cada peça
+    for (const item of vendaSalva.itens) {
       await this.pecaRepo.atualizarEstoque(item.pecaId, -item.quantidade);
     }
 
-    // 4. Se não for a prazo (boleto/faturado), registra a entrada no caixa
+    // 5. Se não for a prazo (boleto/faturado), registra a entrada no caixa
     if (formaPagamento !== FormaPagamento.BOLETO && formaPagamento !== FormaPagamento.FATURADO) {
       await this.caixaRepo.adicionarMovimentacao(caixa.id, {
         id: crypto.randomUUID(),
         tipo: TipoMovimentacaoCaixa.ENTRADA_VENDA,
-        valor: venda.total,
+        valor: vendaSalva.total,
         formaPagamento,
-        descricao: `Venda balcão #${venda.numeroVenda}`,
+        descricao: `Venda balcão #${vendaSalva.numeroVenda}`,
         dataHora: new Date(),
         operadorNome,
       });
     }
 
-    // 5. Salva a venda concluída
-    const vendaSalva = await this.vendaRepo.salvar(venda);
     this.soundGateway.tocarBipSucesso();
 
     return vendaSalva;

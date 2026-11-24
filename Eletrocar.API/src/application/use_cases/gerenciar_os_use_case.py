@@ -20,6 +20,7 @@ from src.domain.exceptions.domain_exceptions import (
 )
 from src.application.services.apresentacao_os import montar_os_dto
 from src.application.dtos.os_dtos import (
+    AtualizarChecklistOSInputDTO,
     CriarOSBalcaoInputDTO,
     AtualizarStatusOSInputDTO,
     AlocarPecaOSInputDTO,
@@ -130,6 +131,18 @@ class GerenciarOrdemServicoUseCase:
             dto.usuario_id, ORIGEM, "OS_PECA_RESERVADA",
             detalhes={"os_id": str(os.id), "numero_os": os.numero_os, "peca_id": str(peca.id),
                       "sku": peca.sku, "quantidade": dto.quantidade}
+        ))
+        return await montar_os_dto(os, self.cliente_repo)
+
+    async def atualizar_checklist(self, dto: AtualizarChecklistOSInputDTO) -> OrdemServicoOutputDTO:
+        os = await self._obter(dto.os_id)
+        antes = dict(os.checklist_eletrico)
+        os.atualizar_checklist(dto.checklist_eletrico)
+        await self.os_repo.salvar(os)
+        await self.audit_repo.registrar(novo_log(
+            dto.usuario_id, ORIGEM, "OS_CHECKLIST_ATUALIZADO",
+            detalhes={"os_id": str(os.id), "numero_os": os.numero_os},
+            antes=antes, depois=dict(os.checklist_eletrico),
         ))
         return await montar_os_dto(os, self.cliente_repo)
 

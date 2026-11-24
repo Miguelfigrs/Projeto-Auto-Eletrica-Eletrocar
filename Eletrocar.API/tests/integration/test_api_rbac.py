@@ -73,6 +73,11 @@ async def test_admin_gerencia_usuarios_e_papeis(client: AsyncClient, criar_usuar
     }, headers=headers)
     assert duplicado.status_code == 400
 
+    # Remoção de colaborador por admin e proteção da própria conta
+    assert (await client.delete(f"/api/v1/usuarios/{admin.id}", headers=headers)).status_code == 400
+    assert (await client.delete(f"/api/v1/usuarios/{usuario_id}", headers=headers)).status_code == 204
+    assert (await client.post("/api/v1/auth/login", json={"username": "roberto", "password": "senhaRoberto1"})).status_code == 401
+
 
 async def test_auditoria_registra_ip_e_estado_antes_depois(client: AsyncClient, criar_usuario):
     _, headers = await criar_usuario(Papel.ADMIN)

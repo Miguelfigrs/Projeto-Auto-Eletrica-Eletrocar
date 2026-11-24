@@ -1,4 +1,4 @@
-import { ICaixaRepository } from "../../ports/repositories/ICaixaRepository";
+import { ICaixaRepository, ValoresContados } from "../../ports/repositories/ICaixaRepository";
 import { ISoundEffectGateway } from "../../ports/gateways/ISoundEffectGateway";
 import { Caixa } from "../../../domain/entities/Caixa";
 import { Dinheiro } from "../../../domain/value-objects/Dinheiro";
@@ -24,8 +24,8 @@ export class OperarCaixaUseCase {
     return caixa;
   }
 
-  public async fecharCaixa(caixaId: string): Promise<void> {
-    await this.caixaRepo.fechar(caixaId);
+  public async fecharCaixa(caixaId: string, valoresContados?: ValoresContados): Promise<void> {
+    await this.caixaRepo.fechar(caixaId, valoresContados);
     this.soundGateway.tocarBipSucesso();
   }
 

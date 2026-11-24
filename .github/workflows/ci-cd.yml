@@ -1,0 +1,190 @@
+# ==============================================================================
+# CI/CD — Auto Elétrica Eletrocar
+#
+#   Pull request / push  -> testes da API (PostgreSQL 16 real, cobertura >= 80%) e da UI (Vitest + build)
+#   Push na main         -> imagem da API no Docker Hub -> deploy no Render -> deploy da UI na Vercel
+#
+# Configuração no GitHub (Settings > Secrets and variables > Actions) — ver docs/DEPLOY.md:
+#   Variables: DOCKERHUB_USERNAME, API_URL (ex.: https://eletrocar-api.onrender.com)
+#   Secrets:   DOCKERHUB_TOKEN, RENDER_DEPLOY_HOOK_URL, VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# ==============================================================================
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # --------------------------------------------------------------------------
+  # 1. API: a suíte roda DENTRO da mesma imagem que será publicada
+  # --------------------------------------------------------------------------
+  backend:
+    name: API — testes (PostgreSQL 16)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: eletrocar_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d eletrocar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Construir imagem da API
+        uses: docker/build-push-action@v6
+        with:
+          context: Eletrocar.API
+          load: true
+          tags: eletrocar-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Testes com cobertura mínima de 80%
+        run: |
+          URL=postgresql+asyncpg://postgres:postgres@localhost:5432/eletrocar_test
+          docker run --rm --network host \
+            -e DATABASE_URL="$URL" \
+            -e TEST_POSTGRES_URL="$URL" \
+            eletrocar-api:ci pytest
+
+  # --------------------------------------------------------------------------
+  # 2. UI: testes unitários/componentes e build de produção do Next.js
+  # --------------------------------------------------------------------------
+  frontend:
+    name: UI — testes e build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Eletrocar.UI
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Eletrocar.UI/package-lock.json
+
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=moderate
+      - run: npm test
+      - run: npm run build
+
+  # --------------------------------------------------------------------------
+  # 3. Publica a imagem da API no Docker Hub (somente push na main)
+  # --------------------------------------------------------------------------
+  publicar-api:
+    name: Publicar imagem no Docker Hub
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      imagem: ${{ steps.imagem.outputs.referencia }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Definir nome da imagem
+        id: imagem
+        run: echo "referencia=docker.io/${{ vars.DOCKERHUB_USERNAME }}/eletrocar-api:sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Construir e enviar
+        uses: docker/build-push-action@v6
+        with:
+          context: Eletrocar.API
+          push: true
+          tags: |
+            ${{ steps.imagem.outputs.referencia }}
+            docker.io/${{ vars.DOCKERHUB_USERNAME }}/eletrocar-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  # --------------------------------------------------------------------------
+  # 4. Render: publica exatamente a imagem testada (tag sha-*) e espera a API responder
+  # --------------------------------------------------------------------------
+  deploy-api:
+    name: Deploy da API no Render
+    needs: publicar-api
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Acionar deploy hook com a imagem nova
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          IMAGEM: ${{ needs.publicar-api.outputs.imagem }}
+        run: |
+          IMAGEM_CODIFICADA=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["IMAGEM"], safe=""))')
+          curl --fail --silent --show-error -X POST "${HOOK}&imgURL=${IMAGEM_CODIFICADA}"
+
+      - name: Aguardar a API ficar saudável
+        if: vars.API_URL != ''
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          # O Render troca a instância quando a nova passa no health check; o free tier pode demorar no cold start
+          for tentativa in $(seq 1 40); do
+            if curl --fail --silent --max-time 20 "${API_URL}/health" > /dev/null; then
+              echo "API saudável (tentativa ${tentativa})."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "A API não respondeu em ${API_URL}/health em 10 minutos." >&2
+          exit 1
+
+  # --------------------------------------------------------------------------
+  # 5. Vercel: build e publicação da UI em produção (depois da API, que já tem as rotas novas)
+  # --------------------------------------------------------------------------
+  deploy-ui:
+    name: Deploy da UI na Vercel
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Vercel CLI
+        run: npm install --global vercel@latest
+
+      # Executado na raiz do repositório: o projeto da Vercel usa Root Directory = Eletrocar.UI
+      - name: Baixar configuração do projeto
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Build de produção
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Publicar
+        run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"

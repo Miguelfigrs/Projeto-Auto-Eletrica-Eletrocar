@@ -73,6 +73,13 @@ class AlocarPecaOSInputDTO:
 
 
 @dataclass
+class AtualizarChecklistOSInputDTO:
+    os_id: uuid.UUID
+    checklist_eletrico: Dict[str, Any]
+    usuario_id: uuid.UUID
+
+
+@dataclass
 class AdicionarServicoOSInputDTO:
     os_id: uuid.UUID
     descricao: str
@@ -123,6 +130,8 @@ class OrdemServicoOutputDTO:
     forma_pagamento: Optional[str] = None
     finalizada_em: Optional[datetime] = None
     entregue_em: Optional[datetime] = None
+    modelo_carro: Optional[str] = None
+    placa_carro: Optional[str] = None
     sucesso: bool = True
 
     @classmethod
