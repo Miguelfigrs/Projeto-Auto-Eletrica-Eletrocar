@@ -59,12 +59,16 @@ jobs:
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
+      # O seed de demonstração fica fora do contexto da imagem (Eletrocar.Database/): é montado
+      # como no docker-compose.yml para o teste de carga de demonstração + auditoria imutável.
       - name: Testes com cobertura mínima de 80%
         run: |
           URL=postgresql+asyncpg://postgres:postgres@localhost:5432/eletrocar_test
           docker run --rm --network host \
             -e DATABASE_URL="$URL" \
             -e TEST_POSTGRES_URL="$URL" \
+            -e SEED_SQL_PATH=/database/seed_completo.sql \
+            -v "$GITHUB_WORKSPACE/Eletrocar.Database/seed_completo.sql:/database/seed_completo.sql:ro" \
             eletrocar-api:ci pytest
 
   # --------------------------------------------------------------------------
