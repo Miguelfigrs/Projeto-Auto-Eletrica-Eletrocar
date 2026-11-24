@@ -125,3 +125,33 @@ async def test_websocket_exige_token(client: AsyncClient):
         with TestClient(app).websocket_connect("/api/v1/ws/notificacoes") as ws:
             ws.receive_text()
     assert exc.value.code == 4401
+
+
+async def test_meu_perfil_dados_senha_e_pin(client, criar_usuario):
+    usuario, headers = await criar_usuario(Papel.ELETRICISTA, senha="senhaInicial1", email="marcio@eletrocar.com.br")
+    _, outro = await criar_usuario(Papel.BALCONISTA, email="carla@eletrocar.com.br")
+
+    atualizado = await client.patch("/api/v1/auth/me", json={"nome": "Márcio Silva", "username": "marcio.s"},
+                                    headers=headers)
+    assert atualizado.status_code == 200, atualizado.text
+    assert atualizado.json()["nome"] == "Márcio Silva"
+    assert (await client.get("/api/v1/auth/me", headers=headers)).json()["username"] == "marcio.s"
+    duplicado = await client.patch("/api/v1/auth/me", json={"email": "carla@eletrocar.com.br"}, headers=headers)
+    assert duplicado.status_code == 400
+
+    errada = await client.post("/api/v1/auth/me/senha", json={"senha_atual": "x", "nova_senha": "outraSenha99"},
+                               headers=headers)
+    assert errada.status_code == 401
+    assert (await client.post("/api/v1/auth/me/senha", json={"senha_atual": "senhaInicial1", "nova_senha": "curta"},
+                              headers=headers)).status_code == 422
+    assert (await client.post("/api/v1/auth/me/senha",
+                              json={"senha_atual": "senhaInicial1", "nova_senha": "outraSenha99"},
+                              headers=headers)).status_code == 204
+    login = await client.post("/api/v1/auth/login", json={"identificador": "marcio.s", "senha": "outraSenha99"})
+    assert login.status_code == 200, login.text
+
+    assert (await client.post("/api/v1/auth/me/pin", json={"senha_atual": "outraSenha99", "pin": "7788"},
+                              headers=headers)).status_code == 204
+    assert (await client.patch("/api/v1/auth/me", json={"nome": "Sem login"})).status_code == 401
+    # Um usuário comum continua sem acesso à gestão de outros usuários
+    assert (await client.get("/api/v1/usuarios", headers=outro)).status_code == 403

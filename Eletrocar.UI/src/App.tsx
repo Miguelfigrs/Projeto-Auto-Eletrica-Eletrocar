@@ -16,6 +16,7 @@ import { CaixaView } from "./presentation/pages/CaixaView";
 import { EstoqueView } from "./presentation/pages/EstoqueView";
 import { FinanceiroDREView } from "./presentation/pages/FinanceiroDREView";
 import { UsuariosView } from "./presentation/pages/UsuariosView";
+import { MeuPerfilView } from "./presentation/pages/MeuPerfilView";
 import { useAuth } from "./adapters/view-models/useAuth";
 import { useHardwareStatus } from "./adapters/view-models/useHardwareStatus";
 import { useCaixa } from "./adapters/view-models/useCaixa";
@@ -247,6 +248,9 @@ export const App: React.FC = () => {
               <CaixaView operadorNome={usuario.nome} modoDidatico={modoDidatico} />
             )}
             {abaAtiva === "dre" && <FinanceiroDREView modoDidatico={modoDidatico} />}
+            {abaAtiva === "perfil" && usuario && (
+              <MeuPerfilView usuario={usuario} onPerfilAtualizado={recarregarSessaoEOperadores} />
+            )}
             {abaAtiva === "usuarios" && (
               <UsuariosView
                 usuarioAtual={usuario}

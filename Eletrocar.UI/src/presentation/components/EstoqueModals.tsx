@@ -9,6 +9,10 @@ import { PackagePlus, PackageCheck } from "lucide-react";
 import { Peca } from "../../domain/entities/Peca";
 import type { NovaPecaDados } from "../../application/ports/repositories/IPecaRepository";
 import { Modal } from "./ui";
+import { BotaoCamera } from "./BotaoCamera";
+import { container } from "../../infra/di/container";
+
+const bipar = () => container.soundGateway.tocarBipSucesso();
 
 function lerNumero(valor: string): number {
   return Number(valor.replace(",", "."));
@@ -105,7 +109,15 @@ export const NovaPecaModal: React.FC<{
           <input id="np-sku" className="field font-mono uppercase" required value={form.sku} onChange={set("sku")} placeholder="REL-DNI-0102" />
         </Campo>
         <Campo id="np-barras" label="Código de barras (EAN)">
-          <input id="np-barras" className="field font-mono" value={form.codigoBarras} onChange={set("codigoBarras")} placeholder="Bipe ou digite (vazio = usa o SKU)" />
+          <div className="flex gap-2">
+            <input id="np-barras" className="field font-mono" value={form.codigoBarras} onChange={set("codigoBarras")} placeholder="Bipe ou digite (vazio = usa o SKU)" />
+            <BotaoCamera
+              onCodigo={(codigo) => {
+                bipar();
+                setForm((f) => ({ ...f, codigoBarras: codigo }));
+              }}
+            />
+          </div>
         </Campo>
         <Campo id="np-fabricante" label="Fabricante">
           <input id="np-fabricante" className="field" value={form.marcaFabricante} onChange={set("marcaFabricante")} placeholder="Bosch, Valeo, Moura..." />
@@ -225,14 +237,22 @@ export const EntradaEstoqueModal: React.FC<{
     >
       <form onSubmit={enviar} className="flex flex-col gap-4">
         <Campo id="ee-codigo" label="Peça (código de barras, SKU ou descrição)">
-          <input
-            id="ee-codigo"
-            className="field font-mono"
-            autoFocus
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
-            placeholder="Bipe o código ou digite para buscar"
-          />
+          <div className="flex gap-2">
+            <input
+              id="ee-codigo"
+              className="field font-mono"
+              autoFocus
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+              placeholder="Bipe o código ou digite para buscar"
+            />
+            <BotaoCamera
+              onCodigo={(lido) => {
+                bipar();
+                setCodigo(lido);
+              }}
+            />
+          </div>
         </Campo>
 
         {sugestoes.length > 0 && (

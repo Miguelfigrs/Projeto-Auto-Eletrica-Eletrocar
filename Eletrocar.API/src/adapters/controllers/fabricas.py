@@ -95,7 +95,7 @@ def sessao_uc(session: AsyncSession = Depends(get_db_session)) -> GerenciarSessa
 
 def usuarios_uc(session: AsyncSession = Depends(get_db_session)) -> GerenciarUsuariosUseCase:
     return GerenciarUsuariosUseCase(UsuarioRepositorySQLAlchemy(session), get_password_hasher(),
-                                    AuditoriaRepositorySQLAlchemy(session))
+                                    AuditoriaRepositorySQLAlchemy(session), get_limitador())
 
 
 def clientes_uc(session: AsyncSession = Depends(get_db_session)) -> GerenciarClientesUseCase:

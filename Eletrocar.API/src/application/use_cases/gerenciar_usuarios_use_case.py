@@ -10,8 +10,10 @@ from src.domain.entities.auditoria import novo_log
 from src.domain.value_objects.enums import Papel
 from src.domain.value_objects.pin_operador import PinOperador
 from src.domain.repositories.interfaces import UsuarioRepositoryInterface, AuditoriaRepositoryInterface
-from src.domain.exceptions.domain_exceptions import RegraNegocioException, EntidadeNaoEncontradaException
-from src.application.ports.seguranca import PasswordHasher
+from src.domain.exceptions.domain_exceptions import (
+    RegraNegocioException, EntidadeNaoEncontradaException, CredenciaisInvalidasException,
+)
+from src.application.ports.seguranca import PasswordHasher, LimitadorTentativas
 from src.application.dtos.auth_dtos import CriarUsuarioInputDTO, AtualizarUsuarioInputDTO, UsuarioOutputDTO
 
 TAMANHO_MINIMO_SENHA = 8
@@ -35,11 +37,53 @@ class GerenciarUsuariosUseCase:
         self,
         usuario_repo: UsuarioRepositoryInterface,
         password_hasher: PasswordHasher,
-        audit_repo: AuditoriaRepositoryInterface
+        audit_repo: AuditoriaRepositoryInterface,
+        limitador: Optional[LimitadorTentativas] = None,
     ):
         self.usuario_repo = usuario_repo
         self.password_hasher = password_hasher
         self.audit_repo = audit_repo
+        self.limitador = limitador
+
+    # ---- Meu perfil (o próprio usuário logado, qualquer papel) ----------------------------------
+
+    async def atualizar_proprio_perfil(
+        self, usuario_id: uuid.UUID, nome: Optional[str], email: Optional[str], username: Optional[str]
+    ) -> UsuarioOutputDTO:
+        """Nome, e-mail e usuário de login. Papéis, status e Telegram continuam exclusivos do administrador."""
+        return await self.atualizar(
+            AtualizarUsuarioInputDTO(usuario_id=usuario_id, nome=nome, email=email, username=username),
+            executor_id=usuario_id,
+        )
+
+    async def trocar_propria_senha(self, usuario_id: uuid.UUID, senha_atual: str, nova_senha: str) -> None:
+        usuario = await self._conferir_senha_atual(usuario_id, senha_atual)
+        _validar_senha(nova_senha)
+        if self.password_hasher.verify(nova_senha, usuario.senha_hash):
+            raise RegraNegocioException("A nova senha deve ser diferente da senha atual.")
+        usuario.senha_hash = self.password_hasher.hash(nova_senha)
+        await self.usuario_repo.salvar(usuario)
+        await self._auditar(usuario_id, "USUARIO_SENHA_ALTERADA_PELO_PROPRIO", usuario)
+
+    async def definir_proprio_pin(self, usuario_id: uuid.UUID, senha_atual: str, pin: str) -> None:
+        usuario = await self._conferir_senha_atual(usuario_id, senha_atual)
+        usuario.pin_hash = self.password_hasher.hash(PinOperador(pin).valor)
+        await self.usuario_repo.salvar(usuario)
+        await self._auditar(usuario_id, "USUARIO_PIN_ALTERADO_PELO_PROPRIO", usuario)
+
+    async def _conferir_senha_atual(self, usuario_id: uuid.UUID, senha_atual: str) -> Usuario:
+        """Exige a senha atual (sessão esquecida aberta não basta) com limite de tentativas."""
+        chave = f"perfil:{usuario_id}"
+        if self.limitador:
+            self.limitador.verificar(chave)
+        usuario = await self._obter(usuario_id)
+        if not senha_atual or not self.password_hasher.verify(senha_atual, usuario.senha_hash):
+            if self.limitador:
+                self.limitador.registrar_falha(chave)
+            raise CredenciaisInvalidasException("Senha atual incorreta.")
+        if self.limitador:
+            self.limitador.limpar(chave)
+        return usuario
 
     async def criar(self, dto: CriarUsuarioInputDTO, executor_id: Optional[uuid.UUID]) -> UsuarioOutputDTO:
         _validar_senha(dto.senha)

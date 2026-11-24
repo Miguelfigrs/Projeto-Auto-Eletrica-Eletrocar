@@ -15,7 +15,8 @@ from src.application.dtos.auth_dtos import LoginInputDTO, TrocaOperadorPinInputD
 from src.application.use_cases.autenticar_usuario_use_case import AutenticarUsuarioUseCase
 from src.application.use_cases.gerenciar_sessao_use_case import GerenciarSessaoUseCase
 from src.adapters.controllers.dependencies import get_current_user
-from src.adapters.controllers.fabricas import autenticar_uc, sessao_uc
+from src.adapters.controllers.fabricas import autenticar_uc, sessao_uc, usuarios_uc
+from src.application.use_cases.gerenciar_usuarios_use_case import GerenciarUsuariosUseCase
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
@@ -126,3 +127,39 @@ async def trocar_operador_pin(
 @router.get("/me", response_model=UsuarioOutputDTO)
 async def obter_usuario_logado(usuario: Usuario = Depends(get_current_user)):
     return UsuarioOutputDTO.de(usuario)
+
+
+# ---- Meu perfil: o próprio usuário logado (qualquer papel) --------------------------------------
+
+class AtualizarPerfilRequest(BaseModel):
+    nome: Optional[str] = Field(default=None, min_length=1)
+    email: Optional[str] = Field(default=None, min_length=3)
+    username: Optional[str] = None
+
+
+class TrocarSenhaRequest(BaseModel):
+    senha_atual: str = Field(min_length=1)
+    nova_senha: str = Field(min_length=8)
+
+
+class DefinirPinRequest(BaseModel):
+    senha_atual: str = Field(min_length=1)
+    pin: str
+
+
+@router.patch("/me", response_model=UsuarioOutputDTO, summary="Atualiza nome, e-mail e usuário do próprio perfil")
+async def atualizar_meu_perfil(body: AtualizarPerfilRequest, usuario: Usuario = Depends(get_current_user),
+                               uc: GerenciarUsuariosUseCase = Depends(usuarios_uc)):
+    return await uc.atualizar_proprio_perfil(usuario.id, body.nome, body.email, body.username)
+
+
+@router.post("/me/senha", status_code=204, summary="Troca a própria senha (exige a senha atual)")
+async def trocar_minha_senha(body: TrocarSenhaRequest, usuario: Usuario = Depends(get_current_user),
+                             uc: GerenciarUsuariosUseCase = Depends(usuarios_uc)):
+    await uc.trocar_propria_senha(usuario.id, body.senha_atual, body.nova_senha)
+
+
+@router.post("/me/pin", status_code=204, summary="Define o próprio PIN de troca rápida (exige a senha atual)")
+async def definir_meu_pin(body: DefinirPinRequest, usuario: Usuario = Depends(get_current_user),
+                          uc: GerenciarUsuariosUseCase = Depends(usuarios_uc)):
+    await uc.definir_proprio_pin(usuario.id, body.senha_atual, body.pin)
