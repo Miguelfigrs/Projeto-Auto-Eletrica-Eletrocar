@@ -64,7 +64,40 @@ interface ApiSessaoTokensDTO {
 }
 
 const STORAGE_KEY = "eletrocar.sessao.v2";
-const API_TIMEOUT_MS = 2500;
+/**
+ * Tempo máximo de espera pela API. Em produção o login confere a senha (bcrypt) e o plano
+ * gratuito do Render pode levar até ~1 min para "acordar": 2,5 s cortava logins válidos.
+ */
+const API_TIMEOUT_MS = 60_000;
+
+const MENSAGEM_SERVIDOR_LENTO =
+  "O servidor demorou para responder (ele pode estar “acordando”). Aguarde alguns segundos e tente de novo.";
+
+/**
+ * O modo de demonstração (usuários de exemplo, dados em memória) só pode assumir quando a API
+ * não responde no ambiente de desenvolvimento. Publicado, uma falha da API vira mensagem de erro:
+ * cair na demonstração recusaria a senha real como "inválida".
+ */
+export function permiteFallbackDemo(hostname = typeof window !== "undefined" ? window.location.hostname : ""): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname.endsWith(".localhost")
+  );
+}
+
+function falhaDeServidor(err: unknown, status?: number): DomainError {
+  if ((err as { name?: string } | null)?.name === "AbortError") {
+    return new DomainError(MENSAGEM_SERVIDOR_LENTO, "IntegracaoExterna");
+  }
+  return new DomainError(
+    status
+      ? `O servidor está indisponível no momento (HTTP ${status}). Tente de novo em instantes.`
+      : "Não foi possível falar com o servidor. Verifique a internet e tente de novo.",
+    "IntegracaoExterna"
+  );
+}
 const REGEX_EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const REGEX_USERNAME = /^[a-z0-9._-]{3,50}$/;
 const REGEX_PIN = /^\d{4,6}$/;
@@ -183,12 +216,15 @@ export class MockOrHttpAuthRepository implements IAuthRepository, IUsuarioAdminR
             res.status === 429 ? "LimiteTentativasExcedido" : "CredenciaisInvalidas"
           );
         }
+        // Outra resposta (5xx, proxy da Vercel/Render): publicado, é erro; em dev, segue para a demonstração
+        if (!permiteFallbackDemo()) throw falhaDeServidor(null, res.status);
       } catch (err) {
         // Se foi erro explícito de regra/credencial da API, propaga sem mascarar
         if (err instanceof DomainError) {
           throw err;
         }
-        // Rede indisponível / API offline -> segue para fallback local
+        // Tempo esgotado ou rede indisponível: publicado, avisa; em dev, segue para o fallback local
+        if (!permiteFallbackDemo()) throw falhaDeServidor(err);
       }
     }
 
@@ -259,10 +295,12 @@ export class MockOrHttpAuthRepository implements IAuthRepository, IUsuarioAdminR
           const msg = await this.extrairMensagemErro(res, "PIN de operador inválido.");
           throw new DomainError(msg, "CredenciaisInvalidas");
         }
+        if (!permiteFallbackDemo()) throw falhaDeServidor(null, res.status);
       } catch (err) {
         if (err instanceof DomainError) {
           throw err;
         }
+        if (!permiteFallbackDemo()) throw falhaDeServidor(err);
       }
     }
 
