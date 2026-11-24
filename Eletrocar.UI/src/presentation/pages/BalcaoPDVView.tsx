@@ -28,6 +28,7 @@ import { Dinheiro } from "../../domain/value-objects/Dinheiro";
 import { VendaBalcao } from "../../domain/entities/VendaBalcao";
 import { Alerts, DidacticBanner, EmptyState, Modal, Page, StepFlow } from "../components/ui";
 import { cn } from "../../lib/utils";
+import { BotaoCamera } from "../components/BotaoCamera";
 
 interface BalcaoPDVViewProps {
   operadorNome: string;
@@ -244,6 +245,12 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
               <button type="submit" className="btn btn-primary h-14 px-6">
                 <Plus size={18} /> Adicionar
               </button>
+              <BotaoCamera
+                className="h-14"
+                rotulo="Câmera"
+                continuo
+                onCodigo={(codigo) => biparOuBuscarCodigo(codigo)}
+              />
               <button
                 type="button"
                 className="btn btn-secondary h-14"
@@ -256,7 +263,7 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-fg-subtle">
               <span>
-                O leitor USB/Bluetooth envia o código direto para cá, mesmo sem foco no campo.
+                O leitor USB/Bluetooth envia o código direto para cá, mesmo sem foco no campo. Sem leitor, use a Câmera.
               </span>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-fg-muted">Teste rápido:</span>
