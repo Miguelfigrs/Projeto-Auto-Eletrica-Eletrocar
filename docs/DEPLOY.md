@@ -27,9 +27,10 @@ não há chamadas entre domínios no navegador.
 
 ## 1. Neon — banco de dados
 
-1. Crie um projeto em <https://neon.tech> (região **AWS São Paulo / sa-east-1**, se disponível, para ficar perto do Render).
+1. Crie um projeto em <https://neon.tech> na região **AWS US East 1 (N. Virginia)**. O Render não tem região no Brasil;
+   banco e API precisam ficar na mesma região (cada tela faz várias consultas ao banco).
 2. Em **Connection Details**, copie a string de conexão **direta** (sem `-pooler` no host), por exemplo:
-   `postgresql://eletrocar_owner:SENHA@ep-xxxx.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
+   `postgresql://neondb_owner:SENHA@ep-xxxx.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
 3. Pode colar exatamente como o Neon entrega: a API converte para o driver `asyncpg` (troca `sslmode` por `ssl`
    e descarta `channel_binding`). A string do pooler também funciona (o cache de prepared statements é desligado),
    mas a conexão direta é a recomendada para a API.
@@ -47,7 +48,7 @@ as extensões `pg_trgm` e `pgcrypto`.
 
 1. **New → Web Service → Existing Image**, imagem `docker.io/SEU_USUARIO/eletrocar-api:latest`.
    (Faça o primeiro push na `main` antes, para a imagem existir — ou envie uma manualmente, ver "Primeira publicação".)
-2. Região: a mesma do Neon (ex.: *Oregon* ou *Virginia* se não houver São Paulo; prefira a mais próxima do banco).
+2. Região: **Virginia (US East)** — a mesma do banco no Neon.
 3. **Health Check Path**: `/health`. A porta vem da variável `PORT` do Render (a imagem já a respeita).
 4. Se o repositório do Docker Hub for privado, cadastre a credencial em **Settings → Registry Credential**.
 5. **Environment** — variáveis de produção:
