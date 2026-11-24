@@ -10,6 +10,7 @@ import { MockOrHttpCaixaRepository } from "../../adapters/repositories/MockOrHtt
 import { MockOrHttpVendaRepository } from "../../adapters/repositories/MockOrHttpVendaRepository";
 import { MockOrHttpAuthRepository } from "../../adapters/repositories/MockOrHttpAuthRepository";
 import { MockOrHttpDRERepository } from "../../adapters/repositories/MockOrHttpDRERepository";
+import type { IPerfilRepository } from "../../application/ports/repositories/IPerfilRepository";
 import { MockOrHttpHistoricoEstoqueRepository } from "../../adapters/repositories/MockOrHttpHistoricoEstoqueRepository";
 
 import { AdicionarItemVendaUseCase } from "../../application/use-cases/balcao/AdicionarItemVendaUseCase";
@@ -30,6 +31,7 @@ class DIContainer {
 
   // Repositories
   public readonly authRepository = new MockOrHttpAuthRepository();
+  public readonly perfilRepository: IPerfilRepository = this.authRepository;
   public readonly pecaRepository = new MockOrHttpPecaRepository(this.authRepository);
   public readonly vendaRepository = new MockOrHttpVendaRepository(this.authRepository);
   public readonly caixaRepository = new MockOrHttpCaixaRepository(this.authRepository);

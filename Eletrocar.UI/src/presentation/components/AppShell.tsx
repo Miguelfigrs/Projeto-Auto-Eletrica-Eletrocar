@@ -15,6 +15,7 @@ import {
   PieChart,
   ScanBarcode,
   ShoppingCart,
+  UserRoundPen,
   Users,
   Wallet,
   Wifi,
@@ -157,7 +158,18 @@ export const AppShell: React.FC<AppShellProps> = ({
 
         {/* Cartão do Operador + Troca por PIN + Logout */}
         <div className="border-t border-line p-3">
-          <div className="flex items-center gap-3 rounded-xl border border-line bg-surface/90 p-2.5">
+          <button
+            type="button"
+            onClick={() => onSelecionarAba("perfil")}
+            title="Meu perfil: editar meus dados, senha e PIN"
+            aria-current={abaAtiva === "perfil" ? "page" : undefined}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors",
+              abaAtiva === "perfil"
+                ? "border-brand-line bg-brand-soft/60"
+                : "border-line bg-surface/90 hover:border-line-strong hover:bg-surface-2"
+            )}
+          >
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-brand-line bg-brand-soft text-xs font-bold text-brand-text">
               {iniciais(usuario.nome)}
             </div>
@@ -167,7 +179,8 @@ export const AppShell: React.FC<AppShellProps> = ({
                 {usuario.papeis.join(" · ")}
               </div>
             </div>
-          </div>
+            <UserRoundPen size={15} className="hidden shrink-0 text-fg-subtle lg:block" />
+          </button>
 
           <div className="mt-2 grid grid-cols-1 gap-1.5 lg:grid-cols-2">
             <button
@@ -199,7 +212,9 @@ export const AppShell: React.FC<AppShellProps> = ({
           <div className="flex min-w-0 items-center gap-2 text-sm">
             <span className="hidden text-fg-subtle sm:inline">Eletrocar</span>
             <span className="hidden text-fg-subtle sm:inline">/</span>
-            <span className="truncate font-semibold text-fg">{paginaAtual?.label}</span>
+            <span className="truncate font-semibold text-fg">
+              {paginaAtual?.label ?? (abaAtiva === "perfil" ? "Meu perfil" : "")}
+            </span>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">

@@ -13,6 +13,7 @@ import {
   CriarUsuarioDTO,
   IUsuarioAdminRepository,
 } from "../../application/ports/repositories/IUsuarioAdminRepository";
+import type { AtualizarMeuPerfilDTO, IPerfilRepository } from "../../application/ports/repositories/IPerfilRepository";
 import { OrigemAutenticacao, Usuario } from "../../domain/entities/Usuario";
 import { Papel } from "../../domain/value-objects/Enums";
 import {
@@ -81,7 +82,7 @@ function descreverAcessoPorPapeis(papeis: Papel[]): string {
   return "Fila de Ordens de Serviço (Oficina), Checklist Elétrico e Estoque.";
 }
 
-export class MockOrHttpAuthRepository implements IAuthRepository, IUsuarioAdminRepository {
+export class MockOrHttpAuthRepository implements IAuthRepository, IUsuarioAdminRepository, IPerfilRepository {
   private readonly usuariosRegistrados: RegistroDemo[] = [
     {
       usuario: new Usuario({
@@ -583,6 +584,93 @@ export class MockOrHttpAuthRepository implements IAuthRepository, IUsuarioAdminR
       throw new DomainError("Usuário não encontrado.", "EntidadeNaoEncontrada");
     }
     this.usuariosRegistrados.splice(idx, 1);
+  }
+
+  // ---- Meu perfil (o próprio usuário logado) -------------------------------------------------
+
+  private exigirSessao(): Usuario {
+    if (!this.usuarioAtual) this.restaurarSessaoStorage();
+    if (!this.usuarioAtual) {
+      throw new DomainError("Entre no sistema para alterar o seu perfil.", "CredenciaisInvalidas");
+    }
+    return this.usuarioAtual;
+  }
+
+  public async atualizarMeuPerfil(dados: AtualizarMeuPerfilDTO): Promise<Usuario> {
+    const atual = this.exigirSessao();
+    if (this.deveUsarApiAdmin()) {
+      const payload: Record<string, string> = {};
+      if (dados.nome !== undefined) payload.nome = dados.nome.trim();
+      if (dados.email !== undefined) payload.email = dados.email.trim().toLowerCase();
+      if (dados.username !== undefined) payload.username = dados.username.trim().toLowerCase();
+      const dto = await this.apiAdminRequest<ApiUsuarioDTO>("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      const atualizado = this.mapearApiUsuario(dto, "API");
+      this.sincronizarPropriaSessaoSeAplicavel(atualizado);
+      return atualizado;
+    }
+    // Demonstração: mesma regra local da edição de usuários (validação e unicidade)
+    return this.atualizar(atual.id, {
+      nome: dados.nome,
+      email: dados.email,
+      username: dados.username,
+    });
+  }
+
+  public async trocarMinhaSenha(senhaAtual: string, novaSenha: string): Promise<void> {
+    const atual = this.exigirSessao();
+    if (!senhaAtual) throw new DomainError("Informe a senha atual.", "RegraNegocio");
+    if (!novaSenha || novaSenha.length < 8) {
+      throw new DomainError("A nova senha deve ter ao menos 8 caracteres.", "RegraNegocio");
+    }
+    if (novaSenha === senhaAtual) {
+      throw new DomainError("A nova senha deve ser diferente da senha atual.", "RegraNegocio");
+    }
+    if (this.deveUsarApiAdmin()) {
+      await this.apiAdminRequest<void>("/auth/me/senha", {
+        method: "POST",
+        body: JSON.stringify({ senha_atual: senhaAtual, nova_senha: novaSenha }),
+      });
+      return;
+    }
+    const reg = this.obterRegistroLocal(atual.id);
+    if (reg.senha !== senhaAtual) throw new DomainError("Senha atual incorreta.", "CredenciaisInvalidas");
+    reg.senha = novaSenha;
+  }
+
+  public async definirMeuPin(senhaAtual: string, pin: string): Promise<void> {
+    const atual = this.exigirSessao();
+    const pinLimpo = (pin || "").trim();
+    if (!senhaAtual) throw new DomainError("Informe a senha atual.", "RegraNegocio");
+    if (!REGEX_PIN.test(pinLimpo)) {
+      throw new DomainError("O PIN deve conter entre 4 e 6 dígitos numéricos.", "RegraNegocio");
+    }
+    if (this.deveUsarApiAdmin()) {
+      await this.apiAdminRequest<void>("/auth/me/pin", {
+        method: "POST",
+        body: JSON.stringify({ senha_atual: senhaAtual, pin: pinLimpo }),
+      });
+      this.sincronizarPropriaSessaoSeAplicavel(
+        new Usuario({
+          id: atual.id,
+          nome: atual.nome,
+          email: atual.email,
+          username: atual.username,
+          papeis: atual.papeis,
+          temPin: true,
+          telegramUserId: atual.telegramUserId,
+          ativo: atual.ativo,
+          origemAuth: atual.origemAuth,
+        })
+      );
+      return;
+    }
+    const reg = this.obterRegistroLocal(atual.id);
+    if (reg.senha !== senhaAtual) throw new DomainError("Senha atual incorreta.", "CredenciaisInvalidas");
+    await this.definirPin(atual.id, pinLimpo);
+    this.sincronizarPropriaSessaoSeAplicavel(this.clonarUsuarioDemo(reg));
   }
 
   public async logout(): Promise<void> {
