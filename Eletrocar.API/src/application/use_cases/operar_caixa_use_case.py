@@ -10,7 +10,9 @@ import uuid
 from src.domain.entities.caixa import CaixaDiario
 from src.domain.entities.auditoria import novo_log
 from src.domain.value_objects.enums import TipoMovimentacaoCaixa, StatusCaixa
-from src.domain.repositories.interfaces import CaixaRepositoryInterface, AuditoriaRepositoryInterface
+from src.domain.repositories.interfaces import (
+    CaixaRepositoryInterface, AuditoriaRepositoryInterface, UsuarioRepositoryInterface,
+)
 from src.domain.exceptions.domain_exceptions import (
     RegraNegocioException,
     CaixaFechadoException,
@@ -33,9 +35,26 @@ ORIGEM = "CAIXA"
 
 
 class OperarCaixaUseCase:
-    def __init__(self, caixa_repo: CaixaRepositoryInterface, audit_repo: AuditoriaRepositoryInterface):
+    def __init__(
+        self,
+        caixa_repo: CaixaRepositoryInterface,
+        audit_repo: AuditoriaRepositoryInterface,
+        usuario_repo: Optional[UsuarioRepositoryInterface] = None,
+    ):
         self.caixa_repo = caixa_repo
         self.audit_repo = audit_repo
+        self.usuario_repo = usuario_repo
+
+    async def _nome_operador(self, operador_id: uuid.UUID) -> Optional[str]:
+        if self.usuario_repo is None:
+            return None
+        usuario = await self.usuario_repo.buscar_por_id(operador_id)
+        return usuario.nome if usuario else None
+
+    async def _visao_operador_com_nome(self, caixa: CaixaDiario) -> CaixaOperadorOutputDTO:
+        dto = self._visao_operador(caixa)
+        dto.operador_nome = await self._nome_operador(caixa.operador_id)
+        return dto
 
     async def abrir_caixa(self, dto: AbrirCaixaInputDTO) -> CaixaOperadorOutputDTO:
         if await self.caixa_repo.obter_caixa_aberto():
@@ -47,7 +66,7 @@ class OperarCaixaUseCase:
             dto.operador_id, ORIGEM, "CAIXA_ABERTO",
             detalhes={"caixa_id": str(caixa.id), "saldo_inicial": str(caixa.saldo_inicial)}
         ))
-        return self._visao_operador(caixa)
+        return await self._visao_operador_com_nome(caixa)
 
     async def registrar_movimentacao(self, dto: MovimentarCaixaInputDTO) -> MovimentacaoOutputDTO:
         try:
@@ -94,7 +113,7 @@ class OperarCaixaUseCase:
 
     async def consultar_caixa_aberto(self) -> Optional[CaixaOperadorOutputDTO]:
         caixa = await self.caixa_repo.obter_caixa_aberto()
-        return self._visao_operador(caixa) if caixa else None
+        return await self._visao_operador_com_nome(caixa) if caixa else None
 
     async def consultar_caixa_gerencial(self, caixa_id: Optional[uuid.UUID] = None) -> Optional[CaixaGerencialOutputDTO]:
         caixa = await self.caixa_repo.buscar_por_id(caixa_id) if caixa_id else await self.caixa_repo.obter_caixa_aberto()
@@ -110,6 +129,7 @@ class OperarCaixaUseCase:
             data_abertura=caixa.data_abertura,
             data_fechamento=caixa.data_fechamento,
             movimentacoes=[self._mov_dto(m) for m in caixa.movimentacoes],
+            operador_nome=await self._nome_operador(caixa.operador_id),
         )
 
     async def relatorio_fechamento(self, caixa_id: uuid.UUID) -> RelatorioFechamentoOutputDTO:

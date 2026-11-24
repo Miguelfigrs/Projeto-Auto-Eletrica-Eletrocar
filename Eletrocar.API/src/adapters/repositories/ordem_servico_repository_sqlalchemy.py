@@ -86,6 +86,14 @@ class OrdemServicoRepositorySQLAlchemy(OrdemServicoRepositoryInterface):
         )
         return [self._to_entity(m) for m in (await self.session.execute(stmt)).scalars().all()]
 
+    async def listar_finalizadas_no_periodo(self, inicio: datetime, fim: datetime) -> List[OrdemServico]:
+        stmt = select(OrdemServicoModel).where(
+            OrdemServicoModel.finalizada_em.is_not(None),
+            OrdemServicoModel.finalizada_em >= inicio,
+            OrdemServicoModel.finalizada_em <= fim,
+        )
+        return [self._to_entity(m) for m in (await self.session.execute(stmt)).scalars().all()]
+
     async def obter_proximo_numero_os(self) -> str:
         return await proximo_numero(self.session, "OS")
 

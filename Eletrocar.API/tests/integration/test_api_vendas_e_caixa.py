@@ -57,6 +57,7 @@ async def test_fluxo_completo_venda_alcada_e_fechamento_cego(client: AsyncClient
     # O operador não enxerga saldo teórico em nenhum momento
     status_caixa = await client.get("/api/v1/caixa/status", headers=balconista)
     assert "saldo_teorico" not in status_caixa.text
+    assert status_caixa.json()["operador_nome"].startswith("Usuário")
 
     fechamento = await client.post("/api/v1/caixa/fechamento-cego", json={
         "valores_contados": {"DINHEIRO": "195.00", "PIX": "28.00"}
@@ -91,6 +92,7 @@ async def test_cancelamento_de_venda_pelo_admin_estorna_estoque_e_caixa(client: 
 
     gerencial = (await client.get("/api/v1/caixa/gerencial", headers=admin)).json()
     assert gerencial["saldo_teorico_dinheiro"] == "50.00"
+    assert gerencial["operador_nome"]
     assert (await client.get(f"/api/v1/pecas/barcode/{peca['codigo_barras']}", headers=admin)).json()["estoque_atual"] == 5
 
 

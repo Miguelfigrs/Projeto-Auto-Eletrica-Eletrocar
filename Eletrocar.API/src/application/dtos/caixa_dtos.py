@@ -51,6 +51,7 @@ class CaixaOperadorOutputDTO:
     saldo_inicial: Decimal
     data_abertura: datetime
     quantidade_movimentacoes: int
+    operador_nome: Optional[str] = None
 
 
 @dataclass
@@ -72,6 +73,7 @@ class CaixaGerencialOutputDTO:
     data_abertura: datetime
     data_fechamento: Optional[datetime]
     movimentacoes: List[MovimentacaoOutputDTO]
+    operador_nome: Optional[str] = None
 
 
 @dataclass

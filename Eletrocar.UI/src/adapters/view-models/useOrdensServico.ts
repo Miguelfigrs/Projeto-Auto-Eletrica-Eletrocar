@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { OrdemServico, OrdemServicoProps } from "../../domain/entities/OrdemServico";
-import { StatusOS, OrigemOS, PrioridadeOS } from "../../domain/value-objects/Enums";
+import { FormaPagamento, StatusOS, OrigemOS, PrioridadeOS } from "../../domain/value-objects/Enums";
 import { container } from "../../infra/di/container";
 
 export function useOrdensServico() {
@@ -18,10 +18,14 @@ export function useOrdensServico() {
   const [simulandoAudio, setSimulandoAudio] = useState(false);
 
   const carregarOrdens = useCallback(async () => {
-    const lista = await container.osRepository.listar(
-      filtroStatus === "TODOS" ? undefined : filtroStatus
-    );
-    setOrdens(lista);
+    try {
+      const lista = await container.osRepository.listar(
+        filtroStatus === "TODOS" ? undefined : filtroStatus
+      );
+      setOrdens(lista);
+    } catch (err: unknown) {
+      setMensagemErro(err instanceof Error ? err.message : "Não foi possível carregar as ordens de serviço.");
+    }
   }, [filtroStatus]);
 
   useEffect(() => {
@@ -41,6 +45,21 @@ export function useOrdensServico() {
       }
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao transicionar status da OS.");
+    }
+  };
+
+  const entregarOS = async (osId: string, formaPagamento: FormaPagamento) => {
+    try {
+      setMensagemErro(null);
+      const os = await container.avancarStatusOSUC.entregar(osId, formaPagamento);
+      setMensagemSucesso(`OS #${os.numeroOS} faturada e veículo entregue.`);
+      setTimeout(() => setMensagemSucesso(null), 3000);
+      carregarOrdens();
+      if (osSelecionada?.id === osId) setOsSelecionada(os);
+      return true;
+    } catch (err: unknown) {
+      setMensagemErro(err instanceof Error ? err.message : "Erro ao faturar a OS.");
+      return false;
     }
   };
 
@@ -103,6 +122,8 @@ export function useOrdensServico() {
     osSelecionada,
     setOsSelecionada,
     avancarStatus,
+    entregarOS,
+    carregarOrdens,
     criarOS,
     simularEnvioAudioTelegram,
     modalNovaOSAberto,

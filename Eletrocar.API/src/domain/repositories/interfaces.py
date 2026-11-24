@@ -49,6 +49,10 @@ class UsuarioRepositoryInterface(ABC):
     async def contar(self) -> int:
         pass
 
+    @abstractmethod
+    async def remover(self, usuario_id: uuid.UUID) -> None:
+        pass
+
 
 class SessaoRepositoryInterface(ABC):
     @abstractmethod
@@ -147,6 +151,10 @@ class OrdemServicoRepositoryInterface(ABC):
         pass
 
     @abstractmethod
+    async def listar_finalizadas_no_periodo(self, inicio: datetime, fim: datetime) -> List[OrdemServico]:
+        """OS cuja finalização (baixa definitiva das peças) ocorreu no período."""
+
+    @abstractmethod
     async def obter_proximo_numero_os(self) -> str:
         """Numeração sequencial atômica (segura para concorrência) no formato OS-AAAA-NNNN."""
 
@@ -167,6 +175,10 @@ class VendaBalcaoRepositoryInterface(ABC):
     @abstractmethod
     async def listar_concluidas_no_periodo(self, inicio: datetime, fim: datetime) -> List[VendaBalcao]:
         pass
+
+    @abstractmethod
+    async def listar_movimentadas_no_periodo(self, inicio: datetime, fim: datetime) -> List[VendaBalcao]:
+        """Vendas (de qualquer status) realizadas OU canceladas no período — base do histórico de estoque."""
 
     @abstractmethod
     async def obter_proximo_numero_venda(self) -> str:
@@ -236,3 +248,9 @@ class AuditoriaRepositoryInterface(ABC):
         usuario_id: Optional[uuid.UUID] = None
     ) -> List[LogAuditoria]:
         pass
+
+    @abstractmethod
+    async def listar_por_acoes_no_periodo(
+        self, acoes: List[str], inicio: datetime, fim: datetime
+    ) -> List[LogAuditoria]:
+        """Logs das ações informadas registrados no período, do mais antigo ao mais recente."""

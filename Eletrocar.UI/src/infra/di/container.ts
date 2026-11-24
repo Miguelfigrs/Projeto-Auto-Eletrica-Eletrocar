@@ -9,6 +9,8 @@ import { MockOrHttpOSRepository } from "../../adapters/repositories/MockOrHttpOS
 import { MockOrHttpCaixaRepository } from "../../adapters/repositories/MockOrHttpCaixaRepository";
 import { MockOrHttpVendaRepository } from "../../adapters/repositories/MockOrHttpVendaRepository";
 import { MockOrHttpAuthRepository } from "../../adapters/repositories/MockOrHttpAuthRepository";
+import { MockOrHttpDRERepository } from "../../adapters/repositories/MockOrHttpDRERepository";
+import { MockOrHttpHistoricoEstoqueRepository } from "../../adapters/repositories/MockOrHttpHistoricoEstoqueRepository";
 
 import { AdicionarItemVendaUseCase } from "../../application/use-cases/balcao/AdicionarItemVendaUseCase";
 import { FinalizarVendaUseCase } from "../../application/use-cases/balcao/FinalizarVendaUseCase";
@@ -19,6 +21,7 @@ import {
   AutenticarUsuarioUseCase,
   TrocarOperadorPorPinUseCase,
 } from "../../application/use-cases/auth/AutenticarUsuarioUseCase";
+import { GerenciarUsuariosUseCase } from "../../application/use-cases/usuarios/GerenciarUsuariosUseCase";
 
 class DIContainer {
   // Gateways
@@ -26,11 +29,16 @@ class DIContainer {
   public readonly barcodeGateway = new KeyboardWedgeGateway();
 
   // Repositories
-  public readonly pecaRepository = new MockOrHttpPecaRepository();
-  public readonly osRepository = new MockOrHttpOSRepository();
-  public readonly caixaRepository = new MockOrHttpCaixaRepository();
-  public readonly vendaRepository = new MockOrHttpVendaRepository();
   public readonly authRepository = new MockOrHttpAuthRepository();
+  public readonly pecaRepository = new MockOrHttpPecaRepository(this.authRepository);
+  public readonly vendaRepository = new MockOrHttpVendaRepository(this.authRepository);
+  public readonly caixaRepository = new MockOrHttpCaixaRepository(this.authRepository);
+  public readonly osRepository = new MockOrHttpOSRepository(this.authRepository);
+  public readonly dreRepository = new MockOrHttpDRERepository(this.authRepository);
+  public readonly historicoEstoqueRepository = new MockOrHttpHistoricoEstoqueRepository(
+    this.authRepository,
+    this.pecaRepository
+  );
 
   // Use Cases
   public readonly adicionarItemVendaUC = new AdicionarItemVendaUseCase(
@@ -63,6 +71,11 @@ class DIContainer {
   );
 
   public readonly trocarOperadorPorPinUC = new TrocarOperadorPorPinUseCase(
+    this.authRepository,
+    this.soundGateway
+  );
+
+  public readonly gerenciarUsuariosUC = new GerenciarUsuariosUseCase(
     this.authRepository,
     this.soundGateway
   );

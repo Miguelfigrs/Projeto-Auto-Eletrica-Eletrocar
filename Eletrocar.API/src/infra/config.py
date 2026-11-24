@@ -6,6 +6,7 @@ import os
 from decimal import Decimal
 from pathlib import Path
 from typing import List
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from dotenv import load_dotenv
 
 # Diretórios base
@@ -32,6 +33,44 @@ def _bool(valor: str) -> bool:
     return str(valor).strip().lower() in ("1", "true", "sim", "yes", "on")
 
 
+# Parâmetros de URL da libpq (psql/Neon) que o asyncpg não aceita como argumento de conexão
+_PARAMETROS_LIBPQ_IGNORADOS = {"channel_binding", "options", "target_session_attrs", "application_name"}
+
+
+def normalizar_url_banco(url: str) -> str:
+    """
+    Aceita a string de conexão como os provedores entregam (Neon, Render, Supabase:
+    "postgres://..." ou "postgresql://...?sslmode=require&channel_binding=require")
+    e devolve a forma usada pela API: driver asyncpg e SSL no parâmetro "ssl".
+    URLs SQLite e URLs já no formato asyncpg são preservadas (só o SSL é traduzido).
+    """
+    url = (url or "").strip()
+    if not url or url.startswith("sqlite"):
+        return url
+    partes = urlsplit(url)
+    esquema = partes.scheme
+    if esquema in ("postgres", "postgresql"):
+        esquema = "postgresql+asyncpg"
+    if not esquema.startswith("postgresql"):
+        return url
+
+    parametros = []
+    for chave, valor in parse_qsl(partes.query, keep_blank_values=True):
+        if chave in _PARAMETROS_LIBPQ_IGNORADOS:
+            continue
+        if chave == "sslmode":
+            chave = "ssl"
+            valor = "require" if valor in ("require", "verify-ca", "verify-full") else valor
+        parametros.append((chave, valor))
+    return urlunsplit((esquema, partes.netloc, partes.path, urlencode(parametros), partes.fragment))
+
+
+def eh_pooler_transacional(url: str) -> bool:
+    """Neon (host "-pooler") e PgBouncer em modo transação não suportam prepared statements em cache."""
+    host = urlsplit(url).hostname or ""
+    return "-pooler" in host or "pgbouncer=true" in url
+
+
 class Settings:
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Auto Elétrica Eletrocar - API")
     VERSION: str = os.getenv("VERSION", "1.1.0")
@@ -42,7 +81,11 @@ class Settings:
     ROOT_DIR: Path = ROOT_DIR
     DATABASE_MODULE_DIR: Path = ROOT_DIR / "Eletrocar.Database" / "data"
     DEFAULT_SQLITE_PATH: Path = DATABASE_MODULE_DIR / "eletrocar.db"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{DEFAULT_SQLITE_PATH.as_posix()}")
+    DATABASE_URL: str = normalizar_url_banco(
+        os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{DEFAULT_SQLITE_PATH.as_posix()}")
+    )
+    DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "5"))
+    DB_MAX_OVERFLOW: int = int(os.getenv("DB_MAX_OVERFLOW", "5"))
     MIGRAR_NA_INICIALIZACAO: bool = _bool(os.getenv("MIGRAR_NA_INICIALIZACAO", "true"))
     SEED_DADOS_DEMO: bool = _bool(os.getenv("SEED_DADOS_DEMO", "false"))
     SEED_SQL_PATH: Path = Path(os.getenv("SEED_SQL_PATH", str(ROOT_DIR / "Eletrocar.Database" / "seed_completo.sql")))
@@ -61,15 +104,17 @@ class Settings:
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
     MAX_TENTATIVAS_LOGIN: int = int(os.getenv("MAX_TENTATIVAS_LOGIN", "5"))
     BLOQUEIO_LOGIN_MINUTOS: int = int(os.getenv("BLOQUEIO_LOGIN_MINUTOS", "15"))
-    CORS_ORIGINS: List[str] = _lista(os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"))
+    CORS_ORIGINS: List[str] = _lista(os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"))
     REFRESH_COOKIE_SECURE: bool = _bool(os.getenv("REFRESH_COOKIE_SECURE", "false"))
 
     # Regras de negócio parametrizáveis
     LIMITE_DESCONTO_SEM_AUTORIZACAO_PERCENTUAL: Decimal = Decimal(os.getenv("LIMITE_DESCONTO_SEM_AUTORIZACAO_PERCENTUAL", "5"))
     PRAZO_FATURADO_DIAS: int = int(os.getenv("PRAZO_FATURADO_DIAS", "30"))
     PERCENTUAL_CUSTO_MAO_OBRA: Decimal = Decimal(os.getenv("PERCENTUAL_CUSTO_MAO_OBRA", "40"))
+    # Fuso da oficina: define o "dia" dos relatórios (os instantes são gravados em UTC)
+    FUSO_HORARIO: str = os.getenv("FUSO_HORARIO", "America/Sao_Paulo")
     NOME_EMPRESA_COMPROVANTE: str = os.getenv("NOME_EMPRESA_COMPROVANTE", "AUTO ELETRICA ELETROCAR")
-    URL_PAINEL: str = os.getenv("URL_PAINEL", "http://localhost:5173")
+    URL_PAINEL: str = os.getenv("URL_PAINEL", "http://localhost:3000")
 
     # Telegram Voice Bot
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -113,6 +158,8 @@ class Settings:
             problemas.append("CORS_ORIGINS não pode ser '*' em produção")
         if self.SEED_DADOS_DEMO:
             problemas.append("SEED_DADOS_DEMO não pode estar ativo em produção")
+        if self.DATABASE_URL.startswith("sqlite"):
+            problemas.append("DATABASE_URL deve apontar para o PostgreSQL (ex.: Neon) em produção")
         if problemas:
             raise RuntimeError("Configuração insegura para produção: " + "; ".join(problemas))
 

@@ -4,43 +4,67 @@
  * autenticação e status do leitor de código de barras.
  */
 import React, { useState, useEffect } from "react";
-import { AppShell } from "./presentation/components/AppShell";
-import { BrandMark, BrandWordmark } from "./presentation/components/ui";
+import { ArrowLeft, Lock, ShieldAlert } from "lucide-react";
+import { AppShell, NAV_ITENS, temAcessoAba } from "./presentation/components/AppShell";
+import { BrandMark, Page } from "./presentation/components/ui";
+import { LoginView } from "./presentation/components/LoginView";
 import { LockScreenModal } from "./presentation/components/LockScreenModal";
+import { OverviewView } from "./presentation/pages/OverviewView";
 import { BalcaoPDVView } from "./presentation/pages/BalcaoPDVView";
 import { OrdensServicoView } from "./presentation/pages/OrdensServicoView";
 import { CaixaView } from "./presentation/pages/CaixaView";
 import { EstoqueView } from "./presentation/pages/EstoqueView";
 import { FinanceiroDREView } from "./presentation/pages/FinanceiroDREView";
+import { UsuariosView } from "./presentation/pages/UsuariosView";
 import { useAuth } from "./adapters/view-models/useAuth";
 import { useHardwareStatus } from "./adapters/view-models/useHardwareStatus";
 import { useCaixa } from "./adapters/view-models/useCaixa";
-import { AlertCircle, ArrowRight, ScanBarcode, Wrench, Wallet } from "lucide-react";
+import { Usuario } from "./domain/entities/Usuario";
+
+function abaInicialPorPerfil(usuario: Usuario): string {
+  if (usuario.ehAdmin) return "overview";
+  if (usuario.ehBalconista) return "balcao";
+  if (usuario.ehEletricista) return "os";
+  return "overview";
+}
 
 export const App: React.FC = () => {
   const {
     usuario,
+    operadoresRapidos,
     carregando,
+    autenticando,
     lockScreenAberto,
     setLockScreenAberto,
     erroAuth,
+    setErroAuth,
     login,
     trocarOperadorPorPin,
+    logout,
+    recarregarSessaoEOperadores,
   } = useAuth();
 
   const { status: hardwareStatus, modelo: hardwareModelo, simularLeitura } = useHardwareStatus();
   const { caixa } = useCaixa(usuario?.nome || "Operador");
 
-  const [abaAtiva, setAbaAtiva] = useState<string>("balcao");
-  const [loginEmail, setLoginEmail] = useState("admin");
-  const [loginSenha, setLoginSenha] = useState("admin123");
+  const [abaAtiva, setAbaAtiva] = useState<string>("overview");
+  const [modoDidatico, setModoDidatico] = useState<boolean>(true);
+  const [codigoPendente, setCodigoPendente] = useState<string | null>(null);
 
-  // Escuta de Teclas de Atalho Globais (F2 a F12)
+  // Escuta de Teclas de Atalho Globais (F1 a F12) quando autenticado
   useEffect(() => {
+    if (!usuario) return;
+
     const handler = (e: KeyboardEvent) => {
       if (e.key === "F12") {
         e.preventDefault();
+        setErroAuth(null);
         setLockScreenAberto(true);
+        return;
+      }
+      if (e.key === "F1") {
+        e.preventDefault();
+        setAbaAtiva("overview");
         return;
       }
       if (e.key === "F2") {
@@ -53,8 +77,9 @@ export const App: React.FC = () => {
         setAbaAtiva("os");
         return;
       }
-      // F4 -> Peças & Estoque (quando não estiver digitando em input)
-      if (e.key === "F4" && (e.target as HTMLElement).tagName !== "INPUT") {
+      // F4 -> Peças & Estoque (quando não estiver digitando em campo de formulário)
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (e.key === "F4" && tag !== "INPUT" && tag !== "TEXTAREA") {
         e.preventDefault();
         setAbaAtiva("estoque");
         return;
@@ -69,11 +94,43 @@ export const App: React.FC = () => {
         setAbaAtiva("dre");
         return;
       }
+      if (e.key === "F8") {
+        e.preventDefault();
+        setAbaAtiva("usuarios");
+        return;
+      }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [setLockScreenAberto]);
+  }, [usuario, setErroAuth, setLockScreenAberto]);
+
+  const handleLogin = async (
+    identificador: string,
+    senha: string,
+    lembrarSessao: boolean
+  ) => {
+    const logado = await login(identificador, senha, lembrarSessao);
+    if (logado) {
+      setAbaAtiva(abaInicialPorPerfil(logado));
+    }
+    return logado;
+  };
+
+  const handleLogout = async () => {
+    setCodigoPendente(null);
+    await logout();
+  };
+
+  const handleAbrirLockScreen = () => {
+    setErroAuth(null);
+    setLockScreenAberto(true);
+  };
+
+  const handleFecharLockScreen = () => {
+    setErroAuth(null);
+    setLockScreenAberto(false);
+  };
 
   if (carregando) {
     return (
@@ -83,124 +140,20 @@ export const App: React.FC = () => {
     );
   }
 
-  // Tela de login
+  // Sem sessão ativa: exige autenticação explícita na tela de Login moderna
   if (!usuario) {
     return (
-      <div className="grid min-h-screen bg-canvas lg:grid-cols-[1.1fr_1fr]">
-        {/* Painel da marca */}
-        <div className="relative hidden overflow-hidden border-r border-line bg-sidebar lg:flex lg:flex-col lg:justify-between lg:p-12">
-          <div
-            className="pointer-events-none absolute -right-40 -top-40 h-[520px] w-[520px] rounded-full opacity-60 blur-3xl"
-            style={{ background: "radial-gradient(circle, rgb(225 29 42 / 0.35), transparent 65%)" }}
-          />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage:
-                "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-              backgroundSize: "44px 44px",
-            }}
-          />
-
-          <div className="relative flex items-center gap-4">
-            <BrandMark size={52} />
-            <BrandWordmark />
-          </div>
-
-          <div className="relative max-w-md">
-            <div className="mb-5 h-1 w-14 rounded-full bg-brand" />
-            <h1 className="font-display text-5xl font-bold uppercase leading-[0.95] tracking-wide text-fg">
-              Oficina, balcão e caixa
-              <span className="text-brand"> no mesmo lugar.</span>
-            </h1>
-            <p className="mt-5 text-base text-fg-muted">
-              Venda peças com leitor de código de barras, acompanhe cada ordem de serviço e feche o
-              turno com o caixa conferido.
-            </p>
-          </div>
-
-          <ul className="relative grid grid-cols-3 gap-3 text-sm">
-            {[
-              { icon: ScanBarcode, t: "Balcão PDV" },
-              { icon: Wrench, t: "Ordens de serviço" },
-              { icon: Wallet, t: "Caixa & turnos" },
-            ].map(({ icon: Icon, t }) => (
-              <li key={t} className="card flex items-center gap-2 px-3 py-3 text-fg-muted">
-                <Icon size={16} className="text-brand" /> {t}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Formulário */}
-        <div className="flex items-center justify-center px-5 py-12">
-          <div className="w-full max-w-[380px]">
-            <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <BrandMark size={44} />
-              <BrandWordmark />
-            </div>
-
-            <h2 className="text-2xl font-semibold text-fg">Entrar no sistema</h2>
-            <p className="mt-1 text-sm text-fg-muted">Use seu usuário e senha de operador.</p>
-
-            {erroAuth && (
-              <div className="alert alert-neg mt-6">
-                <AlertCircle size={18} className="shrink-0" />
-                {erroAuth}
-              </div>
-            )}
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                login(loginEmail, loginSenha);
-              }}
-              className="mt-8 flex flex-col gap-5"
-            >
-              <div>
-                <label className="label" htmlFor="login-usuario">
-                  Usuário ou e-mail
-                </label>
-                <input
-                  id="login-usuario"
-                  type="text"
-                  required
-                  autoComplete="username"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="field h-11"
-                />
-              </div>
-
-              <div>
-                <label className="label" htmlFor="login-senha">
-                  Senha
-                </label>
-                <input
-                  id="login-senha"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  value={loginSenha}
-                  onChange={(e) => setLoginSenha(e.target.value)}
-                  className="field h-11"
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-lg mt-2 w-full">
-                Entrar <ArrowRight size={18} />
-              </button>
-            </form>
-
-            <p className="mt-8 rounded-xl border border-line bg-surface px-4 py-3 text-xs text-fg-muted">
-              Acesso de demonstração: <strong className="text-fg">admin</strong> /{" "}
-              <strong className="text-fg">admin123</strong>
-            </p>
-          </div>
-        </div>
-      </div>
+      <LoginView
+        operadoresRapidos={operadoresRapidos}
+        autenticando={autenticando}
+        erroAuth={erroAuth}
+        onLogin={handleLogin}
+      />
     );
   }
+
+  const acessoPermitido = temAcessoAba(usuario, abaAtiva);
+  const infoAbaRestrita = NAV_ITENS.find((item) => item.id === abaAtiva);
 
   return (
     <>
@@ -209,28 +162,110 @@ export const App: React.FC = () => {
         hardwareStatus={hardwareStatus}
         hardwareModelo={hardwareModelo}
         caixaAberto={!!caixa?.estaAberto}
-        turnoNumero={caixa?.turnoNumero}
+        rotuloTurno={caixa?.rotuloTurno}
         abaAtiva={abaAtiva}
+        modoDidatico={modoDidatico}
+        onAlternarModoDidatico={() => setModoDidatico((v) => !v)}
         onSelecionarAba={setAbaAtiva}
-        onAbrirLockScreen={() => setLockScreenAberto(true)}
+        onAbrirLockScreen={handleAbrirLockScreen}
+        onLogout={handleLogout}
         onSimularScan={() => {
+          setAbaAtiva("balcao");
           simularLeitura("7891049281023", () => {
-            // Callback handled by listener
+            // Tratado pelo listener do PDV
           });
         }}
       >
-        {abaAtiva === "balcao" && <BalcaoPDVView operadorNome={usuario.nome} />}
-        {abaAtiva === "os" && <OrdensServicoView />}
-        {abaAtiva === "estoque" && <EstoqueView onBiparPecaNoBalcao={() => setAbaAtiva("balcao")} />}
-        {abaAtiva === "caixa" && <CaixaView operadorNome={usuario.nome} />}
-        {abaAtiva === "dre" && <FinanceiroDREView />}
+        {!acessoPermitido ? (
+          <Page className="max-w-2xl">
+            <div className="card p-8 text-center">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-brand-line bg-brand-soft text-brand-text">
+                <ShieldAlert size={30} />
+              </div>
+              <div className="eyebrow mt-5 text-brand-text">Controle de Acesso (RBAC)</div>
+              <h2 className="mt-2 font-display text-3xl font-bold uppercase tracking-wide text-fg">
+                Módulo restrito ao seu perfil
+              </h2>
+              <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-fg-muted">
+                O operador <strong className="text-fg">{usuario.nome}</strong> possui perfil{" "}
+                <strong className="text-fg">{usuario.papeis.join(", ")}</strong> e não tem permissão
+                para abrir <strong className="text-fg">{infoAbaRestrita?.label ?? abaAtiva}</strong>.
+              </p>
+              <div className="mt-4 rounded-xl border border-line bg-canvas/80 p-4 text-left text-xs leading-relaxed text-fg-muted">
+                <strong className="text-fg">Por que isso existe na oficina?</strong>
+                <br />
+                A segregação de funções (RBAC) evita que operadores técnicos alterem fechamentos de
+                caixa ou acessem o DRE financeiro e custos de compra (CMV). Use o PIN do Dono/Admin
+                para autorizar ou volte ao seu fluxo normal.
+              </div>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAbaAtiva(abaInicialPorPerfil(usuario))}
+                  className="btn btn-secondary"
+                >
+                  <ArrowLeft size={16} /> Voltar para minha tela inicial
+                </button>
+                <button type="button" onClick={handleAbrirLockScreen} className="btn btn-primary">
+                  <Lock size={16} /> Trocar operador por PIN (F12)
+                </button>
+              </div>
+            </div>
+          </Page>
+        ) : (
+          <>
+            {abaAtiva === "overview" && (
+              <OverviewView
+                usuario={usuario}
+                caixa={caixa}
+                modoDidatico={modoDidatico}
+                onIrParaAba={setAbaAtiva}
+                onAbrirLockScreen={handleAbrirLockScreen}
+              />
+            )}
+            {abaAtiva === "balcao" && (
+              <BalcaoPDVView
+                operadorNome={usuario.nome}
+                caixaAberto={!!caixa?.estaAberto}
+                modoDidatico={modoDidatico}
+                codigoPendente={codigoPendente}
+                onCodigoPendenteConsumido={() => setCodigoPendente(null)}
+                onIrParaCaixa={() => setAbaAtiva("caixa")}
+              />
+            )}
+            {abaAtiva === "os" && <OrdensServicoView modoDidatico={modoDidatico} />}
+            {abaAtiva === "estoque" && (
+              <EstoqueView
+                modoDidatico={modoDidatico}
+                onBiparPecaNoBalcao={(codigo) => {
+                  setCodigoPendente(codigo);
+                  setAbaAtiva("balcao");
+                }}
+              />
+            )}
+            {abaAtiva === "caixa" && (
+              <CaixaView operadorNome={usuario.nome} modoDidatico={modoDidatico} />
+            )}
+            {abaAtiva === "dre" && <FinanceiroDREView modoDidatico={modoDidatico} />}
+            {abaAtiva === "usuarios" && (
+              <UsuariosView
+                usuarioAtual={usuario}
+                modoDidatico={modoDidatico}
+                onUsuariosAlterados={recarregarSessaoEOperadores}
+              />
+            )}
+          </>
+        )}
       </AppShell>
 
       {/* Modal Lock Screen para troca ágil de operador por PIN (F12) */}
       <LockScreenModal
         aberto={lockScreenAberto}
-        onFechar={() => setLockScreenAberto(false)}
+        operadoresRapidos={operadoresRapidos}
+        usuarioAtualId={usuario.id}
+        onFechar={handleFecharLockScreen}
         onAutenticarPorPin={trocarOperadorPorPin}
+        onLogout={handleLogout}
         erro={erroAuth}
       />
     </>

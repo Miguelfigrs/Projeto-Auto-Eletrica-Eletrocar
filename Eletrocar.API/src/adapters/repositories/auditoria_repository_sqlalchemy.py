@@ -2,6 +2,7 @@
 Implementação SQLAlchemy do AuditoriaRepositoryInterface (somente inserção e leitura - logs imutáveis).
 O IP de origem é obtido do contexto da requisição HTTP quando o caso de uso não o informa.
 """
+from datetime import datetime
 from typing import List, Optional
 import uuid
 from sqlalchemy import select
@@ -37,6 +38,27 @@ class AuditoriaRepositorySQLAlchemy(AuditoriaRepositoryInterface):
             stmt = stmt.where(LogAuditoriaModel.acao == acao.upper())
         if usuario_id:
             stmt = stmt.where(LogAuditoriaModel.usuario_id == usuario_id)
+        return [
+            LogAuditoria(
+                id=m.id, usuario_id=m.usuario_id, origem=m.origem, acao=m.acao, detalhes=m.detalhes or {},
+                payload_antes=m.payload_antes, payload_depois=m.payload_depois,
+                ip_address=m.ip_address, timestamp=m.timestamp
+            )
+            for m in (await self.session.execute(stmt)).scalars().all()
+        ]
+
+    async def listar_por_acoes_no_periodo(
+        self, acoes: List[str], inicio: datetime, fim: datetime
+    ) -> List[LogAuditoria]:
+        stmt = (
+            select(LogAuditoriaModel)
+            .where(
+                LogAuditoriaModel.acao.in_([a.upper() for a in acoes]),
+                LogAuditoriaModel.timestamp >= inicio,
+                LogAuditoriaModel.timestamp <= fim,
+            )
+            .order_by(LogAuditoriaModel.timestamp)
+        )
         return [
             LogAuditoria(
                 id=m.id, usuario_id=m.usuario_id, origem=m.origem, acao=m.acao, detalhes=m.detalhes or {},

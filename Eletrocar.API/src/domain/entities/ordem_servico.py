@@ -178,6 +178,12 @@ class OrdemServico:
         self.updated_at = agora_utc()
         return item
 
+    def atualizar_checklist(self, checklist: Dict[str, Any]):
+        """Marca/desmarca itens do checklist elétrico (diagnóstico) enquanto a OS está em aberto."""
+        self._validar_edicao("alterações no checklist")
+        self.checklist_eletrico = dict(checklist)
+        self.updated_at = agora_utc()
+
     def adicionar_servico(self, descricao: str, valor: Decimal, eletricista_id: Optional[uuid.UUID] = None) -> ServicoOS:
         self._validar_edicao("serviços")
         if not descricao or not descricao.strip():

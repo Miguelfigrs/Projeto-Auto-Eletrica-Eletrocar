@@ -116,3 +116,16 @@ async def test_atualizar_dados_cadastrais():
     )
     assert atualizado.nome == "Roberto Sênior"
     assert atualizado.telegram_user_id == "111"
+
+
+@pytest.mark.asyncio
+async def test_admin_pode_remover_outro_usuario_mas_nao_a_propria_conta():
+    use_case, repo, audit, admin = await _cenario()
+    criado = await use_case.criar(_novo(), executor_id=admin.id)
+
+    with pytest.raises(RegraNegocioException):
+        await use_case.remover(admin.id, executor_id=admin.id)
+
+    await use_case.remover(criado.id, executor_id=admin.id)
+    assert await repo.buscar_por_id(criado.id) is None
+    assert "USUARIO_REMOVIDO" in audit.acoes()

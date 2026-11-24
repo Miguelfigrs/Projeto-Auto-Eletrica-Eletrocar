@@ -45,10 +45,15 @@ COPY . /app/
 RUN useradd --create-home --uid 1000 eletrocar && chown -R eletrocar /app
 USER eletrocar
 
+# PORT: definida pelo Render (e outras plataformas); 8000 no Docker Compose local.
+# FORWARDED_ALLOW_IPS: confia nos cabeçalhos X-Forwarded-* do proxy da plataforma (IP real na auditoria).
+ENV PORT=8000 \
+    FORWARDED_ALLOW_IPS=127.0.0.1
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f "http://localhost:${PORT}/health" || exit 1
 
 # As migrações Alembic rodam na inicialização (MIGRAR_NA_INICIALIZACAO=true)
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+CMD ["sh", "-c", "exec uvicorn src.main:app --host 0.0.0.0 --port \"${PORT}\" --proxy-headers --forwarded-allow-ips \"${FORWARDED_ALLOW_IPS}\""]

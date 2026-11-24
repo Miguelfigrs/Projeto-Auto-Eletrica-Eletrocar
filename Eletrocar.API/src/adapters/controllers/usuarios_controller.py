@@ -86,3 +86,9 @@ async def redefinir_senha(usuario_id: uuid.UUID, body: SenhaRequest, admin: Usua
 async def definir_pin(usuario_id: uuid.UUID, body: PinRequest, admin: Usuario = Depends(somente_admin),
                       uc: GerenciarUsuariosUseCase = Depends(usuarios_uc)):
     await uc.definir_pin(usuario_id, body.pin, executor_id=admin.id)
+
+
+@router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remover(usuario_id: uuid.UUID, admin: Usuario = Depends(somente_admin),
+                  uc: GerenciarUsuariosUseCase = Depends(usuarios_uc)):
+    await uc.remover(usuario_id, executor_id=admin.id)

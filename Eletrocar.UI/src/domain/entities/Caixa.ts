@@ -27,6 +27,13 @@ export interface CaixaProps {
   dataAbertura?: Date | string;
   dataFechamento?: Date | string;
   movimentacoes?: MovimentacaoCaixa[];
+  /**
+   * false = visão do operador no fechamento cego: o servidor não revela saldos nem lançamentos,
+   * só que o caixa está aberto. Padrão: true.
+   */
+  visaoGerencial?: boolean;
+  /** Saldo teórico de dinheiro calculado pelo servidor (prevalece sobre o cálculo local). */
+  saldoTeoricoServidor?: Dinheiro;
 }
 
 export class Caixa {
@@ -39,6 +46,8 @@ export class Caixa {
   public readonly dataAbertura: Date;
   public dataFechamento?: Date;
   public movimentacoes: MovimentacaoCaixa[];
+  public readonly visaoGerencial: boolean;
+  private readonly saldoTeoricoServidor?: Dinheiro;
 
   constructor(props: CaixaProps) {
     this.id = props.id;
@@ -53,6 +62,16 @@ export class Caixa {
     this.dataAbertura = props.dataAbertura ? new Date(props.dataAbertura) : new Date();
     this.dataFechamento = props.dataFechamento ? new Date(props.dataFechamento) : undefined;
     this.movimentacoes = props.movimentacoes || [];
+    this.visaoGerencial = props.visaoGerencial ?? true;
+    this.saldoTeoricoServidor = props.saldoTeoricoServidor;
+  }
+
+  /** "#12" nos turnos numerados; "de 24/11 08:30" nos turnos do servidor (que não são numerados). */
+  public get rotuloTurno(): string {
+    if (this.turnoNumero > 0) return `#${this.turnoNumero}`;
+    const data = this.dataAbertura.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    const hora = this.dataAbertura.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    return `de ${data} ${hora}`;
   }
 
   public get estaAberto(): boolean {
@@ -112,6 +131,7 @@ export class Caixa {
   }
 
   public get saldoEsperadoEmDinheiro(): Dinheiro {
+    if (this.saldoTeoricoServidor) return this.saldoTeoricoServidor;
     return this.saldoInicial.somar(this.totalEntradasDinheiro).subtrair(this.totalSaidasDinheiro);
   }
 
