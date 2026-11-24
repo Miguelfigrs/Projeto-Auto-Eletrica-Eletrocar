@@ -173,6 +173,10 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # Reserva para o endereço da API (o next.config.mjs normaliza e usa o primeiro válido):
+      # variáveis "Sensitive" da Vercel não chegam legíveis ao `vercel build` rodado no Actions.
+      API_URL: ${{ vars.API_URL }}
+      ELETROCAR_EXIGIR_API_URL: "1"
     steps:
       - uses: actions/checkout@v4
 
