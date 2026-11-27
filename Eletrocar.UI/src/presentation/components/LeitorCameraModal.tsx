@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Camera, Flashlight, X } from "lucide-react";
 import { CameraBarcodeGateway, mensagemErroCamera, SessaoCamera } from "../../adapters/gateways/CameraBarcodeGateway";
+import { CorpoRolavel } from "./ui";
 
 export const LeitorCameraModal: React.FC<{
   aberto: boolean;
@@ -77,14 +78,14 @@ export const LeitorCameraModal: React.FC<{
   return (
     <div className="modal-overlay" style={{ zIndex: 80 }} role="dialog" aria-modal="true" aria-label="Ler código pela câmera">
       <div className="modal brand-stripe" style={{ maxWidth: 520 }}>
-        <div className="flex items-center gap-3 border-b border-line px-5 py-4">
+        <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-4">
           <Camera size={18} className="text-brand-text" />
           <h2 className="flex-1 text-base font-semibold text-fg">Ler código pela câmera</h2>
           <button type="button" onClick={onFechar} className="btn btn-ghost btn-icon" aria-label="Fechar câmera">
             <X size={18} />
           </button>
         </div>
-        <div className="p-4">
+        <CorpoRolavel classeConteudo="p-4">
           <div className="relative overflow-hidden rounded-xl bg-black" style={{ aspectRatio: "4 / 3" }}>
             <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
             <div className="pointer-events-none absolute inset-x-[10%] top-1/2 h-1/3 -translate-y-1/2 rounded-lg border-2 border-brand/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
@@ -107,7 +108,7 @@ export const LeitorCameraModal: React.FC<{
               {lido && <> Último lido: <strong className="font-mono text-fg">{lido}</strong></>}
             </p>
           )}
-        </div>
+        </CorpoRolavel>
       </div>
     </div>
   );

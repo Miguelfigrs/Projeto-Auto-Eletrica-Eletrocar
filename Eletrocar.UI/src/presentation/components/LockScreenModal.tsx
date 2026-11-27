@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Check, Delete, Lock, LogOut, UserCheck, X } from "lucide-react";
 import { OperadorRapidoInfo } from "../../application/ports/repositories/IAuthRepository";
 import { cn } from "../../lib/utils";
+import { CorpoRolavel } from "./ui";
 
 interface LockScreenModalProps {
   aberto: boolean;
@@ -100,7 +101,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
     <div className="modal-overlay">
       <div
         className={cn(
-          "modal brand-stripe relative px-6 pb-6 pt-6 sm:px-8",
+          "modal brand-stripe relative",
           precisaEscolherNome ? "max-w-[880px]" : "max-w-[460px]"
         )}
         role="dialog"
@@ -110,13 +111,13 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
         <button
           type="button"
           onClick={onFechar}
-          className="btn btn-ghost btn-icon absolute right-3 top-3"
+          className="btn btn-ghost btn-icon absolute right-3 top-3 z-10"
           aria-label="Fechar"
         >
           <X size={22} />
         </button>
 
-        <div className="flex items-center gap-3 pr-14">
+        <div className="flex shrink-0 items-center gap-3 px-6 pb-4 pr-16 pt-6 sm:px-8">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-brand-line bg-brand-soft text-brand-text">
             <Lock size={24} />
           </span>
@@ -129,7 +130,8 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           </div>
         </div>
 
-        <div className={cn("mt-5 grid gap-6", precisaEscolherNome && "md:grid-cols-2")}>
+        <CorpoRolavel classeConteudo="px-6 pb-6 pt-1 sm:px-8">
+        <div className={cn("grid gap-6", precisaEscolherNome && "md:grid-cols-2")}>
           {precisaEscolherNome && (
             <div>
               <div className="label">1. Quem vai usar o sistema?</div>
@@ -241,6 +243,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
             <LogOut size={18} /> Sair do sistema
           </button>
         </div>
+        </CorpoRolavel>
       </div>
     </div>
   );

@@ -507,15 +507,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 16px;
     background: rgb(9 11 14 / 0.78);
     backdrop-filter: blur(8px);
     animation: fade-in 0.15s ease-out;
   }
+  /*
+   * Janela: o título e o botão de fechar ficam fixos; só o conteúdo (.modal-corpo) rola.
+   * Antes a faixa .brand-stripe (overflow: hidden) anulava a rolagem e, em telas baixas,
+   * o fim do formulário e os botões ficavam inalcançáveis.
+   */
   .modal {
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     background: linear-gradient(180deg, #222831 0%, var(--color-surface) 100%);
     border: 1px solid var(--color-line-strong);
     border-radius: 18px;
@@ -523,6 +530,27 @@
       inset 0 1px 0 rgb(255 255 255 / 0.06),
       0 32px 84px -20px rgb(0 0 0 / 0.85);
     animation: pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal-corpo {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: #5b6578 transparent;
+    scrollbar-width: auto;
+  }
+  .modal-corpo::-webkit-scrollbar {
+    width: 16px;
+  }
+  .modal-corpo::-webkit-scrollbar-thumb {
+    background: #5b6578;
+    border: 4px solid #1e232b;
+    border-radius: 999px;
+  }
+  .modal-corpo::-webkit-scrollbar-thumb:hover {
+    background: #7a8598;
   }
 
   /* Faixa vermelho escuro característica da marca */

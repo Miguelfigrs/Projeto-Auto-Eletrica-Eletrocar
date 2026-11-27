@@ -89,6 +89,13 @@ export const SeletorPeriodoCalendario: React.FC<SeletorPeriodoCalendarioProps> =
 
   const containerRef = useRef<HTMLDivElement>(null);
   const ultimoWheelRef = useRef<number>(0);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Em telas baixas o calendário abria cortado embaixo (e a roda do mouse troca Dias/Meses/Anos
+  // em vez de rolar): ao abrir, a página rola até ele ficar inteiro à vista.
+  useEffect(() => {
+    if (aberto) popoverRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [aberto]);
 
   const chavesSelecionadas = useMemo(
     () => new Set(competenciasSelecionadas.map((c) => chaveCompetencia(c))),
@@ -423,6 +430,7 @@ export const SeletorPeriodoCalendario: React.FC<SeletorPeriodoCalendarioProps> =
       {/* Popover do Calendário em 3 níveis (Dias -> Meses -> Anos via Scroll) */}
       {aberto && (
         <div
+          ref={popoverRef}
           role="dialog"
           aria-label="Calendário de seleção de dias, meses e anos"
           onWheel={handleWheelAlternarVisao}
