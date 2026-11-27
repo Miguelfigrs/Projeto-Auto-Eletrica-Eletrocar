@@ -63,6 +63,7 @@ as extensões `pg_trgm` e `pgcrypto`.
 | `CORS_ORIGINS` | `https://SEU-PROJETO.vercel.app` (e o domínio próprio, separado por vírgula) |
 | `URL_PAINEL` | `https://SEU-PROJETO.vercel.app` |
 | `REFRESH_COOKIE_SECURE` | `true` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `480` (sessão de 8 horas; é o padrão — se a variável existir no Render com outro valor, é ela que vale) |
 | `FORWARDED_ALLOW_IPS` | `*` (confia no proxy do Render para registrar o IP real na auditoria) |
 | `MIGRAR_NA_INICIALIZACAO` | `true` |
 | `SEED_DADOS_DEMO` | `false` (a API se recusa a subir em produção com a carga de demonstração) |

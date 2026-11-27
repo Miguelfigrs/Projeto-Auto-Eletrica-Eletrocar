@@ -2,16 +2,30 @@
  * ViewModel: useCaixa
  * Controla a visualização e operações do caixa diário, sangrias e conciliação.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Caixa } from "../../domain/entities/Caixa";
 import { Dinheiro } from "../../domain/value-objects/Dinheiro";
 import { container } from "../../infra/di/container";
 import type { ValoresContados } from "../../application/ports/repositories/ICaixaRepository";
 import { formatarReais } from "../../lib/numeroBR";
 
-export function useCaixa(operadorNome: string) {
+export interface OpcoesUseCaixa {
+  /** Chamado depois de abrir/fechar o turno ou registrar sangria/suprimento (ex.: atualizar o topo). */
+  aoAlterar?: () => void;
+  /** false = não consulta o servidor ao montar; quem usa decide quando chamar carregarCaixa. */
+  carregarAoIniciar?: boolean;
+}
+
+export function useCaixa(operadorNome: string, opcoes: OpcoesUseCaixa = {}) {
+  const { carregarAoIniciar = true } = opcoes;
+  const aoAlterarRef = useRef(opcoes.aoAlterar);
+  aoAlterarRef.current = opcoes.aoAlterar;
+
   const [caixa, setCaixa] = useState<Caixa | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [carregando, setCarregando] = useState(carregarAoIniciar);
+  // Ação em andamento: os botões ficam travados e mostram "Abrindo...", "Registrando"...
+  // (no servidor de produção cada ação leva alguns segundos; sem isso a pessoa clica duas vezes)
+  const [processando, setProcessando] = useState(false);
   const [modalSangriaAberto, setModalSangriaAberto] = useState(false);
   const [modalSuprimentoAberto, setModalSuprimentoAberto] = useState(false);
   const [modalAberturaAberto, setModalAberturaAberto] = useState(false);
@@ -30,12 +44,33 @@ export function useCaixa(operadorNome: string) {
   }, []);
 
   useEffect(() => {
-    carregarCaixa();
-  }, [carregarCaixa]);
+    if (carregarAoIniciar) void carregarCaixa();
+  }, [carregarAoIniciar, carregarCaixa]);
 
-  const abrirTurno = async (saldoInicialNum: number) => {
+  const avisarSucesso = (texto: string) => {
+    setMensagemSucesso(texto);
+    setTimeout(() => setMensagemSucesso(null), 4000);
+  };
+
+  /** Executa uma ação do caixa uma vez só por vez; devolve true se o servidor aceitou. */
+  const executar = async (acao: () => Promise<void>, mensagemFalha: string): Promise<boolean> => {
+    if (processando) return false;
+    setProcessando(true);
+    setMensagemErro(null);
     try {
-      setMensagemErro(null);
+      await acao();
+      aoAlterarRef.current?.();
+      return true;
+    } catch (err: unknown) {
+      setMensagemErro(err instanceof Error ? err.message : mensagemFalha);
+      return false;
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  const abrirTurno = (saldoInicialNum: number) =>
+    executar(async () => {
       const novo = await container.operarCaixaUC.abrirCaixa(
         "usr-atual",
         operadorNome,
@@ -43,72 +78,40 @@ export function useCaixa(operadorNome: string) {
       );
       setCaixa(novo);
       setModalAberturaAberto(false);
-      setMensagemSucesso(`Turno de caixa ${novo.rotuloTurno} aberto com sucesso!`);
-      setTimeout(() => setMensagemSucesso(null), 3000);
-    } catch (err: unknown) {
-      setMensagemErro(err instanceof Error ? err.message : "Erro ao abrir caixa.");
-    }
-  };
+      avisarSucesso(`Turno de caixa ${novo.rotuloTurno} aberto com sucesso!`);
+    }, "Erro ao abrir caixa.");
 
-  const fecharTurno = async (valoresContados?: ValoresContados) => {
-    if (!caixa) return;
-    try {
-      setMensagemErro(null);
+  const fecharTurno = (valoresContados?: ValoresContados) =>
+    executar(async () => {
+      if (!caixa) return;
       await container.operarCaixaUC.fecharCaixa(caixa.id, valoresContados);
-      setMensagemSucesso(`Turno ${caixa.rotuloTurno} fechado com sucesso.`);
-      setTimeout(() => setMensagemSucesso(null), 3000);
-      carregarCaixa();
-    } catch (err: unknown) {
-      setMensagemErro(err instanceof Error ? err.message : "Erro ao fechar caixa.");
-    }
-  };
+      avisarSucesso(`Turno ${caixa.rotuloTurno} fechado com sucesso.`);
+      await carregarCaixa();
+    }, "Erro ao fechar caixa.");
 
   /** true = gravada; false = recusada (o modal continua aberto, com o que foi digitado). */
-  const realizarSangria = async (valor: number, motivo: string): Promise<boolean> => {
-    if (!caixa) return false;
-    try {
-      setMensagemErro(null);
-      await container.operarCaixaUC.realizarSangria(
-        caixa.id,
-        new Dinheiro(valor, false),
-        motivo,
-        operadorNome
-      );
+  const realizarSangria = (valor: number, motivo: string) =>
+    executar(async () => {
+      if (!caixa) throw new Error("Nenhum turno de caixa aberto.");
+      await container.operarCaixaUC.realizarSangria(caixa.id, new Dinheiro(valor, false), motivo, operadorNome);
       setModalSangriaAberto(false);
-      setMensagemSucesso(`Sangria de ${formatarReais(valor)} registrada.`);
-      setTimeout(() => setMensagemSucesso(null), 4000);
-      carregarCaixa();
-      return true;
-    } catch (err: unknown) {
-      setMensagemErro(err instanceof Error ? err.message : "Erro ao registrar sangria.");
-      return false;
-    }
-  };
+      avisarSucesso(`Sangria de ${formatarReais(valor)} registrada.`);
+      await carregarCaixa();
+    }, "Erro ao registrar sangria.");
 
-  const realizarSuprimento = async (valor: number, motivo: string): Promise<boolean> => {
-    if (!caixa) return false;
-    try {
-      setMensagemErro(null);
-      await container.operarCaixaUC.realizarSuprimento(
-        caixa.id,
-        new Dinheiro(valor, false),
-        motivo,
-        operadorNome
-      );
+  const realizarSuprimento = (valor: number, motivo: string) =>
+    executar(async () => {
+      if (!caixa) throw new Error("Nenhum turno de caixa aberto.");
+      await container.operarCaixaUC.realizarSuprimento(caixa.id, new Dinheiro(valor, false), motivo, operadorNome);
       setModalSuprimentoAberto(false);
-      setMensagemSucesso(`Suprimento de ${formatarReais(valor)} registrado.`);
-      setTimeout(() => setMensagemSucesso(null), 4000);
-      carregarCaixa();
-      return true;
-    } catch (err: unknown) {
-      setMensagemErro(err instanceof Error ? err.message : "Erro ao registrar suprimento.");
-      return false;
-    }
-  };
+      avisarSucesso(`Suprimento de ${formatarReais(valor)} registrado.`);
+      await carregarCaixa();
+    }, "Erro ao registrar suprimento.");
 
   return {
     caixa,
     carregando,
+    processando,
     abrirTurno,
     fecharTurno,
     realizarSangria,

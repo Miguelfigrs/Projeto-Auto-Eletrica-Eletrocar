@@ -106,7 +106,11 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
     mensagemErro,
     setMensagemErro,
     simulandoAudio,
+    osEmAndamento,
+    criandoOS,
   } = useOrdensServico();
+  const [salvandoChecklist, setSalvandoChecklist] = useState(false);
+  const [incluindoServico, setIncluindoServico] = useState(false);
 
   const [todasOrdens, setTodasOrdens] = useState<OrdemServico[]>([]);
   const [novoCliente, setNovoCliente] = useState("");
@@ -157,7 +161,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
   const handleCriarOSManual = (e: React.FormEvent) => {
     e.preventDefault();
     if (!novoCliente || !novoCarro) return;
-    criarOS({
+    void criarOS({
       clienteNome: novoCliente,
       carroModelo: novoCarro,
       carroMarca: novaMarca || undefined,
@@ -165,15 +169,19 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
       sintomas: novoSintomas || "Revisão geral da parte elétrica",
       prioridade: novaPrioridade,
       origem: OrigemOS.BALCAO,
+    }).then((ok) => {
+      if (!ok) return;
+      setNovoCliente("");
+      setNovoCarro("");
+      setNovaMarca("");
+      setNovaPlaca("");
+      setNovoSintomas("");
     });
-    setNovoCliente("");
-    setNovoCarro("");
-    setNovaMarca("");
-    setNovaPlaca("");
-    setNovoSintomas("");
   };
 
   const alternarChecklist = async (os: OrdemServico, chave: string) => {
+    if (salvandoChecklist) return;
+    setSalvandoChecklist(true);
     try {
       setMensagemErro(null);
       const atualizada = await container.osRepository.atualizarChecklist(os.id, {
@@ -184,6 +192,8 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
       setTodasOrdens(await container.osRepository.listar());
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao atualizar o checklist.");
+    } finally {
+      setSalvandoChecklist(false);
     }
   };
 
@@ -204,6 +214,8 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
       setMensagemErro("Valor da mão de obra inválido. Use, por exemplo, 150,00 ou 1.200,00.");
       return;
     }
+    if (incluindoServico) return;
+    setIncluindoServico(true);
     try {
       setMensagemErro(null);
       const atualizada = await container.osRepository.adicionarServico(osSelecionada.id, {
@@ -216,6 +228,8 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
       setNovoServicoValor("");
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao adicionar a mão de obra.");
+    } finally {
+      setIncluindoServico(false);
     }
   };
 
@@ -396,7 +410,11 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                       <Eye size={13} /> Detalhes
                     </button>
 
-                    {destinosPermitidos.map((dest) =>
+                    {osEmAndamento === os.id ? (
+                      <span className="chip chip-warn ml-auto min-h-10 px-4 text-sm" role="status">
+                        Salvando, aguarde...
+                      </span>
+                    ) : destinosPermitidos.map((dest) =>
                       dest === StatusOS.CANCELADO ? (
                         <button
                           key={dest}
@@ -418,7 +436,9 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                       ) : (
                         <button
                           key={dest}
+                          type="button"
                           onClick={() => avancarStatus(os.id, dest)}
+                          disabled={Boolean(osEmAndamento)}
                           className="btn btn-secondary btn-sm"
                         >
                           {STATUS_INFO[dest].label} <ArrowRight size={13} />
@@ -497,6 +517,8 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                     key={chave}
                     type="button"
                     onClick={() => alternarChecklist(osSelecionada, chave)}
+                    disabled={salvandoChecklist}
+                    aria-pressed={Boolean(checado)}
                     className={cn(
                       "chip h-8 px-3 transition-colors",
                       checado ? "chip-ok" : "hover:border-line-strong hover:text-fg"
@@ -531,8 +553,8 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                   onChange={(e) => setNovoServicoValor(e.target.value)}
                   className="field money text-right"
                 />
-                <button type="submit" className="btn btn-secondary">
-                  <Plus size={14} /> Incluir
+                <button type="submit" className="btn btn-secondary" disabled={incluindoServico}>
+                  <Plus size={18} /> {incluindoServico ? "Incluindo..." : "Incluir"}
                 </button>
               </div>
             </form>
@@ -793,8 +815,8 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
             />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-lg mt-1 w-full">
-            <Check size={18} /> Abrir OS
+          <button type="submit" className="btn btn-primary btn-lg mt-1 w-full" disabled={criandoOS}>
+            <Check size={18} /> {criandoOS ? "Abrindo a OS..." : "Abrir OS"}
           </button>
         </form>
       </Modal>

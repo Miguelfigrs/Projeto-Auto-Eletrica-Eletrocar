@@ -27,6 +27,8 @@ import { ROTULO_FORMA_PAGAMENTO } from "../components/DetalhamentoDREPanel";
 interface CaixaViewProps {
   operadorNome: string;
   modoDidatico?: boolean;
+  /** Avisa quem mostra o caixa em outro lugar (o topo) que o turno mudou. */
+  onCaixaAlterado?: () => void;
 }
 
 const parseValorDecimal = lerValorBR;
@@ -58,6 +60,8 @@ const MovimentoForm: React.FC<{
   placeholderValor: string;
   placeholderMotivo: string;
   cta: string;
+  ctaProcessando: string;
+  processando?: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }> = (p) => (
   <form onSubmit={p.onSubmit} className="flex flex-col gap-4">
@@ -84,15 +88,16 @@ const MovimentoForm: React.FC<{
         className="field"
       />
     </div>
-    <button type="submit" className="btn btn-primary btn-lg mt-1 w-full">
-      {p.cta}
+    <button type="submit" className="btn btn-primary btn-lg mt-1 w-full" disabled={p.processando}>
+      {p.processando ? p.ctaProcessando : p.cta}
     </button>
   </form>
 );
 
-export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico = true }) => {
+export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico = true, onCaixaAlterado }) => {
   const {
     caixa,
+    processando,
     abrirTurno,
     fecharTurno,
     realizarSangria,
@@ -106,7 +111,7 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
     mensagemSucesso,
     mensagemErro,
     setMensagemErro,
-  } = useCaixa(operadorNome);
+  } = useCaixa(operadorNome, { aoAlterar: onCaixaAlterado });
 
   const [valorSangria, setValorSangria] = useState("");
   const [motivoSangria, setMotivoSangria] = useState("");
@@ -156,9 +161,11 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
   const handleSubmeterAbertura = (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseValorDecimal(saldoInicialAbertura);
-    if (!isNaN(val) && val >= 0) {
-      abrirTurno(val);
+    if (Number.isNaN(val) || val < 0) {
+      setMensagemErro("Digite o fundo de troco. Exemplo: 100,00 (ou 0 se a gaveta começar vazia).");
+      return;
     }
+    void abrirTurno(val);
   };
 
   const abrirFechamentoCego = () => {
@@ -183,13 +190,14 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
       const v = parseValorDecimal(raw);
       return new Dinheiro(Number.isNaN(v) ? 0 : Math.max(0, v), false);
     };
-    fecharTurno({
+    void fecharTurno({
       [FormaPagamento.DINHEIRO]: contado(contadoDinheiro),
       [FormaPagamento.PIX]: contado(contadoPix),
       [FormaPagamento.CARTAO_CREDITO]: contado(contadoCredito),
       [FormaPagamento.CARTAO_DEBITO]: contado(contadoDebito),
+    }).then((ok) => {
+      if (ok) setModalFechamentoAberto(false);
     });
-    setModalFechamentoAberto(false);
   };
 
   // O servidor não informa o operador de cada lançamento; sem a informação a coluna some.
@@ -497,6 +505,8 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
           placeholderValor="Ex: 150,00"
           placeholderMotivo="Ex: Recolhimento para o cofre"
           cta="Confirmar sangria"
+          ctaProcessando="Registrando sangria..."
+          processando={processando}
           onSubmit={handleSubmeterSangria}
         />
       </Modal>
@@ -519,6 +529,8 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
           placeholderValor="Ex: 100,00"
           placeholderMotivo="Ex: Moedas e notas de R$ 5"
           cta="Confirmar suprimento"
+          ctaProcessando="Registrando suprimento..."
+          processando={processando}
           onSubmit={handleSubmeterSuprimento}
         />
       </Modal>
@@ -543,8 +555,8 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
               className="field money h-12 text-lg"
             />
           </div>
-          <button type="submit" className="btn btn-primary btn-lg mt-1 w-full">
-            Abrir turno
+          <button type="submit" className="btn btn-primary btn-lg mt-1 w-full" disabled={processando}>
+            {processando ? "Abrindo o turno..." : "Abrir turno"}
           </button>
         </form>
       </Modal>
@@ -674,8 +686,8 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
             >
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary">
-              <Lock size={15} /> Confirmar fechamento do turno
+            <button type="submit" className="btn btn-primary" disabled={processando}>
+              <Lock size={18} /> {processando ? "Fechando o turno..." : "Confirmar fechamento do turno"}
             </button>
           </div>
         </form>

@@ -51,6 +51,20 @@ async def test_login_por_email_e_formulario_oauth2(client: AsyncClient, criar_us
     assert form.status_code == 200
 
 
+async def test_token_do_login_vale_pelo_tempo_configurado(client: AsyncClient, criar_usuario):
+    import jwt
+    from src.infra.config import settings
+
+    usuario, _ = await criar_usuario(Papel.BALCONISTA, username="turno8h")
+    res = await client.post("/api/v1/auth/login", json={"identificador": "turno8h", "senha": "senhaForte123"})
+    assert res.status_code == 200
+    corpo = res.json()
+    claims = jwt.decode(corpo["access_token"], options={"verify_signature": False})
+    validade = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    assert corpo["expira_em_segundos"] == validade
+    assert abs((claims["exp"] - claims["iat"]) - validade) <= 2
+
+
 async def test_login_senha_invalida(client: AsyncClient):
     res = await client.post("/api/v1/auth/login", json={"email": "admin@inexistente.com", "senha": "123"})
     assert res.status_code == 401

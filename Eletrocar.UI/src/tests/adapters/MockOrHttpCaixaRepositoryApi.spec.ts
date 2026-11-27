@@ -72,6 +72,27 @@ describe("Adapter: MockOrHttpCaixaRepository — modo API", () => {
     expect(caixa?.movimentacoes).toEqual([]);
   });
 
+  it("depois do primeiro 403 o balconista vai direto ao /caixa/status (sem 403 a cada tela)", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(resposta(403, { erro: "Acesso negado" }))
+      .mockResolvedValue(resposta(200, caixaOperador));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const repo = new MockOrHttpCaixaRepository(sessaoApi);
+    await repo.obterCaixaAberto();
+    await repo.obterCaixaAberto();
+
+    const urls = fetchMock.mock.calls.map((c) => c[0]);
+    expect(urls.filter((u) => u === "/api/v1/caixa/gerencial")).toHaveLength(1);
+    expect(urls.filter((u) => u === "/api/v1/caixa/status")).toHaveLength(2);
+  });
+
+  it("administrador sem turno aberto recebe null do gerencial", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(resposta(200, null)));
+    expect(await new MockOrHttpCaixaRepository(sessaoApi).obterCaixaAberto()).toBeNull();
+  });
+
   it("sem caixa aberto devolve null (404 no gerencial ou null no status)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(resposta(404, { detail: "Caixa não encontrado." })));
     expect(await new MockOrHttpCaixaRepository(sessaoApi).obterCaixaAberto()).toBeNull();

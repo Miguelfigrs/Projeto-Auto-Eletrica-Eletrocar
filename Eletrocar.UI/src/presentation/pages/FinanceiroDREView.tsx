@@ -12,6 +12,7 @@ import {
   BookOpen,
   Filter,
   FileText,
+  Loader2,
 } from "lucide-react";
 import type { FiltroResultadoDRE } from "../../application/ports/repositories/IRelatorioDRERepository";
 import {
@@ -333,19 +334,36 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
         </div>
       </section>
 
+      {/* Aviso de carregamento: no servidor de produção os números levam alguns segundos e,
+          sem isso, a tela mostrava R$ 0,00 / 0,0% como se o mês tivesse sido zerado. */}
+      {carregando && (
+        <div className="alert alert-warn mb-5" role="status" aria-live="polite">
+          <Loader2 size={22} className="shrink-0 animate-spin" />
+          <span>Carregando os números do período... isso pode levar alguns segundos.</span>
+        </div>
+      )}
+
       {/* KPIs do período selecionado */}
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard
           label="Receita líquida"
           value={carregando && !drePeriodo ? "..." : receitaLiquida.formatar()}
-          hint={`${drePeriodo?.quantidadeVendas ?? 0} vendas balcão · ${drePeriodo?.quantidadeOS ?? 0} OS`}
+          hint={
+            carregando && !drePeriodo
+              ? "Carregando..."
+              : `${drePeriodo?.quantidadeVendas ?? 0} vendas balcão · ${drePeriodo?.quantidadeOS ?? 0} OS`
+          }
           icon={DollarSign}
         />
         <StatCard
           label="Lucro bruto"
           value={carregando && !drePeriodo ? "..." : lucroBruto.formatar()}
           tone={lucroBruto.centavos < 0 ? "neg" : "ok"}
-          hint={`Margem bruta de ${formatarPercentual(drePeriodo?.margemBrutaPercentual ?? 0)}`}
+          hint={
+            carregando && !drePeriodo
+              ? "Carregando..."
+              : `Margem bruta de ${formatarPercentual(drePeriodo?.margemBrutaPercentual ?? 0)}`
+          }
           icon={TrendingUp}
         />
         <StatCard
@@ -353,7 +371,9 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
           value={carregando && !drePeriodo ? "..." : lucroLiquido.formatar()}
           tone={ehPrejuizoPeriodo ? "neg" : "brand"}
           hint={
-            ehPrejuizoPeriodo
+            carregando && !drePeriodo
+              ? "Carregando..."
+              : ehPrejuizoPeriodo
               ? `Resultado deficitário (${formatarPercentual(drePeriodo?.margemLiquidaPercentual ?? 0)})`
               : `Margem líquida de ${formatarPercentual(drePeriodo?.margemLiquidaPercentual ?? 0)}`
           }

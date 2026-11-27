@@ -22,6 +22,10 @@ export function useOrdensServico() {
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [mensagemErro, setMensagemErro] = useState<string | null>(null);
   const [simulandoAudio, setSimulandoAudio] = useState(false);
+  // OS com ação em andamento: os botões dela ficam travados até a lista voltar atualizada
+  // (no servidor de produção a mudança de etapa leva alguns segundos).
+  const [osEmAndamento, setOsEmAndamento] = useState<string | null>(null);
+  const [criandoOS, setCriandoOS] = useState(false);
 
   const carregarOrdens = useCallback(async () => {
     try {
@@ -39,6 +43,8 @@ export function useOrdensServico() {
   }, [carregarOrdens]);
 
   const avancarStatus = async (osId: string, novoStatus: StatusOS) => {
+    if (osEmAndamento) return;
+    setOsEmAndamento(osId);
     try {
       setMensagemErro(null);
       const os = await container.avancarStatusOSUC.executar(osId, novoStatus);
@@ -48,14 +54,16 @@ export function useOrdensServico() {
           ? `${numero} foi cancelada.`
           : `${numero} passou para a etapa "${ROTULO_STATUS_OS[novoStatus] ?? novoStatus}".`
       );
-      setTimeout(() => setMensagemSucesso(null), 3000);
-      carregarOrdens();
+      setTimeout(() => setMensagemSucesso(null), 4000);
+      await carregarOrdens();
       if (osSelecionada?.id === osId) {
         const atualizada = await container.osRepository.buscarPorId(osId);
         setOsSelecionada(atualizada);
       }
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao transicionar status da OS.");
+    } finally {
+      setOsEmAndamento(null);
     }
   };
 
@@ -74,16 +82,23 @@ export function useOrdensServico() {
     }
   };
 
-  const criarOS = async (props: Partial<OrdemServicoProps>) => {
+  /** true = OS aberta; false = recusada (o formulário continua preenchido). */
+  const criarOS = async (props: Partial<OrdemServicoProps>): Promise<boolean> => {
+    if (criandoOS) return false;
+    setCriandoOS(true);
     try {
       setMensagemErro(null);
       const nova = await container.criarOSUC.executar(props);
       setModalNovaOSAberto(false);
       setMensagemSucesso(`Ordem de Serviço #${nova.numeroOS} aberta com sucesso!`);
-      setTimeout(() => setMensagemSucesso(null), 3000);
-      carregarOrdens();
+      setTimeout(() => setMensagemSucesso(null), 4000);
+      await carregarOrdens();
+      return true;
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao abrir OS.");
+      return false;
+    } finally {
+      setCriandoOS(false);
     }
   };
 
@@ -145,5 +160,7 @@ export function useOrdensServico() {
     mensagemErro,
     setMensagemErro,
     simulandoAudio,
+    osEmAndamento,
+    criandoOS,
   };
 }

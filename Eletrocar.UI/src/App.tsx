@@ -48,15 +48,18 @@ export const App: React.FC = () => {
   } = useAuth();
 
   const { status: hardwareStatus, modelo: hardwareModelo, simularLeitura } = useHardwareStatus();
-  const { caixa, carregarCaixa } = useCaixa(usuario?.nome || "Operador");
+  // O App não consulta o caixa sozinho: só depois do login e só para quem tem acesso ao caixa
+  // (o eletricista recebia 403 a cada troca de tela).
+  const { caixa, carregarCaixa } = useCaixa(usuario?.nome || "Operador", { carregarAoIniciar: false });
+  const veCaixa = !!usuario && temAcessoAba(usuario, "caixa");
 
   const [abaAtiva, setAbaAtiva] = useState<string>("overview");
 
   // O caixa do topo e da Visão Geral é o do servidor: recarrega ao entrar, ao trocar de operador
   // e a cada troca de tela (abrir/fechar turno ou vender muda a situação).
   useEffect(() => {
-    if (usuario) void carregarCaixa();
-  }, [usuario, abaAtiva, carregarCaixa]);
+    if (veCaixa) void carregarCaixa();
+  }, [veCaixa, usuario, abaAtiva, carregarCaixa]);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -188,6 +191,7 @@ export const App: React.FC = () => {
         hardwareStatus={hardwareStatus}
         hardwareModelo={hardwareModelo}
         caixaAberto={!!caixa?.estaAberto}
+        mostrarCaixa={veCaixa}
         rotuloTurno={caixa?.rotuloTurno}
         abaAtiva={abaAtiva}
         modoDidatico={modoDidatico}
@@ -267,7 +271,11 @@ export const App: React.FC = () => {
               />
             )}
             {abaAtiva === "caixa" && (
-              <CaixaView operadorNome={usuario.nome} modoDidatico={modoDidatico} />
+              <CaixaView
+                operadorNome={usuario.nome}
+                modoDidatico={modoDidatico}
+                onCaixaAlterado={() => void carregarCaixa()}
+              />
             )}
             {abaAtiva === "dre" && <FinanceiroDREView modoDidatico={modoDidatico} />}
             {abaAtiva === "perfil" && usuario && (

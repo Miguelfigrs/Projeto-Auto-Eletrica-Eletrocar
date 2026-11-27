@@ -51,6 +51,8 @@ interface AppShellProps {
   hardwareStatus: DeviceStatus;
   hardwareModelo: string;
   caixaAberto: boolean;
+  /** false para quem não usa o caixa (eletricista): o topo não mostra a situação do caixa. */
+  mostrarCaixa?: boolean;
   rotuloTurno?: string;
   abaAtiva: string;
   modoDidatico: boolean;
@@ -88,6 +90,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   hardwareStatus,
   hardwareModelo,
   caixaAberto,
+  mostrarCaixa = true,
   rotuloTurno,
   abaAtiva,
   modoDidatico,
@@ -234,24 +237,26 @@ export const AppShell: React.FC<AppShellProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={() => onSelecionarAba("caixa")}
-              className={cn(
-                "chip min-h-11 px-4 text-sm transition-opacity hover:opacity-90",
-                caixaAberto ? "chip-ok" : "chip-neg"
-              )}
-              title="Abrir a tela do Caixa"
-            >
-              <span className="dot" />
-              {caixaAberto ? (
-                <>
-                  Caixa aberto<span className="hidden xl:inline"> · {rotuloTurno ?? "-"}</span>
-                </>
-              ) : (
-                "Caixa fechado"
-              )}
-            </button>
+            {mostrarCaixa && (
+              <button
+                type="button"
+                onClick={() => onSelecionarAba("caixa")}
+                className={cn(
+                  "chip min-h-11 px-4 text-sm transition-opacity hover:opacity-90",
+                  caixaAberto ? "chip-ok" : "chip-neg"
+                )}
+                title="Abrir a tela do Caixa"
+              >
+                <span className="dot" />
+                {caixaAberto ? (
+                  <>
+                    Caixa aberto<span className="hidden xl:inline"> · {rotuloTurno ?? "-"}</span>
+                  </>
+                ) : (
+                  "Caixa fechado"
+                )}
+              </button>
+            )}
 
             <button
               type="button"

@@ -100,7 +100,8 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", SECRET_KEY_DESENVOLVIMENTO)
     ALGORITHM: str = "HS256"
     BCRYPT_CUSTO: int = max(4, int(os.getenv("BCRYPT_CUSTO", "12")))
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    # Sessão de 8 horas: cobre um turno inteiro de balcão sem pedir login de novo
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
     MAX_TENTATIVAS_LOGIN: int = int(os.getenv("MAX_TENTATIVAS_LOGIN", "5"))
     BLOQUEIO_LOGIN_MINUTOS: int = int(os.getenv("BLOQUEIO_LOGIN_MINUTOS", "15"))

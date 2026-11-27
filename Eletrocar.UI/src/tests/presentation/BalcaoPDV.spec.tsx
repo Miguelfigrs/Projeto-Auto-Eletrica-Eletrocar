@@ -49,6 +49,22 @@ describe("Componente de Interface: BalcaoPDVView (React Testing Library)", () =>
     expect(screen.getByText(/R\$\s*815,00/)).toBeInTheDocument();
   });
 
+  it("o aviso de valor recebido menor some quando o valor é corrigido", async () => {
+    render(<BalcaoPDVView operadorNome="Carlos Eduardo" />);
+    fireEvent.click(await screen.findByRole("button", { name: /Regulador de Voltagem/i }));
+    await screen.findByText("Regulador de Voltagem Bosch 12V");
+
+    fireEvent.keyDown(window, { key: "F9" });
+    const recebido = await screen.findByLabelText(/Valor recebido/i);
+    fireEvent.change(recebido, { target: { value: "100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar recebimento/i }));
+    expect(await screen.findByText(/é menor que o total/)).toBeInTheDocument();
+
+    fireEvent.change(recebido, { target: { value: "1.000,00" } });
+    expect(screen.queryByText(/é menor que o total/)).not.toBeInTheDocument();
+    expect(screen.getByText("Troco a devolver")).toBeInTheDocument();
+  });
+
   it("pede confirmação antes de cancelar a venda", async () => {
     render(<BalcaoPDVView operadorNome="Carlos Eduardo" />);
 
