@@ -2,7 +2,7 @@
  * Kit de componentes visuais compartilhados da Eletrocar.
  * Identidade visual: Chumbo metálico + Vermelho escuro automotivo.
  */
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -356,6 +356,75 @@ export const StatCard: React.FC<{
 );
 
 /* -------------------------------------------------------------------------- */
+/* Área rolável das janelas                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Conteúdo de janela que rola quando a tela é baixa. Enquanto houver algo escondido
+ * embaixo, mostra o botão "Role para ver mais" — quem não percebe a barra de rolagem
+ * entende que a janela continua.
+ */
+export const CorpoRolavel: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  classeConteudo?: string;
+}> = ({ children, className, classeConteudo = "px-6 py-5" }) => {
+  const areaRef = useRef<HTMLDivElement>(null);
+  const conteudoRef = useRef<HTMLDivElement>(null);
+  const [temMaisAbaixo, setTemMaisAbaixo] = useState(false);
+
+  const atualizar = useCallback(() => {
+    const area = areaRef.current;
+    if (!area) return;
+    setTemMaisAbaixo(area.scrollHeight - area.scrollTop - area.clientHeight > 12);
+  }, []);
+
+  useEffect(() => {
+    const area = areaRef.current;
+    if (!area) return;
+    atualizar();
+    area.addEventListener("scroll", atualizar, { passive: true });
+    window.addEventListener("resize", atualizar);
+    // O conteúdo muda de altura (mensagem de erro, campo novo): recalcula
+    let observador: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== "undefined") {
+      observador = new ResizeObserver(atualizar);
+      observador.observe(area);
+      if (conteudoRef.current) observador.observe(conteudoRef.current);
+    }
+    return () => {
+      area.removeEventListener("scroll", atualizar);
+      window.removeEventListener("resize", atualizar);
+      observador?.disconnect();
+    };
+  }, [atualizar]);
+
+  const rolarParaBaixo = () => {
+    const area = areaRef.current;
+    area?.scrollBy?.({ top: Math.max(160, area.clientHeight * 0.7), behavior: "smooth" });
+  };
+
+  return (
+    <div ref={areaRef} className={cn("modal-corpo", className)}>
+      <div ref={conteudoRef} className={classeConteudo}>
+        {children}
+      </div>
+      {temMaisAbaixo && (
+        <div className="pointer-events-none sticky bottom-0 -mt-20 flex h-20 items-end justify-center bg-linear-to-t from-surface via-surface/90 to-transparent pb-3">
+          <button
+            type="button"
+            onClick={rolarParaBaixo}
+            className="btn btn-secondary btn-sm pointer-events-auto border-brand-line! shadow-lg shadow-black/60"
+          >
+            <ChevronDown size={20} /> Role para ver mais
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
 /* Modal                                                                      */
 /* -------------------------------------------------------------------------- */
 
@@ -388,7 +457,7 @@ export const Modal: React.FC<{
     >
       <div className="modal brand-stripe" style={{ maxWidth: largura }} role="dialog" aria-modal="true">
         {titulo && (
-          <div className="flex items-start gap-3 border-b border-line px-6 py-5">
+          <div className="flex shrink-0 items-start gap-3 border-b border-line px-6 py-5">
             {Icon && (
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-brand-line bg-brand-soft text-brand-text">
                 <Icon size={22} />
@@ -409,7 +478,7 @@ export const Modal: React.FC<{
             </button>
           </div>
         )}
-        <div className="px-6 py-5">{children}</div>
+        <CorpoRolavel>{children}</CorpoRolavel>
       </div>
     </div>
   );
