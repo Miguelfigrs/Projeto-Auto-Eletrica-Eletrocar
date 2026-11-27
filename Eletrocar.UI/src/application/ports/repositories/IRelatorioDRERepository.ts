@@ -2,10 +2,42 @@ import type { Dinheiro } from "../../../domain/value-objects/Dinheiro";
 
 export type FiltroResultadoDRE = "TODOS" | "LUCROS" | "PREJUIZOS";
 
+export interface CompetenciaDRE {
+  ano: number;
+  mes: number;
+}
+
 export interface FiltroDREParams {
   ano: number;
   mes: number | "TODOS";
   resultado: FiltroResultadoDRE;
+}
+
+export interface ResultadoDiarioDRE {
+  dataIso: string;
+  dia: number;
+  mes: number;
+  ano: number;
+  diaSemana: string;
+  rotuloCurto: string;
+  receitaTotal: Dinheiro;
+  custosEDespesas: Dinheiro;
+  lucroLiquido: Dinheiro;
+  quantidadeVendas: number;
+  quantidadeOS: number;
+}
+
+export interface SerieDiariaDRE {
+  ano: number;
+  mes: number;
+  competenciaLabel: string;
+  origemDados: "API" | "DEMO";
+  dias: ResultadoDiarioDRE[];
+  melhorDia: ResultadoDiarioDRE | null;
+  piorDia: ResultadoDiarioDRE | null;
+  mediaDiariaLucro: Dinheiro;
+  totalLucroPeriodo: Dinheiro;
+  totalReceitaPeriodo: Dinheiro;
 }
 
 export interface DadosDREPeriodo {
@@ -120,7 +152,18 @@ export interface DetalhamentoDRE {
 
 export interface IRelatorioDRERepository {
   obterDREPeriodo(params: Pick<FiltroDREParams, "ano" | "mes">): Promise<DadosDREPeriodo>;
+  obterDRECompetencias(competencias: CompetenciaDRE[]): Promise<DadosDREPeriodo>;
+  obterDREDias(diasIso: string[]): Promise<DadosDREPeriodo>;
   obterResumoMensalAnual(params: Pick<FiltroDREParams, "ano" | "resultado">): Promise<ResumoMensalDREAnual>;
+  obterResumoMensalAnos(anos: number[], resultado: FiltroResultadoDRE): Promise<ResumoMensalDREAnual>;
   obterDetalhamento(params: Pick<FiltroDREParams, "ano" | "mes">): Promise<DetalhamentoDRE>;
+  obterDetalhamentoCompetencias(competencias: CompetenciaDRE[]): Promise<DetalhamentoDRE>;
+  obterDetalhamentoDias(diasIso: string[]): Promise<DetalhamentoDRE>;
+  obterSerieDiaria(params: {
+    ano: number;
+    mes: number;
+    detalhamento?: DetalhamentoDRE | null;
+    diasFiltrados?: string[];
+  }): Promise<SerieDiariaDRE>;
 }
 

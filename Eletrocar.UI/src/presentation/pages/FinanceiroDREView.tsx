@@ -1,7 +1,8 @@
 /**
- * Financeiro & DRE — Demonstrativo do Resultado do Exercício com filtros por mês, ano e lucros/prejuízos.
+ * Financeiro & DRE — Demonstrativo do Resultado do Exercício com calendário multi-mês/multi-ano,
+ * filtros de lucros/prejuízos e gráficos analíticos em barras, curva e visão diária.
  */
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -10,19 +11,23 @@ import {
   Calendar,
   BookOpen,
   Filter,
-  RotateCcw,
+  FileText,
 } from "lucide-react";
 import type { FiltroResultadoDRE } from "../../application/ports/repositories/IRelatorioDRERepository";
 import {
-  ANOS_DISPONIVEIS_DRE,
   MESES_ABREV_PT_BR,
-  MESES_PT_BR,
+  chaveCompetencia,
 } from "../../adapters/repositories/MockOrHttpDRERepository";
 import { useFinanceiroDRE } from "../../adapters/view-models/useFinanceiroDRE";
 import { Dinheiro } from "../../domain/value-objects/Dinheiro";
 import { Alerts, DidacticBanner, EmptyState, Page, PageHeader, StatCard } from "../components/ui";
 import { cn } from "../../lib/utils";
+import { formatarPercentual } from "../../lib/numeroBR";
 import { DetalhamentoDREPanel } from "../components/DetalhamentoDREPanel";
+import { SeletorPeriodoCalendario } from "../components/SeletorPeriodoCalendario";
+import { GraficosFinanceirosDRE } from "../components/GraficosFinanceirosDRE";
+import { imprimirDocumento, montarRelatorioMensalHtml } from "../relatorios/relatorioMensal";
+import { container } from "../../infra/di/container";
 
 interface LinhaDREProps {
   tipo: "grupo" | "detalhe" | "subtotal" | "resultado";
@@ -97,14 +102,25 @@ const OPCOES_RESULTADO: Array<{
 export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidatico = true }) => {
   const {
     ano,
-    setAno,
-    mes,
-    setMes,
+    anosSelecionados,
+    competenciasSelecionadas,
+    diasSelecionados,
+    competenciaDiaria,
+    setCompetenciaDiaria,
+    alternarDia,
+    definirIntervaloDias,
+    limparSelecaoDias,
+    alternarMes,
+    alternarAno,
+    selecionarAnoInteiro,
+    selecionarTodosAnos,
+    selecionarUltimosMeses,
     filtroResultado,
     setFiltroResultado,
     drePeriodo,
     resumoMensal,
     detalhamento,
+    serieDiaria,
     erroDetalhamento,
     carregando,
     erro,
@@ -114,6 +130,24 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
   } = useFinanceiroDRE();
 
   const [exibirNotas, setExibirNotas] = useState(true);
+
+  const chavesSelecionadas = useMemo(
+    () => new Set(competenciasSelecionadas.map((c) => chaveCompetencia(c))),
+    [competenciasSelecionadas]
+  );
+
+  const gerarRelatorio = async () => {
+    if (!drePeriodo) return;
+    const usuario = await container.authRepository.obterUsuarioAtual().catch(() => null);
+    imprimirDocumento(
+      montarRelatorioMensalHtml({
+        dre: drePeriodo,
+        detalhamento,
+        geradoEm: new Date(),
+        geradoPor: usuario?.nome,
+      })
+    );
+  };
   const mostrarDica = modoDidatico && exibirNotas;
 
   const receitaProdutos = drePeriodo?.receitaVendasProdutos ?? Dinheiro.zero();
@@ -150,7 +184,10 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
       : 0;
 
   const por100Liquido =
-    receitaBrutaNum > 0 ? ((lucroLiquido.valor / receitaBrutaNum) * 100).toFixed(1) : "0.0";
+    (receitaBrutaNum > 0 ? (lucroLiquido.valor / receitaBrutaNum) * 100 : 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   const periodoZeradoApi =
     drePeriodo?.origemDados === "API" &&
@@ -168,14 +205,26 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
       ? "Somente Prejuízos"
       : "Todos os resultados";
 
+  const rotuloAnosComparativo =
+    anosSelecionados.length > 1 ? anosSelecionados.join(" · ") : String(ano);
+
   return (
     <Page>
       <PageHeader
-        eyebrow="Exclusivo Dono / Admin · F7"
+        eyebrow="Só para o dono · tecla F7"
         title="Financeiro & DRE"
-        description="Resultado por competência: selecione mês, ano e filtre entre lucros e prejuízos."
+        description="Resultado por competência: selecione um ou mais meses/anos no calendário, analise gráficos em barras ou curva e descubra os dias mais lucrativos."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void gerarRelatorio()}
+              disabled={!drePeriodo || carregando}
+              className="btn btn-primary btn-sm"
+              title="Gera o relatório de gastos e lucros da competência selecionada (imprimir ou salvar em PDF)"
+            >
+              <FileText size={15} /> Gerar relatório
+            </button>
             <button
               type="button"
               onClick={() => setExibirNotas((v) => !v)}
@@ -189,8 +238,8 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
               <span>{drePeriodo?.competenciaLabel ?? `Competência ${ano}`}</span>
             </div>
             {drePeriodo && (
-              <span className="chip text-[0.7rem]">
-                {drePeriodo.origemDados === "API" ? "API PostgreSQL" : "Base Demonstrativa"}
+              <span className="chip text-xs">
+                {drePeriodo.origemDados === "API" ? "Dados reais" : "Dados de demonstração"}
               </span>
             )}
           </div>
@@ -199,76 +248,40 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
 
       <DidacticBanner
         visivel={modoDidatico}
-        titulo="Como ler a DRE e comparar Lucros e Prejuízos"
-        resumo="Faturamento não é lucro. Use os filtros de mês, ano e resultado abaixo para alternar entre visão mensal ou anual consolidada e isolar meses lucrativos de períodos com déficit."
+        titulo="Como ler o resultado do mês (DRE)"
+        resumo="Vender muito não é o mesmo que lucrar. Aqui você vê quanto entrou, quanto custaram as peças e as despesas, e quanto sobrou de lucro."
         passos={[
-          "1. Escolha Mês e Ano (ou 'Todos os meses' para o consolidado anual).",
-          "2. Filtre por 'Somente Lucros' ou 'Somente Prejuízos' para auditar o comparativo mensal.",
-          "3. Clique em qualquer mês no comparativo abaixo para inspecionar sua DRE detalhada.",
+          "Escolha o mês no calendário. Dá para marcar vários meses ou o ano inteiro.",
+          "Nos gráficos, compare os meses ou veja os dias do mês que deram mais lucro.",
+          "Use 'Somente Lucros' ou 'Somente Prejuízos' para achar rápido os meses bons e ruins.",
         ]}
-        regraNegocio="Acesso restrito ao perfil Dono/Admin (RBAC) para proteger margens de lucro, CMV e despesas fixas."
+        regraNegocio="Só o dono vê esta tela, porque ela mostra custos e lucro da oficina."
       />
 
       <Alerts erro={erro} />
 
-      {/* Barra de filtros: Mês, Ano e Lucros/Prejuízos */}
+      {/* Barra moderna de filtros: Calendário Multi-Mês/Multi-Ano + Lucros/Prejuízos */}
       <section
         className="card mb-6 p-4 sm:p-5"
-        aria-label="Filtros da DRE por mês, ano e lucros ou prejuízos"
+        aria-label="Filtros da DRE por calendário de meses, anos e lucros ou prejuízos"
       >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:items-end lg:gap-4">
-            <div className="min-w-[200px]">
-              <label
-                htmlFor="dre-mes"
-                className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-fg-muted"
-              >
-                <Calendar size={13} className="text-brand-text" />
-                Mês de competência
-              </label>
-              <select
-                id="dre-mes"
-                aria-label="Selecionar mês"
-                value={mes === "TODOS" ? "TODOS" : String(mes)}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setMes(val === "TODOS" ? "TODOS" : Number(val));
-                }}
-                className="input h-10 w-full cursor-pointer text-sm"
-              >
-                <option value="TODOS">Todos os meses (Anual)</option>
-                {MESES_PT_BR.map((nome, idx) => (
-                  <option key={nome} value={String(idx + 1)}>
-                    {nome}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <SeletorPeriodoCalendario
+            competenciasSelecionadas={competenciasSelecionadas}
+            diasSelecionados={diasSelecionados}
+            resumoMesesDisponiveis={resumoMensal?.meses}
+            onAlternarDia={alternarDia}
+            onDefinirIntervaloDias={definirIntervaloDias}
+            onLimparSelecaoDias={limparSelecaoDias}
+            onAlternarMes={alternarMes}
+            onAlternarAno={alternarAno}
+            onSelecionarAnoInteiro={selecionarAnoInteiro}
+            onSelecionarUltimosMeses={selecionarUltimosMeses}
+            onSelecionarTodosAnos={selecionarTodosAnos}
+            onIrParaMesAtual={irParaMesAtual}
+          />
 
-            <div className="min-w-[130px]">
-              <label
-                htmlFor="dre-ano"
-                className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-fg-muted"
-              >
-                Ano
-              </label>
-              <select
-                id="dre-ano"
-                aria-label="Selecionar ano"
-                value={String(ano)}
-                onChange={(e) => setAno(Number(e.target.value))}
-                className="input h-10 w-full cursor-pointer text-sm"
-              >
-                {ANOS_DISPONIVEIS_DRE.map((anoItem) => (
-                  <option key={anoItem} value={String(anoItem)}>
-                    {anoItem}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 lg:items-end">
+          <div className="flex flex-col gap-2 xl:items-end">
             <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-fg-muted">
               <Filter size={13} className="text-brand-text" />
               Filtro de Lucros e Prejuízos
@@ -306,16 +319,6 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
                 })}
               </div>
 
-              <button
-                type="button"
-                onClick={irParaMesAtual}
-                className="btn btn-ghost btn-sm"
-                title="Voltar para o mês e ano atuais"
-              >
-                <RotateCcw size={13} />
-                Mês atual
-              </button>
-
               {periodoZeradoApi && (
                 <button
                   type="button"
@@ -342,7 +345,7 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
           label="Lucro bruto"
           value={carregando && !drePeriodo ? "..." : lucroBruto.formatar()}
           tone={lucroBruto.centavos < 0 ? "neg" : "ok"}
-          hint={`Margem bruta de ${(drePeriodo?.margemBrutaPercentual ?? 0).toFixed(1)}%`}
+          hint={`Margem bruta de ${formatarPercentual(drePeriodo?.margemBrutaPercentual ?? 0)}`}
           icon={TrendingUp}
         />
         <StatCard
@@ -351,12 +354,23 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
           tone={ehPrejuizoPeriodo ? "neg" : "brand"}
           hint={
             ehPrejuizoPeriodo
-              ? `Resultado deficitário (${(drePeriodo?.margemLiquidaPercentual ?? 0).toFixed(1)}%)`
-              : `Margem líquida de ${(drePeriodo?.margemLiquidaPercentual ?? 0).toFixed(1)}%`
+              ? `Resultado deficitário (${formatarPercentual(drePeriodo?.margemLiquidaPercentual ?? 0)})`
+              : `Margem líquida de ${formatarPercentual(drePeriodo?.margemLiquidaPercentual ?? 0)}`
           }
           icon={ehPrejuizoPeriodo ? TrendingDown : PieChart}
         />
       </div>
+
+      {/* Gráficos Analíticos: Barras / Curva · Comparação Mensal · Dias Mais Lucrativos */}
+      <GraficosFinanceirosDRE
+        mesesResumo={resumoMensal?.meses ?? []}
+        competenciasSelecionadas={competenciasSelecionadas}
+        diasSelecionados={diasSelecionados}
+        competenciaDiaria={competenciaDiaria}
+        serieDiaria={serieDiaria}
+        onSelecionarMesDiario={setCompetenciaDiaria}
+        onFocarMesComparativo={(anoClicado, mesClicado) => selecionarMesAno(mesClicado, anoClicado)}
+      />
 
       {/* Gráficos de composição */}
       <div className="mb-6 grid gap-5 lg:grid-cols-2">
@@ -369,12 +383,12 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
             <div
               className="bg-brand"
               style={{ width: `${pctProdutos}%` }}
-              title={`Produtos: ${pctProdutos.toFixed(1)}%`}
+              title={`Produtos: ${formatarPercentual(pctProdutos)}`}
             />
             <div
               className="bg-fg-muted/50"
               style={{ width: `${pctServicos}%` }}
-              title={`Serviços OS: ${pctServicos.toFixed(1)}%`}
+              title={`Serviços OS: ${formatarPercentual(pctServicos)}`}
             />
           </div>
           <div className="mt-3 flex flex-wrap gap-4 text-xs text-fg-muted">
@@ -402,7 +416,7 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
                 ehPrejuizoPeriodo ? "text-neg-text" : "text-ok-text"
               )}
             >
-              {ehPrejuizoPeriodo ? `Déficit (${por100Liquido}%)` : `R$ ${por100Liquido} líquidos`}
+              {ehPrejuizoPeriodo ? `Déficit (${por100Liquido}%)` : `R$ ${por100Liquido} de lucro`}
             </span>
           </div>
           <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-surface-2">
@@ -441,10 +455,10 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface-2/80 px-5 py-3.5">
           <div>
             <h2 className="text-sm font-semibold text-fg">
-              Comparativo mensal · {ano} ({tituloFiltroResultado})
+              Comparativo mensal · {rotuloAnosComparativo} ({tituloFiltroResultado})
             </h2>
             <p className="text-xs text-fg-muted">
-              Clique em um mês para carregar o demonstrativo detalhado daquela competência.
+              Clique em um mês para carregar sua DRE detalhada e análise diária.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -452,11 +466,11 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
               Meses exibidos: <strong className="text-fg">{resumoMensal?.totalMesesFiltrados ?? 0}</strong>
             </span>
             <span className="chip text-ok-text">
-              Lucros no ano:{" "}
+              Lucros:{" "}
               <strong className="money">{(resumoMensal?.somaLucros ?? Dinheiro.zero()).formatar()}</strong>
             </span>
             <span className="chip text-neg-text">
-              Prejuízos no ano:{" "}
+              Prejuízos:{" "}
               <strong className="money">
                 {(resumoMensal?.somaPrejuizos ?? Dinheiro.zero()).ehZero()
                   ? Dinheiro.zero().formatar()
@@ -482,8 +496,8 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
         {!resumoMensal || resumoMensal.meses.length === 0 ? (
           <EmptyState
             icon={Filter}
-            title={`Nenhum mês encontrado para "${tituloFiltroResultado}" em ${ano}`}
-            description="Ajuste o filtro de Lucros e Prejuízos ou escolha outro ano para visualizar as competências."
+            title={`Nenhum mês encontrado para "${tituloFiltroResultado}" em ${rotuloAnosComparativo}`}
+            description="Ajuste o filtro de Lucros e Prejuízos ou selecione outro período no calendário."
             action={
               <button
                 type="button"
@@ -497,7 +511,9 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
         ) : (
           <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {resumoMensal.meses.map((item) => {
-              const selecionado = mes === item.mes;
+              const selecionado = chavesSelecionadas.has(
+                chaveCompetencia({ ano: item.ano, mes: item.mes })
+              );
               const abrev = MESES_ABREV_PT_BR[item.mes - 1] ?? item.competencia;
               return (
                 <button
@@ -517,7 +533,7 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
                     </span>
                     <span
                       className={cn(
-                        "rounded-full px-2 py-0.5 text-[0.68rem] font-bold uppercase tracking-wider",
+                        "rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wider",
                         item.ehLucro && "bg-ok/20 text-ok-text",
                         item.ehPrejuizo && "bg-neg/20 text-neg-text",
                         !item.ehLucro && !item.ehPrejuizo && "bg-surface text-fg-muted"
@@ -540,7 +556,7 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
                     {item.lucroLiquido.formatar()}
                   </div>
 
-                  <div className="mt-2 flex items-center justify-between text-[0.72rem] text-fg-muted">
+                  <div className="mt-2 flex items-center justify-between text-xs text-fg-muted">
                     <span>Rec: {item.receitaLiquida.formatar()}</span>
                     <span>Desp: {item.despesasTotais.formatar()}</span>
                   </div>
@@ -556,7 +572,7 @@ export const FinanceiroDREView: React.FC<FinanceiroDREViewProps> = ({ modoDidati
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-2/80 px-5 py-3.5">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-fg">Demonstrativo de resultado</h2>
-            <span className="chip text-[0.68rem]">
+            <span className="chip text-xs">
               {drePeriodo?.competenciaLabel ?? `${ano}`} · {tituloFiltroResultado}
             </span>
           </div>

@@ -298,7 +298,7 @@ export const DetalhamentoDREPanel: React.FC<{
                           {ROTULO_CATEGORIA[d.categoria] ?? d.categoria}
                         </span>
                         {!d.entraNoDRE && (
-                          <div className="mt-1 text-[0.7rem] text-fg-subtle">Não entra na DRE: vira CMV ao vender</div>
+                          <div className="mt-1 text-xs text-fg-subtle">Não entra na DRE: vira CMV ao vender</div>
                         )}
                       </td>
                       <td className="py-3 pr-4 text-fg-muted">{forma(d.formaPagamento)}</td>
