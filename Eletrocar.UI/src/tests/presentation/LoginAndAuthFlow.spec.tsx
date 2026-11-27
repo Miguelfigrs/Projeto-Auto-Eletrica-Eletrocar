@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { App } from "../../App";
 import { container } from "../../infra/di/container";
 
@@ -10,22 +10,23 @@ describe("Fluxo de Login, RBAC Didático e Logout", () => {
     await container.authRepository.logout();
   });
 
-  it("deve abrir na tela de Login moderna com perfis didáticos e exigir autenticação", async () => {
+  it("deve abrir na tela de Login moderna sem perfis didáticos expostos e exigir autenticação", async () => {
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: /Entrar no sistema/i })).toBeInTheDocument();
-    expect(screen.getByText(/Perfis Didáticos de Demonstração/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Perfis Didáticos de Demonstração/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Sair/i })).not.toBeInTheDocument();
   });
 
-  it("deve autenticar via perfil rápido de balconista e bloquear acesso ao módulo DRE por RBAC", async () => {
+  it("deve autenticar como balconista pelo formulário e bloquear acesso ao módulo DRE por RBAC", async () => {
     render(<App />);
 
-    const credenciaisCarlos = await screen.findByText(/carlos \/ carlos123/i);
-    const cardCarlos = credenciaisCarlos.closest(".rounded-xl") as HTMLElement;
-    expect(cardCarlos).not.toBeNull();
+    const inputUsuario = await screen.findByLabelText(/Usuário ou e-mail/i);
+    const inputSenha = screen.getByPlaceholderText(/Digite sua senha de acesso/i);
 
-    fireEvent.click(within(cardCarlos).getByRole("button", { name: "Entrar" }));
+    fireEvent.change(inputUsuario, { target: { value: "carlos" } });
+    fireEvent.change(inputSenha, { target: { value: "carlos123" } });
+    fireEvent.click(screen.getByRole("button", { name: /Entrar no sistema/i }));
 
     // Aguarda transição pós-login (elemento exclusivo do AppShell/PDV)
     expect(await screen.findByPlaceholderText(/Escaneie o código de barras/i)).toBeInTheDocument();

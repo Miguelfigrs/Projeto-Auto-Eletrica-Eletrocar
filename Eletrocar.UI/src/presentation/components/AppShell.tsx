@@ -1,12 +1,13 @@
 /**
  * Componente: AppShell
- * Estrutura principal em Chumbo + Vermelho Escuro:
- * menu lateral, navegação por atalhos (F1–F7), toggle de Modo Didático,
- * cartão do operador com troca por PIN (F12) e logout, e telemetria no topo.
+ * Estrutura principal em Chumbo + Vermelho Escuro, pensada para leitura fácil:
+ * menu lateral grande com uma frase explicando cada tela, atalhos F1–F8 visíveis,
+ * cartão do operador com troca por PIN (F12) e saída, e um topo com só o essencial
+ * (situação do caixa, do leitor e o botão de ajuda).
  */
 import React from "react";
 import {
-  BookOpen,
+  CircleHelp,
   LayoutDashboard,
   Lock,
   LogOut,
@@ -18,7 +19,6 @@ import {
   UserRoundPen,
   Users,
   Wallet,
-  Wifi,
   Wrench,
 } from "lucide-react";
 import { DeviceStatus } from "../../application/ports/gateways/IBarcodeReaderGateway";
@@ -29,19 +29,21 @@ import { cn } from "../../lib/utils";
 export interface NavItemConfig {
   id: string;
   label: string;
+  /** Frase curta, em linguagem do dia a dia, do que se faz na tela */
+  dica: string;
   atalho: string;
   icon: LucideIcon;
   somenteAdmin?: boolean;
 }
 
 export const NAV_ITENS: NavItemConfig[] = [
-  { id: "overview", label: "Visão Geral", atalho: "F1", icon: LayoutDashboard },
-  { id: "balcao", label: "Balcão & PDV", atalho: "F2", icon: ShoppingCart },
-  { id: "os", label: "Ordens de Serviço", atalho: "F3", icon: Wrench },
-  { id: "estoque", label: "Peças & Estoque", atalho: "F4", icon: Package },
-  { id: "caixa", label: "Caixa & Turnos", atalho: "F6", icon: Wallet },
-  { id: "dre", label: "Financeiro & DRE", atalho: "F7", icon: PieChart },
-  { id: "usuarios", label: "Usuários", atalho: "F8", icon: Users, somenteAdmin: true },
+  { id: "overview", label: "Visão Geral", dica: "Resumo do dia", atalho: "F1", icon: LayoutDashboard },
+  { id: "balcao", label: "Balcão & PDV", dica: "Vender peças", atalho: "F2", icon: ShoppingCart },
+  { id: "os", label: "Ordens de Serviço", dica: "Carros na oficina", atalho: "F3", icon: Wrench },
+  { id: "estoque", label: "Peças & Estoque", dica: "Ver e repor peças", atalho: "F4", icon: Package },
+  { id: "caixa", label: "Caixa & Turnos", dica: "Abrir e fechar o dia", atalho: "F6", icon: Wallet },
+  { id: "dre", label: "Financeiro & DRE", dica: "Lucro do mês", atalho: "F7", icon: PieChart },
+  { id: "usuarios", label: "Usuários", dica: "Funcionários", atalho: "F8", icon: Users, somenteAdmin: true },
 ];
 
 interface AppShellProps {
@@ -68,6 +70,12 @@ const iniciais = (nome: string) =>
     .map((p) => p[0]?.toUpperCase())
     .join("");
 
+const ROTULO_PAPEL: Record<string, string> = {
+  ADMIN: "Dono",
+  BALCONISTA: "Balcão",
+  ELETRICISTA: "Eletricista",
+};
+
 export function temAcessoAba(usuario: Usuario, aba: string): boolean {
   if (usuario.ehAdmin) return true;
   if (aba === "dre" || aba === "usuarios") return false;
@@ -92,29 +100,29 @@ export const AppShell: React.FC<AppShellProps> = ({
 }) => {
   const leitor =
     hardwareStatus === "CONECTADO"
-      ? { cls: "chip-ok", txt: "Leitor conectado" }
+      ? { cls: "chip-ok", txt: "Leitor ligado" }
       : hardwareStatus === "STANDBY"
-      ? { cls: "chip-warn", txt: "Leitor em standby" }
-      : { cls: "chip-neg", txt: "Leitor desconectado" };
+      ? { cls: "chip-warn", txt: "Leitor em espera" }
+      : { cls: "chip-neg", txt: "Leitor desligado" };
 
   const paginaAtual = NAV_ITENS.find((n) => n.id === abaAtiva);
+  const itensVisiveis = NAV_ITENS.filter((item) => !item.somenteAdmin || usuario.ehAdmin);
 
   return (
     <div className="flex min-h-screen">
-      {/* ---------------- Sidebar Chumbo Profundo ---------------- */}
-      <aside className="sticky top-0 flex h-screen w-[76px] shrink-0 flex-col border-r border-line bg-sidebar lg:w-[272px]">
-        <div className="flex h-[72px] items-center gap-3 border-b border-line px-[18px] lg:px-5">
-          <BrandMark size={40} />
+      {/* ---------------- Menu lateral ---------------- */}
+      <aside className="sticky top-0 flex h-screen w-[84px] shrink-0 flex-col border-r border-line bg-sidebar lg:w-[320px]">
+        <div className="flex h-[76px] shrink-0 items-center gap-3 border-b border-line px-[20px] lg:px-6">
+          <BrandMark size={44} />
           <BrandWordmark compact className="hidden lg:block" />
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-5">
-          <div className="eyebrow mb-3 hidden px-3 lg:block">Navegação &amp; Atalhos</div>
+        <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Telas do sistema">
           <ul className="flex flex-col gap-1.5">
-            {NAV_ITENS.filter((item) => !item.somenteAdmin || usuario.ehAdmin).map((item) => {
+            {itensVisiveis.map((item) => {
               const ativa = abaAtiva === item.id;
-              const Icon = item.icon;
               const permitido = temAcessoAba(usuario, item.id);
+              const Icon = permitido ? item.icon : Lock;
               return (
                 <li key={item.id}>
                   <button
@@ -122,33 +130,37 @@ export const AppShell: React.FC<AppShellProps> = ({
                     onClick={() => onSelecionarAba(item.id)}
                     title={
                       permitido
-                        ? `${item.label} (${item.atalho})`
+                        ? `${item.label} — ${item.dica} (tecla ${item.atalho})`
                         : `${item.label} — acesso restrito ao perfil atual`
                     }
                     aria-current={ativa ? "page" : undefined}
                     className={cn(
-                      "group relative flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium transition-all lg:justify-start",
+                      "group relative flex min-h-[58px] w-full items-center justify-center gap-3.5 rounded-2xl px-3 text-left transition-all lg:justify-start lg:px-4",
                       ativa
-                        ? "border border-brand-line/70 bg-linear-to-r from-brand-soft via-surface-2 to-surface-2 text-fg shadow-sm"
-                        : "border border-transparent text-fg-muted hover:bg-surface hover:text-fg",
-                      !permitido && "opacity-55"
+                        ? "border-2 border-brand-hover bg-linear-to-r from-brand-soft via-surface-2 to-surface-2 text-fg shadow-sm"
+                        : "border-2 border-transparent text-fg-muted hover:border-line-strong hover:bg-surface hover:text-fg",
+                      !permitido && "opacity-60"
                     )}
                   >
                     {ativa && (
-                      <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-brand-hover" />
+                      <span className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-brand-hover" />
                     )}
                     <Icon
-                      size={18}
-                      className={cn(
-                        ativa ? "text-brand-text" : "text-fg-subtle group-hover:text-fg-muted"
-                      )}
+                      size={24}
+                      className={cn(ativa ? "text-brand-text" : "text-fg-subtle group-hover:text-fg-muted")}
                     />
-                    <span className="hidden flex-1 truncate text-left lg:block">{item.label}</span>
-                    {!permitido ? (
-                      <Lock size={13} className="hidden text-fg-subtle lg:inline-flex" />
-                    ) : (
-                      <span className="kbd hidden lg:inline-flex">{item.atalho}</span>
-                    )}
+                    <span className="hidden min-w-0 flex-1 lg:block">
+                      <span className="block truncate text-base font-semibold leading-tight">{item.label}</span>
+                      <span
+                        className={cn(
+                          "mt-0.5 block truncate text-sm font-normal leading-tight",
+                          ativa ? "text-fg-muted" : "text-fg-subtle"
+                        )}
+                      >
+                        {permitido ? item.dica : "Sem acesso no seu perfil"}
+                      </span>
+                    </span>
+                    {permitido && <span className="kbd hidden lg:inline-flex">{item.atalho}</span>}
                   </button>
                 </li>
               );
@@ -156,7 +168,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           </ul>
         </nav>
 
-        {/* Cartão do Operador + Troca por PIN + Logout */}
+        {/* Cartão do operador + Troca por PIN + Sair */}
         <div className="border-t border-line p-3">
           <button
             type="button"
@@ -164,42 +176,42 @@ export const AppShell: React.FC<AppShellProps> = ({
             title="Meu perfil: editar meus dados, senha e PIN"
             aria-current={abaAtiva === "perfil" ? "page" : undefined}
             className={cn(
-              "flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors",
+              "flex w-full items-center gap-3 rounded-2xl border-2 p-2.5 text-left transition-colors",
               abaAtiva === "perfil"
-                ? "border-brand-line bg-brand-soft/60"
+                ? "border-brand-hover bg-brand-soft/60"
                 : "border-line bg-surface/90 hover:border-line-strong hover:bg-surface-2"
             )}
           >
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-brand-line bg-brand-soft text-xs font-bold text-brand-text">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-brand-line bg-brand-soft text-sm font-bold text-brand-text">
               {iniciais(usuario.nome)}
             </div>
             <div className="hidden min-w-0 flex-1 lg:block">
-              <div className="truncate text-sm font-semibold text-fg">{usuario.nome}</div>
-              <div className="mt-0.5 truncate text-[0.68rem] uppercase tracking-wider text-fg-subtle">
-                {usuario.papeis.join(" · ")}
+              <div className="truncate text-base font-semibold text-fg">{usuario.nome}</div>
+              <div className="mt-0.5 truncate text-sm text-fg-subtle">
+                {usuario.papeis.map((p) => ROTULO_PAPEL[p] ?? p).join(" · ")} · Meu perfil
               </div>
             </div>
-            <UserRoundPen size={15} className="hidden shrink-0 text-fg-subtle lg:block" />
+            <UserRoundPen size={20} className="hidden shrink-0 text-fg-subtle lg:block" />
           </button>
 
-          <div className="mt-2 grid grid-cols-1 gap-1.5 lg:grid-cols-2">
+          <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2">
             <button
               type="button"
               onClick={onAbrirLockScreen}
               title="Trocar operador por PIN (F12)"
-              className="btn btn-secondary btn-sm w-full"
+              className="btn btn-secondary w-full px-3"
             >
-              <Lock size={13} />
-              <span className="hidden lg:inline">PIN</span>
-              <span className="kbd hidden lg:inline-flex">F12</span>
+              <Lock size={18} />
+              <span className="hidden lg:inline">Trocar</span>
+              <span className="kbd hidden xl:inline-flex">F12</span>
             </button>
             <button
               type="button"
               onClick={onLogout}
               title="Encerrar sessão e voltar ao Login"
-              className="btn btn-ghost btn-sm w-full hover:text-neg-text"
+              className="btn btn-ghost w-full px-3 hover:text-neg-text"
             >
-              <LogOut size={13} />
+              <LogOut size={18} />
               <span className="hidden lg:inline">Sair</span>
             </button>
           </div>
@@ -208,69 +220,59 @@ export const AppShell: React.FC<AppShellProps> = ({
 
       {/* ---------------- Conteúdo ---------------- */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex h-[72px] items-center justify-between gap-3 border-b border-line bg-canvas/85 px-4 backdrop-blur-xl sm:px-8">
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <span className="hidden text-fg-subtle sm:inline">Eletrocar</span>
-            <span className="hidden text-fg-subtle sm:inline">/</span>
-            <span className="truncate font-semibold text-fg">
-              {paginaAtual?.label ?? (abaAtiva === "perfil" ? "Meu perfil" : "")}
-            </span>
+        <header className="sticky top-0 z-40 flex min-h-[76px] items-center justify-between gap-3 border-b border-line bg-canvas/90 px-4 py-3 backdrop-blur-xl sm:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            {paginaAtual && <paginaAtual.icon size={26} className="hidden shrink-0 text-brand-text sm:block" />}
+            <div className="min-w-0">
+              <div className="truncate text-xl font-bold text-fg">
+                {paginaAtual?.label ?? (abaAtiva === "perfil" ? "Meu perfil" : "")}
+              </div>
+              {paginaAtual && (
+                <div className="hidden truncate text-sm text-fg-subtle sm:block">{paginaAtual.dica}</div>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onAlternarModoDidatico}
-              title="Mostrar ou ocultar os guias explicativos das telas"
-              className={cn(
-                "chip transition-colors",
-                modoDidatico ? "chip-brand" : "hover:border-line-strong hover:text-fg"
-              )}
-            >
-              <BookOpen size={12} />
-              <span className="hidden sm:inline">
-                {modoDidatico ? "Guia Didático: Ativo" : "Guia Didático: Oculto"}
-              </span>
-            </button>
-
+          <div className="flex flex-wrap items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={() => onSelecionarAba("caixa")}
-              className={cn("chip transition-opacity hover:opacity-90", caixaAberto ? "chip-ok" : "chip-neg")}
-              title="Clique para abrir Caixa & Turnos"
+              className={cn(
+                "chip min-h-11 px-4 text-sm transition-opacity hover:opacity-90",
+                caixaAberto ? "chip-ok" : "chip-neg"
+              )}
+              title="Abrir a tela do Caixa"
             >
               <span className="dot" />
-              {caixaAberto ? `Caixa aberto · Turno ${rotuloTurno ?? "-"}` : "Caixa fechado"}
+              {caixaAberto ? (
+                <>
+                  Caixa aberto<span className="hidden xl:inline"> · {rotuloTurno ?? "-"}</span>
+                </>
+              ) : (
+                "Caixa fechado"
+              )}
             </button>
-
-            <span
-              className={cn("chip hidden md:inline-flex", leitor.cls)}
-              title={`Hardware: ${hardwareModelo}`}
-            >
-              <ScanBarcode size={13} />
-              {leitor.txt}
-            </span>
 
             <button
               type="button"
               onClick={onSimularScan}
-              className="btn btn-secondary btn-sm hidden lg:inline-flex"
-              title="Simula a leitura de um código de barras no leitor"
+              className={cn("chip hidden min-h-11 px-4 text-sm md:inline-flex", leitor.cls)}
+              title={`${hardwareModelo}. Clique para testar o leitor com um código de exemplo.`}
             >
-              Testar bip
+              <ScanBarcode size={18} />
+              {leitor.txt}
             </button>
 
-            <span
-              className={cn("chip hidden xl:inline-flex", usuario.origemAuth === "API" ? "chip-ok" : "chip-info")}
-              title={
-                usuario.origemAuth === "API"
-                  ? "Autenticado via FastAPI + PostgreSQL"
-                  : "Sessão local de demonstração"
-              }
+            <button
+              type="button"
+              onClick={onAlternarModoDidatico}
+              aria-pressed={modoDidatico}
+              title="Mostrar ou ocultar os guias explicativos das telas"
+              className={cn("btn btn-sm", modoDidatico ? "btn-secondary border-brand-line!" : "btn-ghost")}
             >
-              <Wifi size={12} />
-              {usuario.origemAuth === "API" ? "API Online" : "Demo Local"}
-            </span>
+              <CircleHelp size={18} className={modoDidatico ? "text-brand-text" : undefined} />
+              <span className="hidden sm:inline">{modoDidatico ? "Ocultar ajuda" : "Mostrar ajuda"}</span>
+            </button>
           </div>
         </header>
 

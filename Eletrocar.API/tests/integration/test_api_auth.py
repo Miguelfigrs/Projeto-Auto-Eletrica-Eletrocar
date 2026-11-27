@@ -107,6 +107,22 @@ async def test_troca_de_operador_por_pin_exige_terminal_autenticado(client: Asyn
     assert troca.json()["usuario"]["id"] == str(juliana.id)
 
 
+async def test_lista_operadores_para_troca_rapida_sem_expor_pin(client: AsyncClient, criar_usuario):
+    juliana, _ = await criar_usuario(Papel.BALCONISTA, pin="3344", email="juliana@eletrocar.com.br")
+    sem_pin, _ = await criar_usuario(Papel.ELETRICISTA, email="semPin@eletrocar.com.br")
+    _, terminal = await criar_usuario(Papel.BALCONISTA, pin="1122", email="terminal@eletrocar.com.br")
+
+    assert (await client.get("/api/v1/auth/operadores")).status_code == 401
+
+    res = await client.get("/api/v1/auth/operadores", headers=terminal)
+    assert res.status_code == 200
+    ids = [op["id"] for op in res.json()]
+    assert str(juliana.id) in ids
+    assert str(sem_pin.id) not in ids  # sem PIN não consegue assumir o terminal
+    assert all(set(op) == {"id", "nome", "username", "papeis"} for op in res.json())
+    assert "3344" not in res.text and "pin" not in res.text.lower()
+
+
 async def test_pin_bloqueado_apos_5_erros(client: AsyncClient, criar_usuario):
     juliana, _ = await criar_usuario(Papel.BALCONISTA, pin="3344")
     _, terminal = await criar_usuario(Papel.BALCONISTA)

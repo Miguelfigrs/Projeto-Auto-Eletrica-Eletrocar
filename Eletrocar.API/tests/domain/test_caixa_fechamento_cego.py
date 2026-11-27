@@ -66,8 +66,13 @@ def test_estorno_de_venda_reduz_saldo_e_nao_pode_exceder_dinheiro_disponivel():
     caixa.registrar_movimentacao(TipoMovimentacaoCaixa.ESTORNO_VENDA, Decimal("30.00"), FormaPagamento.DINHEIRO, "Estorno VB-1")
     assert caixa.saldo_teorico == Decimal("50.00")
 
-    with pytest.raises(RegraNegocioException):
+    with pytest.raises(RegraNegocioException) as erro:
         caixa.registrar_movimentacao(TipoMovimentacaoCaixa.SANGRIA, Decimal("60.00"), FormaPagamento.DINHEIRO, "Excesso")
+    # Mensagem legível para o balconista: valores no formato brasileiro, sem nomes internos
+    assert str(erro.value) == (
+        "Não há saldo suficiente em dinheiro na gaveta para a sangria. "
+        "Pedido: R$ 60,00 · disponível: R$ 50,00."
+    )
 
 
 def test_formas_a_prazo_nao_entram_no_caixa():

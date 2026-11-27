@@ -4,11 +4,12 @@ export interface OperadorRapidoInfo {
   id: string;
   nome: string;
   username: string;
-  email: string;
+  email?: string;
   papeis: Usuario["papeis"];
-  pinDemo: string;
-  senhaDemo: string;
-  descricaoAcesso: string;
+  /** Só na demonstração offline: com a API os PINs nunca chegam ao navegador. */
+  pinDemo?: string;
+  senhaDemo?: string;
+  descricaoAcesso?: string;
 }
 
 export interface IAuthRepository {

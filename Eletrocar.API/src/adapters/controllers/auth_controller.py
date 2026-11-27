@@ -11,7 +11,14 @@ from pydantic import BaseModel, Field, model_validator
 from src.infra.config import settings
 from src.domain.entities.usuario import Usuario
 from src.domain.exceptions.domain_exceptions import CredenciaisInvalidasException
-from src.application.dtos.auth_dtos import LoginInputDTO, TrocaOperadorPinInputDTO, SessaoTokensDTO, UsuarioOutputDTO
+from typing import List
+from src.application.dtos.auth_dtos import (
+    LoginInputDTO,
+    OperadorRapidoOutputDTO,
+    TrocaOperadorPinInputDTO,
+    SessaoTokensDTO,
+    UsuarioOutputDTO,
+)
 from src.application.use_cases.autenticar_usuario_use_case import AutenticarUsuarioUseCase
 from src.application.use_cases.gerenciar_sessao_use_case import GerenciarSessaoUseCase
 from src.adapters.controllers.dependencies import get_current_user
@@ -122,6 +129,13 @@ async def trocar_operador_pin(
 ):
     usuario = await autenticar.trocar_operador_por_pin(TrocaOperadorPinInputDTO(usuario_id=body.usuario_id, pin=body.pin))
     return _responder_sessao(response, await sessao.iniciar(usuario.id))
+
+
+@router.get("/operadores", response_model=List[OperadorRapidoOutputDTO],
+            summary="Operadores que podem assumir o terminal por PIN (sem expor o PIN)")
+async def listar_operadores_rapidos(_terminal: Usuario = Depends(get_current_user),
+                                    uc: GerenciarUsuariosUseCase = Depends(usuarios_uc)):
+    return await uc.listar_operadores_rapidos()
 
 
 @router.get("/me", response_model=UsuarioOutputDTO)

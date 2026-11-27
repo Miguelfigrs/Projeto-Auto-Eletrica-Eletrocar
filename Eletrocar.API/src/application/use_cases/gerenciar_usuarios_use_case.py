@@ -14,7 +14,12 @@ from src.domain.exceptions.domain_exceptions import (
     RegraNegocioException, EntidadeNaoEncontradaException, CredenciaisInvalidasException,
 )
 from src.application.ports.seguranca import PasswordHasher, LimitadorTentativas
-from src.application.dtos.auth_dtos import CriarUsuarioInputDTO, AtualizarUsuarioInputDTO, UsuarioOutputDTO
+from src.application.dtos.auth_dtos import (
+    CriarUsuarioInputDTO,
+    AtualizarUsuarioInputDTO,
+    OperadorRapidoOutputDTO,
+    UsuarioOutputDTO,
+)
 
 TAMANHO_MINIMO_SENHA = 8
 ORIGEM = "GESTAO_USUARIOS"
@@ -171,6 +176,15 @@ class GerenciarUsuariosUseCase:
     async def listar(self) -> List[UsuarioOutputDTO]:
         usuarios = await self.usuario_repo.listar_todos()
         return [UsuarioOutputDTO.de(u) for u in sorted(usuarios, key=lambda u: u.nome.lower())]
+
+    async def listar_operadores_rapidos(self) -> List[OperadorRapidoOutputDTO]:
+        """Usuários ativos com PIN cadastrado: os que podem assumir o terminal pela troca rápida."""
+        usuarios = await self.usuario_repo.listar_todos()
+        return [
+            OperadorRapidoOutputDTO.de(u)
+            for u in sorted(usuarios, key=lambda u: u.nome.lower())
+            if u.ativo and u.tem_pin
+        ]
 
     async def _obter(self, usuario_id: uuid.UUID) -> Usuario:
         usuario = await self.usuario_repo.buscar_por_id(usuario_id)

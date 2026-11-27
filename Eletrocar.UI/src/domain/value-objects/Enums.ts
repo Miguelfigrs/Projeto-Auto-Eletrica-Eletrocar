@@ -21,6 +21,19 @@ export enum StatusOS {
   CANCELADO = "CANCELADO",
 }
 
+/** Nome da etapa como aparece para o usuário (sem códigos internos). */
+export const ROTULO_STATUS_OS: Record<StatusOS, string> = {
+  [StatusOS.TRIAGEM]: "Triagem",
+  [StatusOS.ORCAMENTO_PENDENTE]: "Orçamento",
+  [StatusOS.APROVADO]: "Aprovado",
+  [StatusOS.EM_EXECUCAO]: "Em execução",
+  [StatusOS.AGUARDANDO_PECA]: "Aguardando peça",
+  [StatusOS.TESTES_ELETRICOS]: "Testes elétricos",
+  [StatusOS.FINALIZADO]: "Finalizado",
+  [StatusOS.ENTREGUE]: "Entregue",
+  [StatusOS.CANCELADO]: "Cancelado",
+};
+
 export enum OrigemOS {
   BALCAO = "BALCAO",
   TELEGRAM_VOICE = "TELEGRAM_VOICE",

@@ -4,7 +4,13 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { OrdemServico, OrdemServicoProps } from "../../domain/entities/OrdemServico";
-import { FormaPagamento, StatusOS, OrigemOS, PrioridadeOS } from "../../domain/value-objects/Enums";
+import {
+  FormaPagamento,
+  StatusOS,
+  OrigemOS,
+  PrioridadeOS,
+  ROTULO_STATUS_OS,
+} from "../../domain/value-objects/Enums";
 import { container } from "../../infra/di/container";
 
 export function useOrdensServico() {
@@ -35,8 +41,13 @@ export function useOrdensServico() {
   const avancarStatus = async (osId: string, novoStatus: StatusOS) => {
     try {
       setMensagemErro(null);
-      await container.avancarStatusOSUC.executar(osId, novoStatus);
-      setMensagemSucesso(`Status da OS atualizado para "${novoStatus}".`);
+      const os = await container.avancarStatusOSUC.executar(osId, novoStatus);
+      const numero = os?.numeroOS ?? "A OS";
+      setMensagemSucesso(
+        novoStatus === StatusOS.CANCELADO
+          ? `${numero} foi cancelada.`
+          : `${numero} passou para a etapa "${ROTULO_STATUS_OS[novoStatus] ?? novoStatus}".`
+      );
       setTimeout(() => setMensagemSucesso(null), 3000);
       carregarOrdens();
       if (osSelecionada?.id === osId) {

@@ -36,7 +36,7 @@ export function useVendaBalcao(operadorNome: string) {
         setMensagemSucesso(null);
         await container.adicionarItemVendaUC.executar(venda, codigo, 1);
         setVenda(venda.clone());
-        setMensagemSucesso(`Item adicionado via leitor/código: ${codigo}`);
+        setMensagemSucesso(`Peça adicionada (código ${codigo}).`);
         setTimeout(() => setMensagemSucesso(null), 3000);
       } catch (err: unknown) {
         setMensagemErro(err instanceof Error ? err.message : "Erro ao processar item.");
@@ -63,19 +63,27 @@ export function useVendaBalcao(operadorNome: string) {
     setVenda(venda.clone());
   };
 
-  const aplicarDesconto = (valorDesconto: number) => {
-    venda.aplicarDesconto(new Dinheiro(valorDesconto, false));
-    setVenda(venda.clone());
+  const aplicarDesconto = (valorDesconto: number): boolean => {
+    try {
+      setMensagemErro(null);
+      venda.aplicarDesconto(new Dinheiro(valorDesconto, false));
+      setVenda(venda.clone());
+      return true;
+    } catch (err: unknown) {
+      setMensagemErro(err instanceof Error ? err.message : "Desconto inválido.");
+      return false;
+    }
   };
 
   const cancelarVenda = () => {
     setVenda(new VendaBalcao());
     setMensagemErro(null);
-    setMensagemSucesso("Venda cancelada / carrinho limpo.");
+    setMensagemSucesso("Venda cancelada. O carrinho foi esvaziado.");
     setTimeout(() => setMensagemSucesso(null), 2500);
   };
 
-  const finalizarVenda = async (formaPagamento: FormaPagamento) => {
+  /** Devolve a venda gravada (com o número do servidor) ou null se o servidor recusou. */
+  const finalizarVenda = async (formaPagamento: FormaPagamento): Promise<VendaBalcao | null> => {
     try {
       setProcessando(true);
       setMensagemErro(null);
@@ -88,8 +96,10 @@ export function useVendaBalcao(operadorNome: string) {
       setMensagemSucesso(`Venda #${vendaConcluida.numeroVenda} finalizada com sucesso! Comprovante emitido.`);
       setVenda(new VendaBalcao());
       carregarCatalogo();
+      return vendaConcluida;
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao finalizar venda.");
+      return null;
     } finally {
       setProcessando(false);
     }
