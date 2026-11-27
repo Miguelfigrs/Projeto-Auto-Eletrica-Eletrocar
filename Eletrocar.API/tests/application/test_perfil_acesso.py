@@ -62,6 +62,15 @@ async def test_sessao_informa_validade_do_access_token():
 
 
 @pytest.mark.asyncio
+async def test_sessao_padrao_dura_um_turno_de_8_horas():
+    repo = FakeUsuarioRepository()
+    usuario = _usuario(Papel.BALCONISTA)
+    await repo.salvar(usuario)
+    tokens = await GerenciarSessaoUseCase(repo, FakeSessaoRepository(), FakeTokenService()).iniciar(usuario.id)
+    assert tokens.expira_em_segundos == 8 * 60 * 60
+
+
+@pytest.mark.asyncio
 async def test_login_e_troca_de_operador_sao_auditados():
     repo, audit = FakeUsuarioRepository(), FakeAuditoriaRepository()
     hasher = FakePasswordHasher()

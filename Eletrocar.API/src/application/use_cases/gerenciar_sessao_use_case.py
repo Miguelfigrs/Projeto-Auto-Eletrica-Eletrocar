@@ -21,7 +21,7 @@ class GerenciarSessaoUseCase:
         sessao_repo: SessaoRepositoryInterface,
         token_service: TokenService,
         validade_refresh_dias: int = 7,
-        validade_access_minutos: int = 30,
+        validade_access_minutos: int = 480,
         relogio: Callable[[], datetime] = agora_utc
     ):
         self.usuario_repo = usuario_repo

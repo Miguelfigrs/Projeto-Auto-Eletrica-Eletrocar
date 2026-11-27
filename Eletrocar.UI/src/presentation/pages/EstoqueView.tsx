@@ -235,7 +235,24 @@ export const EstoqueView: React.FC<EstoqueViewProps> = ({
 
           {pecasFiltradas.length === 0 ? (
             <div className="card">
-              <EmptyState icon={Package} title="Nenhuma peça encontrada" description="Ajuste a busca, o filtro de reposição ou o fabricante." />
+              {pecas.length === 0 ? (
+                <EmptyState
+                  icon={Package}
+                  title="Nenhuma peça cadastrada ainda"
+                  description="Comece cadastrando a primeira peça do catálogo. Depois é só usar 'Entrada de estoque' quando chegar mercadoria."
+                  action={
+                    <button type="button" className="btn btn-primary" onClick={() => setNovaPecaAberto(true)}>
+                      <PackagePlus size={20} /> Cadastrar a primeira peça
+                    </button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon={Package}
+                  title="Nenhuma peça encontrada"
+                  description="Ajuste a busca, o filtro de reposição ou o fabricante."
+                />
+              )}
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">

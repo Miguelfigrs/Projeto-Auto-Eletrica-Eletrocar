@@ -23,6 +23,17 @@ async def test_venda_exige_caixa_aberto(client: AsyncClient, criar_usuario):
     assert res.json()["tipo"] == "CaixaFechado"
 
 
+async def test_caixa_gerencial_sem_turno_aberto_responde_vazio(client: AsyncClient, criar_usuario):
+    import uuid
+    _, admin = await criar_usuario(Papel.ADMIN)
+    sem_turno = await client.get("/api/v1/caixa/gerencial", headers=admin)
+    assert sem_turno.status_code == 200
+    assert sem_turno.json() is None
+    # Um caixa específico que não existe continua sendo 404
+    inexistente = await client.get(f"/api/v1/caixa/gerencial?caixa_id={uuid.uuid4()}", headers=admin)
+    assert inexistente.status_code == 404
+
+
 async def test_fluxo_completo_venda_alcada_e_fechamento_cego(client: AsyncClient, criar_usuario):
     _, admin = await criar_usuario(Papel.ADMIN, email="gestor@eletrocar.com.br", pin="9090")
     _, balconista = await criar_usuario(Papel.BALCONISTA)

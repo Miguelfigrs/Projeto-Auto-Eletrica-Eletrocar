@@ -82,11 +82,22 @@ export class MockOrHttpCaixaRepository implements ICaixaRepository {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
+  /** Token cuja sessão não tem visão gerencial (balconista): vai direto ao /caixa/status. */
+  private tokenSemVisaoGerencial: string | null = null;
+
   private async obterCaixaAbertoApi(): Promise<Caixa | null> {
-    const gerencial = await fetch(`${this.apiBase}/caixa/gerencial`, { headers: this.autenticacao() });
-    if (gerencial.ok) return caixaDaApi((await gerencial.json()) as ApiCaixaGerencial);
-    if (gerencial.status === 404) return null;
-    if (gerencial.status !== 403) throw new Error(await mensagemDeErro(gerencial, "consultar o caixa"));
+    const token = this.sessao?.obterAccessToken() ?? null;
+    if (!token || token !== this.tokenSemVisaoGerencial) {
+      const gerencial = await fetch(`${this.apiBase}/caixa/gerencial`, { headers: this.autenticacao() });
+      if (gerencial.ok) {
+        // null = nenhum turno aberto
+        const dto = (await gerencial.json()) as ApiCaixaGerencial | null;
+        return dto ? caixaDaApi(dto) : null;
+      }
+      if (gerencial.status === 404) return null;
+      if (gerencial.status !== 403) throw new Error(await mensagemDeErro(gerencial, "consultar o caixa"));
+      this.tokenSemVisaoGerencial = token;
+    }
 
     // Operador sem visão gerencial: só a situação do caixa (fechamento cego).
     const dto = await requisitarApi<ApiCaixaOperador | null>(

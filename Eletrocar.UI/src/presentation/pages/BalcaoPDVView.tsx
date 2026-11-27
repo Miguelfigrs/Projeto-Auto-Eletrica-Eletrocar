@@ -591,7 +591,10 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                 inputMode="decimal"
                 placeholder="R$ 0,00"
                 value={valorRecebidoInput}
-                onChange={(e) => setValorRecebidoInput(e.target.value)}
+                onChange={(e) => {
+                  setValorRecebidoInput(e.target.value);
+                  setErroPagamento(null); // o aviso antigo ("menor que o total") some ao corrigir
+                }}
                 className="field money w-36 text-right"
               />
             </div>

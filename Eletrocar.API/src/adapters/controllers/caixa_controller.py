@@ -59,12 +59,14 @@ async def fechamento_cego(body: FechamentoCegoRequest, usuario: Usuario = Depend
     return await uc.fechar_caixa_cego(FechamentoCegoInputDTO(operador_id=usuario.id, valores_contados=body.valores_contados))
 
 
-@router.get("/gerencial", response_model=CaixaGerencialOutputDTO, summary="Saldo teórico e totais (Administrador)")
+@router.get("/gerencial", response_model=Optional[CaixaGerencialOutputDTO],
+            summary="Saldo teórico e totais (Administrador); null quando não há caixa aberto")
 async def caixa_gerencial(caixa_id: Optional[uuid.UUID] = None, _: Usuario = Depends(somente_admin),
                           uc: OperarCaixaUseCase = Depends(caixa_uc)):
     caixa = await uc.consultar_caixa_gerencial(caixa_id)
-    if not caixa:
+    if not caixa and caixa_id is not None:
         raise HTTPException(status_code=404, detail="Caixa não encontrado.")
+    # Sem caixa aberto não é erro: a tela só mostra "Caixa fechado" (antes vinha 404 a cada troca de tela)
     return caixa
 
 
