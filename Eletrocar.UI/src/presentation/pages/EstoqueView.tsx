@@ -153,14 +153,14 @@ export const EstoqueView: React.FC<EstoqueViewProps> = ({
 
       <DidacticBanner
         visivel={modoDidatico}
-        titulo="Como funciona o controle de estoque e ponto de reposição"
-        resumo="Cada peça reúne SKU interno, código de barras EAN-13, prateleira física, custo de compra, preço de balcão e estoque mínimo de segurança."
+        titulo="Como funciona o controle de estoque"
+        resumo="Cada peça tem código, prateleira, preço de custo, preço de venda e uma quantidade mínima para não faltar no balcão."
         passos={[
-          "Quando o saldo atinge ou fica abaixo do mínimo, a peça entra em alerta vermelho para compra.",
-          "Use 'Nova peça' para cadastrar um item novo no catálogo e 'Entrada de estoque' (ou o botão 'Entrada' do card) para somar unidades recebidas do fornecedor.",
-          "Clique em 'Ao Balcão' para abrir a venda no PDV já com a peça bipada.",
+          "Quando a quantidade chega no mínimo, a peça fica vermelha: é hora de comprar.",
+          "'Nova peça' cadastra um item novo. 'Entrada de estoque' soma as peças que chegaram do fornecedor.",
+          "'Ao Balcão' abre a venda já com a peça escolhida.",
         ]}
-        regraNegocio="A entidade Peca impede baixa acima do saldo disponível e exige quantidade positiva na reposição, protegendo o balcão contra estoque negativo."
+        regraNegocio="O sistema não deixa vender mais peças do que existem no estoque."
       />
 
       {feedback && (
@@ -312,7 +312,7 @@ export const EstoqueView: React.FC<EstoqueViewProps> = ({
                       <div>
                         <div className="eyebrow">Preço balcão</div>
                         <div className="money mt-1 text-2xl font-semibold text-fg">{peca.precoVenda.formatar()}</div>
-                        <div className="mt-0.5 text-[0.72rem] text-fg-subtle">
+                        <div className="mt-0.5 text-xs text-fg-subtle">
                           Custo: {peca.precoCusto.formatar()} • Markup +{margemPct}%
                         </div>
                       </div>

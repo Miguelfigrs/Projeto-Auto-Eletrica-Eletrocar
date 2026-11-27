@@ -7,6 +7,7 @@ import { Caixa } from "../../domain/entities/Caixa";
 import { Dinheiro } from "../../domain/value-objects/Dinheiro";
 import { container } from "../../infra/di/container";
 import type { ValoresContados } from "../../application/ports/repositories/ICaixaRepository";
+import { formatarReais } from "../../lib/numeroBR";
 
 export function useCaixa(operadorNome: string) {
   const [caixa, setCaixa] = useState<Caixa | null>(null);
@@ -62,8 +63,9 @@ export function useCaixa(operadorNome: string) {
     }
   };
 
-  const realizarSangria = async (valor: number, motivo: string) => {
-    if (!caixa) return;
+  /** true = gravada; false = recusada (o modal continua aberto, com o que foi digitado). */
+  const realizarSangria = async (valor: number, motivo: string): Promise<boolean> => {
+    if (!caixa) return false;
     try {
       setMensagemErro(null);
       await container.operarCaixaUC.realizarSangria(
@@ -73,16 +75,18 @@ export function useCaixa(operadorNome: string) {
         operadorNome
       );
       setModalSangriaAberto(false);
-      setMensagemSucesso(`Sangria de R$ ${valor.toFixed(2)} registrada.`);
-      setTimeout(() => setMensagemSucesso(null), 3000);
+      setMensagemSucesso(`Sangria de ${formatarReais(valor)} registrada.`);
+      setTimeout(() => setMensagemSucesso(null), 4000);
       carregarCaixa();
+      return true;
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao registrar sangria.");
+      return false;
     }
   };
 
-  const realizarSuprimento = async (valor: number, motivo: string) => {
-    if (!caixa) return;
+  const realizarSuprimento = async (valor: number, motivo: string): Promise<boolean> => {
+    if (!caixa) return false;
     try {
       setMensagemErro(null);
       await container.operarCaixaUC.realizarSuprimento(
@@ -92,11 +96,13 @@ export function useCaixa(operadorNome: string) {
         operadorNome
       );
       setModalSuprimentoAberto(false);
-      setMensagemSucesso(`Suprimento de R$ ${valor.toFixed(2)} registrado.`);
-      setTimeout(() => setMensagemSucesso(null), 3000);
+      setMensagemSucesso(`Suprimento de ${formatarReais(valor)} registrado.`);
+      setTimeout(() => setMensagemSucesso(null), 4000);
       carregarCaixa();
+      return true;
     } catch (err: unknown) {
       setMensagemErro(err instanceof Error ? err.message : "Erro ao registrar suprimento.");
+      return false;
     }
   };
 

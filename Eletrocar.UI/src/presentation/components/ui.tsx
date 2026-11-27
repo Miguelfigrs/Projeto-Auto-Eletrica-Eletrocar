@@ -5,6 +5,7 @@
 import React, { useEffect, useState } from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   BookOpen,
   CheckCircle2,
   ChevronDown,
@@ -65,7 +66,7 @@ export const BrandWordmark: React.FC<{ className?: string; compact?: boolean }> 
     >
       Eletro<span className="text-brand-text">car</span>
     </div>
-    <div className="mt-1 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-fg-subtle">
+    <div className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-fg-muted">
       Auto Elétrica
     </div>
   </div>
@@ -81,15 +82,15 @@ export const PageHeader: React.FC<{
   eyebrow?: string;
   actions?: React.ReactNode;
 }> = ({ title, description, eyebrow, actions }) => (
-  <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
     <div className="min-w-0">
-      {eyebrow && <div className="eyebrow mb-1 text-brand-text">{eyebrow}</div>}
-      <h1 className="font-display text-3xl font-bold uppercase tracking-wide text-fg sm:text-[2.1rem]">
+      {eyebrow && <div className="eyebrow mb-1.5 text-brand-text">{eyebrow}</div>}
+      <h1 className="font-display text-[2rem] font-bold uppercase leading-tight tracking-wide text-fg sm:text-[2.4rem]">
         {title}
       </h1>
-      {description && <p className="mt-1 max-w-2xl text-sm text-fg-muted">{description}</p>}
+      {description && <p className="mt-1.5 max-w-3xl text-base leading-relaxed text-fg-muted">{description}</p>}
     </div>
-    {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
+    {actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}
   </div>
 );
 
@@ -113,7 +114,7 @@ export const DidacticBanner: React.FC<{
   passos?: string[];
   regraNegocio?: string;
   defaultAberto?: boolean;
-}> = ({ visivel = true, titulo, resumo, passos = [], regraNegocio, defaultAberto = true }) => {
+}> = ({ visivel = true, titulo, resumo, passos = [], regraNegocio, defaultAberto = false }) => {
   const [aberto, setAberto] = useState(defaultAberto);
 
   if (!visivel) return null;
@@ -123,52 +124,50 @@ export const DidacticBanner: React.FC<{
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.02] sm:px-5"
+        aria-expanded={aberto}
+        className="flex min-h-[64px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.02] sm:px-5"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-brand-line bg-brand-soft text-brand-text">
-            <BookOpen size={15} />
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-brand-line bg-brand-soft text-brand-text">
+            <BookOpen size={20} />
           </span>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-brand-text">
-                Guia Didático
-              </span>
-              <span className="text-xs text-fg-subtle">·</span>
-              <span className="truncate text-sm font-semibold text-fg">{titulo}</span>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="text-xs font-bold uppercase tracking-[0.1em] text-brand-text">Ajuda</span>
+              <span className="text-base font-semibold text-fg">{titulo}</span>
             </div>
-            {!aberto && <p className="truncate text-xs text-fg-muted">{resumo}</p>}
+            {!aberto && <p className="line-clamp-2 text-sm text-fg-muted">{resumo}</p>}
           </div>
         </div>
-        <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-fg-muted">
-          {aberto ? "Recolher" : "Ver passo a passo"}
-          {aberto ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        <span className="flex shrink-0 items-center gap-1.5 rounded-xl border border-line-strong px-3 py-2 text-sm font-semibold text-fg-muted">
+          <span className="hidden sm:inline">{aberto ? "Esconder" : "Ver passo a passo"}</span>
+          {aberto ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </span>
       </button>
 
       {aberto && (
         <div className="border-t border-line/80 px-4 pb-4 pt-3 sm:px-5">
-          <p className="text-sm leading-relaxed text-fg-muted">{resumo}</p>
+          <p className="text-base leading-relaxed text-fg-muted">{resumo}</p>
 
           {passos.length > 0 && (
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
               {passos.map((passo, idx) => (
                 <div
                   key={idx}
-                  className="flex items-start gap-2.5 rounded-xl border border-line bg-canvas/65 px-3 py-2.5 text-xs text-fg-muted"
+                  className="flex items-start gap-3 rounded-xl border border-line bg-canvas/65 px-3.5 py-3 text-sm text-fg-muted"
                 >
-                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand text-[0.68rem] font-bold text-brand-fg">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-brand-fg">
                     {idx + 1}
                   </span>
-                  <span className="leading-snug">{passo}</span>
+                  <span className="leading-relaxed">{passo}</span>
                 </div>
               ))}
             </div>
           )}
 
           {regraNegocio && (
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-line bg-surface-2/70 px-3 py-2 text-xs text-fg-muted">
-              <ShieldCheck size={14} className="mt-0.5 shrink-0 text-brand-text" />
+            <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-line bg-surface-2/70 px-3.5 py-2.5 text-sm text-fg-muted">
+              <ShieldCheck size={18} className="mt-0.5 shrink-0 text-brand-text" />
               <span>
                 <strong className="text-fg">Regra da oficina:</strong> {regraNegocio}
               </span>
@@ -184,12 +183,12 @@ export const StepFlow: React.FC<{
   passos: Array<{ numero: number; titulo: string; detalhe: string; ativo?: boolean; concluido?: boolean }>;
   className?: string;
 }> = ({ passos, className }) => (
-  <div className={cn("grid gap-2 sm:grid-cols-3", className)}>
+  <div className={cn("grid grid-cols-1 gap-2 sm:grid-cols-3", className)}>
     {passos.map((p) => (
       <div
         key={p.numero}
         className={cn(
-          "flex items-center gap-3 rounded-xl border px-3.5 py-2.5 transition-colors",
+          "flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors",
           p.ativo
             ? "border-brand-line bg-brand-soft"
             : p.concluido
@@ -199,7 +198,7 @@ export const StepFlow: React.FC<{
       >
         <span
           className={cn(
-            "grid h-7 w-7 shrink-0 place-items-center rounded-lg font-mono text-xs font-bold",
+            "grid h-9 w-9 shrink-0 place-items-center rounded-lg font-mono text-sm font-bold",
             p.ativo
               ? "bg-brand text-brand-fg"
               : p.concluido
@@ -210,8 +209,8 @@ export const StepFlow: React.FC<{
           {p.concluido ? "✓" : p.numero}
         </span>
         <div className="min-w-0">
-          <div className="truncate text-xs font-semibold text-fg">{p.titulo}</div>
-          <div className="truncate text-[0.72rem] text-fg-muted">{p.detalhe}</div>
+          <div className="truncate text-sm font-semibold text-fg">{p.titulo}</div>
+          <div className="truncate text-sm text-fg-muted">{p.detalhe}</div>
         </div>
       </div>
     ))}
@@ -222,6 +221,10 @@ export const StepFlow: React.FC<{
 /* Feedback                                                                   */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Avisos da tela. Ficam fixos no topo e ACIMA de qualquer janela aberta: antes o erro de uma
+ * sangria ou venda recusada aparecia atrás do modal e o usuário não via nada acontecer.
+ */
 export const Alerts: React.FC<{
   sucesso?: string | null;
   erro?: string | null;
@@ -230,38 +233,62 @@ export const Alerts: React.FC<{
 }> = ({ sucesso, erro, aviso, onFecharErro }) => {
   if (!sucesso && !erro && !aviso) return null;
   return (
-    <div className="mb-5 flex flex-col gap-2">
-      {sucesso && (
-        <div className="alert alert-ok" role="status">
-          <CheckCircle2 size={18} className="shrink-0" />
-          <span>{sucesso}</span>
-        </div>
-      )}
-      {aviso && (
-        <div className="alert alert-warn" role="status">
-          <Info size={18} className="shrink-0" />
-          <span>{aviso}</span>
-        </div>
-      )}
+    <div className="toast-stack" aria-live="polite">
       {erro && (
-        <div className="alert alert-neg" role="alert">
-          <AlertCircle size={18} className="shrink-0" />
+        <div className="alert alert-neg toast" role="alert">
+          <AlertCircle size={24} className="shrink-0" />
           <span className="flex-1">{erro}</span>
           {onFecharErro && (
             <button
               type="button"
               onClick={onFecharErro}
-              className="rounded-md p-1 opacity-70 hover:opacity-100"
+              className="btn btn-ghost btn-sm shrink-0 text-current!"
               aria-label="Fechar alerta"
             >
-              <X size={16} />
+              <X size={18} /> Fechar
             </button>
           )}
+        </div>
+      )}
+      {aviso && (
+        <div className="alert alert-warn toast" role="status">
+          <Info size={24} className="shrink-0" />
+          <span>{aviso}</span>
+        </div>
+      )}
+      {sucesso && (
+        <div className="alert alert-ok toast" role="status">
+          <CheckCircle2 size={24} className="shrink-0" />
+          <span>{sucesso}</span>
         </div>
       )}
     </div>
   );
 };
+
+/** Pergunta "tem certeza?" antes de ações que não dá para desfazer. */
+export const ConfirmDialog: React.FC<{
+  aberto: boolean;
+  titulo: string;
+  mensagem: React.ReactNode;
+  textoConfirmar: string;
+  textoVoltar?: string;
+  perigoso?: boolean;
+  onConfirmar: () => void;
+  onVoltar: () => void;
+}> = ({ aberto, titulo, mensagem, textoConfirmar, textoVoltar = "Voltar", perigoso, onConfirmar, onVoltar }) => (
+  <Modal aberto={aberto} onFechar={onVoltar} titulo={titulo} icon={perigoso ? AlertTriangle : Info} largura={500}>
+    <p className="text-base leading-relaxed text-fg-muted">{mensagem}</p>
+    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <button type="button" className="btn btn-secondary" onClick={onVoltar} autoFocus>
+        {textoVoltar}
+      </button>
+      <button type="button" className={cn("btn", perigoso ? "btn-danger-solid" : "btn-primary")} onClick={onConfirmar}>
+        {textoConfirmar}
+      </button>
+    </div>
+  </Modal>
+);
 
 export const EmptyState: React.FC<{
   icon: React.ElementType;
@@ -273,8 +300,8 @@ export const EmptyState: React.FC<{
     <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl border border-line-strong bg-surface-2 text-fg-subtle shadow-inner">
       <Icon size={26} />
     </div>
-    <p className="text-base font-semibold text-fg">{title}</p>
-    {description && <p className="mt-1 max-w-sm text-sm text-fg-muted">{description}</p>}
+    <p className="text-lg font-semibold text-fg">{title}</p>
+    {description && <p className="mt-1.5 max-w-md text-base text-fg-muted">{description}</p>}
     {action && <div className="mt-5">{action}</div>}
   </div>
 );
@@ -321,10 +348,10 @@ export const StatCard: React.FC<{
         </span>
       )}
     </div>
-    <div className={cn("money mt-3 text-[1.75rem] font-semibold leading-none", toneText[tone])}>
+    <div className={cn("money mt-3 text-[1.9rem] font-semibold leading-none", toneText[tone])}>
       {value}
     </div>
-    {hint && <div className="mt-2.5 text-xs text-fg-muted">{hint}</div>}
+    {hint && <div className="mt-3 text-sm text-fg-muted">{hint}</div>}
   </div>
 );
 
@@ -363,21 +390,22 @@ export const Modal: React.FC<{
         {titulo && (
           <div className="flex items-start gap-3 border-b border-line px-6 py-5">
             {Icon && (
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-brand-line bg-brand-soft text-brand-text">
-                <Icon size={18} />
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-brand-line bg-brand-soft text-brand-text">
+                <Icon size={22} />
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-semibold text-fg">{titulo}</h2>
-              {descricao && <p className="mt-0.5 text-sm text-fg-muted">{descricao}</p>}
+              <h2 className="text-xl font-semibold text-fg">{titulo}</h2>
+              {descricao && <p className="mt-1 text-base text-fg-muted">{descricao}</p>}
             </div>
             <button
               type="button"
               onClick={onFechar}
               className="btn btn-ghost btn-icon -mr-2 -mt-1"
               aria-label="Fechar"
+              title="Fechar (Esc)"
             >
-              <X size={18} />
+              <X size={22} />
             </button>
           </div>
         )}

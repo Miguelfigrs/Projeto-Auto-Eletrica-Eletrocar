@@ -8,6 +8,8 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./src/tests/setup.ts"],
+    // Testes de tela com jsdom ficam lentos quando todos rodam em paralelo (CI com poucos núcleos)
+    testTimeout: 15000,
     include: ["src/tests/**/*.spec.{ts,tsx}"],
     coverage: {
       provider: "v8",

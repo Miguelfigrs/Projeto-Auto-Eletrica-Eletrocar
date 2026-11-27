@@ -22,6 +22,8 @@ import { useHardwareStatus } from "./adapters/view-models/useHardwareStatus";
 import { useCaixa } from "./adapters/view-models/useCaixa";
 import { Usuario } from "./domain/entities/Usuario";
 
+const CHAVE_AJUDA = "eletrocar:ajuda";
+
 function abaInicialPorPerfil(usuario: Usuario): string {
   if (usuario.ehAdmin) return "overview";
   if (usuario.ehBalconista) return "balcao";
@@ -46,10 +48,34 @@ export const App: React.FC = () => {
   } = useAuth();
 
   const { status: hardwareStatus, modelo: hardwareModelo, simularLeitura } = useHardwareStatus();
-  const { caixa } = useCaixa(usuario?.nome || "Operador");
+  const { caixa, carregarCaixa } = useCaixa(usuario?.nome || "Operador");
 
   const [abaAtiva, setAbaAtiva] = useState<string>("overview");
-  const [modoDidatico, setModoDidatico] = useState<boolean>(true);
+
+  // O caixa do topo e da Visão Geral é o do servidor: recarrega ao entrar, ao trocar de operador
+  // e a cada troca de tela (abrir/fechar turno ou vender muda a situação).
+  useEffect(() => {
+    if (usuario) void carregarCaixa();
+  }, [usuario, abaAtiva, carregarCaixa]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [abaAtiva]);
+  // A escolha "Mostrar/Ocultar ajuda" fica guardada neste computador
+  const [modoDidatico, setModoDidatico] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem(CHAVE_AJUDA) !== "oculta";
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CHAVE_AJUDA, modoDidatico ? "visivel" : "oculta");
+    } catch {
+      // armazenamento indisponível (janela anônima): segue só na memória
+    }
+  }, [modoDidatico]);
   const [codigoPendente, setCodigoPendente] = useState<string | null>(null);
 
   // Escuta de Teclas de Atalho Globais (F1 a F12) quando autenticado
@@ -78,9 +104,9 @@ export const App: React.FC = () => {
         setAbaAtiva("os");
         return;
       }
-      // F4 -> Peças & Estoque (quando não estiver digitando em campo de formulário)
+      // F4 -> Peças & Estoque (quando não estiver digitando; no Balcão o F4 abre o catálogo da venda)
       const tag = (e.target as HTMLElement | null)?.tagName;
-      if (e.key === "F4" && tag !== "INPUT" && tag !== "TEXTAREA") {
+      if (e.key === "F4" && abaAtiva !== "balcao" && tag !== "INPUT" && tag !== "TEXTAREA") {
         e.preventDefault();
         setAbaAtiva("estoque");
         return;
@@ -104,7 +130,7 @@ export const App: React.FC = () => {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [usuario, setErroAuth, setLockScreenAberto]);
+  }, [usuario, abaAtiva, setErroAuth, setLockScreenAberto]);
 
   const handleLogin = async (
     identificador: string,
@@ -145,7 +171,6 @@ export const App: React.FC = () => {
   if (!usuario) {
     return (
       <LoginView
-        operadoresRapidos={operadoresRapidos}
         autenticando={autenticando}
         erroAuth={erroAuth}
         onLogin={handleLogin}
@@ -183,21 +208,18 @@ export const App: React.FC = () => {
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-brand-line bg-brand-soft text-brand-text">
                 <ShieldAlert size={30} />
               </div>
-              <div className="eyebrow mt-5 text-brand-text">Controle de Acesso (RBAC)</div>
+              <div className="eyebrow mt-5 text-brand-text">Acesso restrito</div>
               <h2 className="mt-2 font-display text-3xl font-bold uppercase tracking-wide text-fg">
                 Módulo restrito ao seu perfil
               </h2>
-              <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-fg-muted">
-                O operador <strong className="text-fg">{usuario.nome}</strong> possui perfil{" "}
-                <strong className="text-fg">{usuario.papeis.join(", ")}</strong> e não tem permissão
-                para abrir <strong className="text-fg">{infoAbaRestrita?.label ?? abaAtiva}</strong>.
+              <p className="mx-auto mt-3 max-w-lg text-base leading-relaxed text-fg-muted">
+                Você entrou como <strong className="text-fg">{usuario.nome}</strong>. A tela{" "}
+                <strong className="text-fg">{infoAbaRestrita?.label ?? abaAtiva}</strong> não está
+                liberada para o seu perfil.
               </p>
-              <div className="mt-4 rounded-xl border border-line bg-canvas/80 p-4 text-left text-xs leading-relaxed text-fg-muted">
-                <strong className="text-fg">Por que isso existe na oficina?</strong>
-                <br />
-                A segregação de funções (RBAC) evita que operadores técnicos alterem fechamentos de
-                caixa ou acessem o DRE financeiro e custos de compra (CMV). Use o PIN do Dono/Admin
-                para autorizar ou volte ao seu fluxo normal.
+              <div className="mt-4 rounded-xl border border-line bg-canvas/80 p-4 text-left text-base leading-relaxed text-fg-muted">
+                <strong className="text-fg">Por que?</strong> Caixa, lucro e cadastro de funcionários
+                ficam só com quem cuida deles. Se precisar, peça ao dono para entrar com o PIN dele.
               </div>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <button
@@ -205,10 +227,10 @@ export const App: React.FC = () => {
                   onClick={() => setAbaAtiva(abaInicialPorPerfil(usuario))}
                   className="btn btn-secondary"
                 >
-                  <ArrowLeft size={16} /> Voltar para minha tela inicial
+                  <ArrowLeft size={20} /> Voltar para minha tela
                 </button>
                 <button type="button" onClick={handleAbrirLockScreen} className="btn btn-primary">
-                  <Lock size={16} /> Trocar operador por PIN (F12)
+                  <Lock size={20} /> Trocar operador por PIN (F12)
                 </button>
               </div>
             </div>

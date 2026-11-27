@@ -156,7 +156,7 @@ export const MeuPerfilView: React.FC<MeuPerfilViewProps> = ({ usuario, onPerfilA
         description="Atualize seus dados de acesso, sua senha e o PIN de troca rápida de operador."
       />
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Secao
           icon={UserRound}
           titulo="Dados pessoais"

@@ -21,19 +21,31 @@ import { Dinheiro } from "../../domain/value-objects/Dinheiro";
 import { FormaPagamento, TipoMovimentacaoCaixa } from "../../domain/value-objects/Enums";
 import { Alerts, DidacticBanner, EmptyState, Modal, Page, PageHeader, StatCard } from "../components/ui";
 import { cn } from "../../lib/utils";
+import { lerValorBR, valorParaCampo } from "../../lib/numeroBR";
+import { ROTULO_FORMA_PAGAMENTO } from "../components/DetalhamentoDREPanel";
 
 interface CaixaViewProps {
   operadorNome: string;
   modoDidatico?: boolean;
 }
 
-function parseValorDecimal(raw: string): number {
-  const limpo = raw.trim();
-  if (!limpo) return NaN;
-  const normalizado = limpo.includes(",")
-    ? limpo.replace(/\./g, "").replace(",", ".")
-    : limpo;
-  return Number.parseFloat(normalizado);
+const parseValorDecimal = lerValorBR;
+
+const ROTULO_MOVIMENTO: Record<string, string> = {
+  ENTRADA_VENDA: "Venda",
+  ENTRADA_OS: "Ordem de serviço",
+  SUPRIMENTO: "Suprimento",
+  SANGRIA: "Sangria",
+  ESTORNO_VENDA: "Estorno",
+};
+
+/** "14:43" se for de hoje; "24/11 14:43" se o turno atravessou dias. */
+function horarioMovimento(data: Date): string {
+  const d = new Date(data);
+  const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return d.toDateString() === new Date().toDateString()
+    ? hora
+    : `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} ${hora}`;
 }
 
 const MovimentoForm: React.FC<{
@@ -112,21 +124,33 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
   const handleSubmeterSangria = (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseValorDecimal(valorSangria);
-    if (!isNaN(val) && val > 0 && motivoSangria) {
-      realizarSangria(val, motivoSangria);
-      setValorSangria("");
-      setMotivoSangria("");
+    if (Number.isNaN(val) || val <= 0) {
+      setMensagemErro("Digite o valor da sangria. Exemplo: 150,00");
+      return;
     }
+    if (!motivoSangria.trim()) return;
+    void realizarSangria(val, motivoSangria).then((ok) => {
+      if (ok) {
+        setValorSangria("");
+        setMotivoSangria("");
+      }
+    });
   };
 
   const handleSubmeterSuprimento = (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseValorDecimal(valorSuprimento);
-    if (!isNaN(val) && val > 0 && motivoSuprimento) {
-      realizarSuprimento(val, motivoSuprimento);
-      setValorSuprimento("");
-      setMotivoSuprimento("");
+    if (Number.isNaN(val) || val <= 0) {
+      setMensagemErro("Digite o valor do suprimento. Exemplo: 100,00");
+      return;
     }
+    if (!motivoSuprimento.trim()) return;
+    void realizarSuprimento(val, motivoSuprimento).then((ok) => {
+      if (ok) {
+        setValorSuprimento("");
+        setMotivoSuprimento("");
+      }
+    });
   };
 
   const handleSubmeterAbertura = (e: React.FormEvent) => {
@@ -147,10 +171,10 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
 
   const preencherValoresEsperados = () => {
     if (!caixa) return;
-    setContadoDinheiro(caixa.saldoEsperadoEmDinheiro.valor.toFixed(2).replace(".", ","));
-    setContadoPix(caixa.totalPorFormaPagamento(FormaPagamento.PIX).valor.toFixed(2).replace(".", ","));
-    setContadoCredito(caixa.totalPorFormaPagamento(FormaPagamento.CARTAO_CREDITO).valor.toFixed(2).replace(".", ","));
-    setContadoDebito(caixa.totalPorFormaPagamento(FormaPagamento.CARTAO_DEBITO).valor.toFixed(2).replace(".", ","));
+    setContadoDinheiro(valorParaCampo(caixa.saldoEsperadoEmDinheiro.valor));
+    setContadoPix(valorParaCampo(caixa.totalPorFormaPagamento(FormaPagamento.PIX).valor));
+    setContadoCredito(valorParaCampo(caixa.totalPorFormaPagamento(FormaPagamento.CARTAO_CREDITO).valor));
+    setContadoDebito(valorParaCampo(caixa.totalPorFormaPagamento(FormaPagamento.CARTAO_DEBITO).valor));
   };
 
   const handleConfirmarFechamentoCego = (e: React.FormEvent) => {
@@ -167,6 +191,9 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
     });
     setModalFechamentoAberto(false);
   };
+
+  // O servidor não informa o operador de cada lançamento; sem a informação a coluna some.
+  const mostrarOperador = !!caixa?.movimentacoes.some((m) => m.operadorNome && m.operadorNome !== "—");
 
   // Fechamento cego de verdade: o operador sem visão gerencial não vê o que o sistema espera.
   const verValores = !!caixa?.visaoGerencial;
@@ -279,14 +306,14 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
 
       <DidacticBanner
         visivel={modoDidatico}
-        titulo="Como funciona a conciliação da gaveta e o Fechamento Cego"
-        resumo="Somente dinheiro em espécie entra ou sai da gaveta física; vendas em PIX e cartão são conciliadas pelas maquininhas e extrato bancário."
+        titulo="Como funciona o caixa do dia"
+        resumo="Só o dinheiro em espécie entra e sai da gaveta. PIX e cartão são conferidos pelo extrato e pelas maquininhas."
         passos={[
-          "Abertura: registre o fundo de troco inicial que começa na gaveta.",
-          "Durante o turno: faça Suprimento ao repor moedas/notas e Sangria ao retirar excesso de dinheiro para o cofre.",
-          "Fechamento Cego: conte a gaveta e os comprovantes antes de conferir sobra ou quebra.",
+          "Ao abrir: informe quanto dinheiro de troco tem na gaveta.",
+          "Durante o dia: 'Suprimento' quando colocar dinheiro na gaveta e 'Sangria' quando tirar dinheiro para o cofre.",
+          "Ao fechar: conte a gaveta e os comprovantes e digite os valores. O sistema mostra se sobrou ou faltou.",
         ]}
-        regraNegocio="Fórmula da gaveta física: Saldo Esperado = Fundo de Troco + Entradas em Dinheiro − Sangrias."
+        regraNegocio="Dinheiro esperado na gaveta = troco inicial + vendas em dinheiro + suprimentos − sangrias."
       />
 
       {caixa && aberto && !verValores ? (
@@ -379,7 +406,7 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
                         style={{ width: `${Math.max(item.valor.centavos > 0 ? 6 : 0, pct)}%` }}
                       />
                     </div>
-                    <div className="mt-1.5 text-[0.7rem] text-fg-subtle">{item.nota}</div>
+                    <div className="mt-1.5 text-xs text-fg-subtle">{item.nota}</div>
                   </div>
                 );
               })}
@@ -397,11 +424,11 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Horário</th>
+                    <th>Quando</th>
                     <th>Tipo</th>
                     <th>Descrição</th>
-                    <th>Forma</th>
-                    <th>Operador</th>
+                    <th>Pagamento</th>
+                    {mostrarOperador && <th>Operador</th>}
                     <th className="text-right!">Valor</th>
                   </tr>
                 </thead>
@@ -414,16 +441,18 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
                     return (
                       <tr key={mov.id}>
                         <td className="money text-fg-subtle">
-                          {new Date(mov.dataHora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                          {horarioMovimento(mov.dataHora)}
                         </td>
                         <td>
                           <span className={cn("chip h-6 px-2", ehEntrada ? "chip-ok" : "chip-neg")}>
-                            {mov.tipo.replace(/_/g, " ").toLowerCase()}
+                            {ROTULO_MOVIMENTO[mov.tipo] ?? mov.tipo}
                           </span>
                         </td>
                         <td className="font-medium text-fg">{mov.descricao}</td>
-                        <td className="text-fg-muted">{mov.formaPagamento.replace(/_/g, " ").toLowerCase()}</td>
-                        <td className="text-fg-muted">{mov.operadorNome}</td>
+                        <td className="text-fg-muted">
+                          {ROTULO_FORMA_PAGAMENTO[mov.formaPagamento] ?? mov.formaPagamento}
+                        </td>
+                        {mostrarOperador && <td className="text-fg-muted">{mov.operadorNome}</td>}
                         <td className={cn("money text-right font-semibold", ehEntrada ? "text-ok-text" : "text-neg-text")}>
                           {ehEntrada ? "+" : "-"} {mov.valor.formatar()}
                         </td>
@@ -556,7 +585,7 @@ export const CaixaView: React.FC<CaixaViewProps> = ({ operadorNome, modoDidatico
                     <label htmlFor={`fechamento-${linha.id}`} className="text-xs font-semibold text-fg">
                       {linha.rotulo}
                     </label>
-                    <div className="mt-1 flex items-center gap-2 text-[0.72rem] text-fg-subtle">
+                    <div className="mt-1 flex items-center gap-2 text-xs text-fg-subtle">
                       {verValores && <span>Sistema: {new Dinheiro(linha.esperado).formatar()}</span>}
                       {verValores && temInput && (
                         <span

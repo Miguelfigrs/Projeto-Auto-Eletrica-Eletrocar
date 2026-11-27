@@ -13,9 +13,11 @@ describe("Aba Administrativa de Usuários (Somente ADMIN)", () => {
   it("não deve exibir a aba de Usuários para operadores não-admin", async () => {
     render(<App />);
 
-    const credenciaisCarlos = await screen.findByText(/carlos \/ carlos123/i);
-    const cardCarlos = credenciaisCarlos.closest(".rounded-xl") as HTMLElement;
-    fireEvent.click(within(cardCarlos).getByRole("button", { name: "Entrar" }));
+    const inputUsuario = await screen.findByLabelText(/Usuário ou e-mail/i);
+    const inputSenha = screen.getByPlaceholderText(/Digite sua senha de acesso/i);
+    fireEvent.change(inputUsuario, { target: { value: "carlos" } });
+    fireEvent.change(inputSenha, { target: { value: "carlos123" } });
+    fireEvent.click(screen.getByRole("button", { name: /Entrar no sistema/i }));
 
     expect(await screen.findByPlaceholderText(/Escaneie o código de barras/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Usuários/i })).not.toBeInTheDocument();

@@ -41,6 +41,8 @@ export function useAuth() {
       setErroAuth(null);
       const u = await container.autenticarUC.executar(usernameOuEmail, senha, lembrarSessao);
       setUsuario(u);
+      // Com a sessão aberta, a lista da troca rápida passa a ser a do servidor
+      setOperadoresRapidos(await container.authRepository.listarOperadoresRapidos());
       return u;
     } catch (err: unknown) {
       setErroAuth(err instanceof Error ? err.message : "Erro na autenticação.");

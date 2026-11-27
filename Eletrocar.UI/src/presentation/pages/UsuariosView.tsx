@@ -146,7 +146,7 @@ const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
       return;
     }
     if (papeis.length === 0) {
-      setErroLocal("Selecione ao menos um papel de acesso (RBAC).");
+      setErroLocal("Escolha pelo menos uma função (Dono, Balcão ou Eletricista).");
       return;
     }
     if (!editando && senha.length < 8) {
@@ -197,8 +197,8 @@ const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
       titulo={editando ? `Editar usuário · ${usuarioEditando.nome}` : "Novo usuário"}
       descricao={
         editando
-          ? "Atualize dados cadastrais, perfis RBAC ou redefina senha e PIN rápido."
-          : "Cadastre um colaborador com os papéis RBAC adequados para balcão, oficina ou gestão."
+          ? "Atualize os dados, as funções, a senha ou o PIN."
+          : "Cadastre um funcionário e escolha as funções dele."
       }
       icon={editando ? Pencil : UserPlus}
       largura={640}
@@ -273,7 +273,7 @@ const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
 
         {/* Seleção multi-papel RBAC */}
         <div>
-          <div className="label">Papéis de acesso (RBAC) *</div>
+          <div className="label">Funções de acesso *</div>
           <div className="grid gap-2.5 sm:grid-cols-3">
             {PAPEIS_INFO.map((item) => {
               const marcado = papeis.includes(item.papel);
@@ -301,13 +301,13 @@ const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
                       aria-label={item.titulo}
                     />
                   </div>
-                  <p className="text-[0.7rem] leading-snug text-fg-muted">{item.descricao}</p>
+                  <p className="text-xs leading-snug text-fg-muted">{item.descricao}</p>
                 </label>
               );
             })}
           </div>
           {ehPropriaConta && (
-            <p className="mt-1.5 text-[0.72rem] text-fg-subtle">
+            <p className="mt-1.5 text-xs text-fg-subtle">
               Por segurança, você não pode remover seu próprio papel de Administrador.
             </p>
           )}
@@ -495,9 +495,9 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
   return (
     <Page>
       <PageHeader
-        eyebrow="Administração & RBAC · F8"
+        eyebrow="Só para o dono · tecla F8"
         title="Usuários & acessos"
-        description="Adicione colaboradores, ajuste papéis RBAC multi-perfil, gerencie senha/PIN e remova contas."
+        description="Cadastre funcionários, escolha as funções de cada um e cuide de senhas e PINs."
         actions={
           <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto">
             <div className="relative w-full sm:w-72">
@@ -522,14 +522,14 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
 
       <DidacticBanner
         visivel={modoDidatico}
-        titulo="Como funciona o controle de usuários e papéis RBAC"
-        resumo="Um colaborador pode acumular mais de um papel (ex: Balconista + Eletricista) e possuir um PIN exclusivo para alternar o operador no PDV sem digitar senha longa."
+        titulo="Como cadastrar os funcionários"
+        resumo="Cada funcionário tem usuário e senha próprios. Uma pessoa pode ter mais de uma função (por exemplo Balcão e Eletricista) e um PIN para trocar de operador rápido."
         passos={[
-          "Adicionar: defina nome, e-mail, senha (mín. 8 dígitos), papéis RBAC e PIN rápido F12 opcional.",
-          "Editar: atualize dados cadastrais, altere papéis, ative/desative o acesso ou redefina senha e PIN.",
-          "Remover: exclua cadastros sem movimentação. Se o usuário já emitiu vendas, OS ou caixas, desative a conta para preservar a auditoria.",
+          "Novo usuário: preencha nome, e-mail, senha (pelo menos 8 caracteres), as funções e, se quiser, um PIN.",
+          "Editar: mude os dados, as funções, a senha ou o PIN, ou desative o acesso.",
+          "Remover: só para quem nunca vendeu nem abriu OS. Para quem já trabalhou no sistema, use 'Desativar' e o histórico fica guardado.",
         ]}
-        regraNegocio="Esta aba e todas as rotas /api/v1/usuarios/* exigem perfil ADMIN. O administrador logado é impedido de excluir, desativar ou remover o próprio acesso ADMIN."
+        regraNegocio="Só o dono mexe nos usuários. Ninguém consegue remover ou desativar a própria conta."
       />
 
       {!modalQualquerAberto && (
@@ -633,7 +633,7 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
               <span className="chip h-6 px-2">{usuariosFiltrados.length}</span>
             </h3>
             <span className="text-xs text-fg-subtle">
-              Fonte: {usuarioAtual.origemAuth === "API" ? "API FastAPI + PostgreSQL" : "Modo Demo Local"}
+              Fonte: {usuarioAtual.origemAuth === "API" ? "servidor da oficina" : "demonstração"}
             </span>
           </div>
 
@@ -643,7 +643,7 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
                 <tr>
                   <th>Colaborador</th>
                   <th>Acesso &amp; E-mail</th>
-                  <th>Papéis RBAC</th>
+                  <th>Funções</th>
                   <th>PIN F12 &amp; Status</th>
                   <th className="text-right!">Ações</th>
                 </tr>
@@ -669,13 +669,13 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-semibold text-fg">{u.nome}</span>
                               {ehVoce && (
-                                <span className="chip chip-brand h-5 px-2 text-[0.65rem]">
+                                <span className="chip chip-brand h-5 px-2 text-xs">
                                   Você
                                 </span>
                               )}
                             </div>
                             {u.telegramUserId && (
-                              <div className="mt-0.5 flex items-center gap-1 font-mono text-[0.7rem] text-fg-subtle">
+                              <div className="mt-0.5 flex items-center gap-1 font-mono text-xs text-fg-subtle">
                                 <Send size={11} /> TG: {u.telegramUserId}
                               </div>
                             )}
@@ -697,7 +697,7 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
                           {PAPEIS_INFO.filter((info) => u.papeis.includes(info.papel)).map((info) => (
                             <span
                               key={info.papel}
-                              className={cn("chip h-6 px-2 text-[0.7rem]", info.chipCls)}
+                              className={cn("chip h-6 px-2 text-xs", info.chipCls)}
                             >
                               {info.chipLabel}
                             </span>
@@ -709,14 +709,14 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={cn(
-                              "chip h-6 px-2 text-[0.7rem]",
+                              "chip h-6 px-2 text-xs",
                               u.ativo ? "chip-ok" : "chip-neg"
                             )}
                           >
                             {u.ativo ? <CheckCircle2 size={11} /> : <UserX size={11} />}
                             {u.ativo ? "Ativo" : "Inativo"}
                           </span>
-                          <span className="chip h-6 px-2 font-mono text-[0.68rem]">
+                          <span className="chip h-6 px-2 font-mono text-xs">
                             <KeyRound size={11} />
                             {u.temPin ? "PIN ativo" : "Sem PIN"}
                           </span>
@@ -823,7 +823,7 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
               </div>
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {usuarioParaRemover.papeis.map((p) => (
-                  <span key={p} className="chip h-5 px-2 text-[0.68rem]">
+                  <span key={p} className="chip h-5 px-2 text-xs">
                     {p}
                   </span>
                 ))}

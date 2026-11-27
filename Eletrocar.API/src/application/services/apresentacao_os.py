@@ -15,6 +15,6 @@ async def montar_os_dto(os: OrdemServico, cliente_repo: ClienteRepositoryInterfa
         descricao_carro = carro.formatar_descricao()
     dto = OrdemServicoOutputDTO.de(os, nome_cliente, descricao_carro)
     if carro:
-        dto.modelo_carro = f"{carro.marca} {carro.modelo}".strip()
+        dto.modelo_carro = carro.marca_e_modelo
         dto.placa_carro = carro.placa
     return dto

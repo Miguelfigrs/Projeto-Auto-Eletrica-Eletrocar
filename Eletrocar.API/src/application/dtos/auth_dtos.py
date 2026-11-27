@@ -77,3 +77,21 @@ class SessaoTokensDTO:
     usuario: UsuarioOutputDTO
     expira_em_segundos: int = 0  # validade do access token (renove com /auth/refresh antes de expirar)
     token_type: str = "bearer"
+
+
+@dataclass
+class OperadorRapidoOutputDTO:
+    """Operador que pode assumir o terminal pela troca rápida (F12). Nunca inclui o PIN."""
+    id: uuid.UUID
+    nome: str
+    username: Optional[str]
+    papeis: List[str]
+
+    @classmethod
+    def de(cls, usuario: Usuario) -> "OperadorRapidoOutputDTO":
+        return cls(
+            id=usuario.id,
+            nome=usuario.nome,
+            username=usuario.username,
+            papeis=sorted(p.value for p in usuario.papeis),
+        )

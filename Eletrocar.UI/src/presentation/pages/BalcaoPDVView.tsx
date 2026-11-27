@@ -26,9 +26,11 @@ import { useVendaBalcao } from "../../adapters/view-models/useVendaBalcao";
 import { FormaPagamento } from "../../domain/value-objects/Enums";
 import { Dinheiro } from "../../domain/value-objects/Dinheiro";
 import { VendaBalcao } from "../../domain/entities/VendaBalcao";
-import { Alerts, DidacticBanner, EmptyState, Modal, Page, StepFlow } from "../components/ui";
+import { Alerts, ConfirmDialog, DidacticBanner, EmptyState, Modal, Page, StepFlow } from "../components/ui";
 import { cn } from "../../lib/utils";
+import { formatarPercentual, lerValorBR } from "../../lib/numeroBR";
 import { BotaoCamera } from "../components/BotaoCamera";
+import { ROTULO_FORMA_PAGAMENTO } from "../components/DetalhamentoDREPanel";
 
 interface BalcaoPDVViewProps {
   operadorNome: string;
@@ -92,11 +94,42 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
   const [formaSelecionada, setFormaSelecionada] = useState<FormaPagamento>(FormaPagamento.DINHEIRO);
   const [valorRecebidoInput, setValorRecebidoInput] = useState("");
   const [comprovante, setComprovante] = useState<ComprovanteGerado | null>(null);
+  const [erroPagamento, setErroPagamento] = useState<string | null>(null);
+  const [confirmarCancelamento, setConfirmarCancelamento] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  const abrirPagamento = () => {
+    if (itens.length === 0) return;
+    setErroPagamento(null);
+    setModalPagamentoAberto(true);
+  };
+
+  // Atalhos do PDV: F9 conclui o pagamento e F4 abre o catálogo (sem sair da venda).
+  const algumModalAberto =
+    modalPagamentoAberto || modalBuscaAberto || Boolean(comprovante) || confirmarCancelamento;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F9") {
+        e.preventDefault();
+        if (!algumModalAberto && itens.length > 0) {
+          setErroPagamento(null);
+          setModalPagamentoAberto(true);
+        }
+      } else if (e.key === "F4") {
+        e.preventDefault();
+        if (!algumModalAberto) setModalBuscaAberto(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [algumModalAberto, itens.length, setModalPagamentoAberto, setModalBuscaAberto]);
+
+  // Atalhos de teste com peças reais do catálogo (só no modo de ajuda)
+  const pecasTeste = useMemo(() => catalogo.filter((p) => p.estoqueAtual > 0).slice(0, 3), [catalogo]);
 
   useEffect(() => {
     if (codigoPendente) {
@@ -120,39 +153,62 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
 
   const handleAplicarDesconto = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(descontoInput.replace(",", "."));
-    if (!isNaN(val) && val >= 0) {
-      aplicarDesconto(val);
-      setDescontoInput("");
+    const val = lerValorBR(descontoInput);
+    if (Number.isNaN(val) || val < 0) {
+      setMensagemErro("Desconto inválido. Digite, por exemplo, 10,00.");
+      return;
     }
+    if (aplicarDesconto(val)) setDescontoInput("");
   };
 
-  const valorRecebido = parseFloat(valorRecebidoInput.replace(",", ".")) || 0;
+  const valorRecebidoLido = lerValorBR(valorRecebidoInput);
+  const valorRecebido = Number.isNaN(valorRecebidoLido) ? 0 : valorRecebidoLido;
   const trocoCalculado = valorRecebido > total.valor ? valorRecebido - total.valor : 0;
   const qtdTotal = itens.reduce((acc, i) => acc + i.quantidade, 0);
-  const percentualDesconto =
-    subtotal.valor > 0 ? ((desconto.valor / subtotal.valor) * 100).toFixed(1) : "0.0";
+  const percentualDesconto = formatarPercentual(
+    subtotal.valor > 0 ? (desconto.valor / subtotal.valor) * 100 : 0
+  );
   const excedeAlcada = subtotal.valor > 0 && desconto.valor / subtotal.valor > 0.05;
 
   const handleConfirmarPagamento = async () => {
-    const vendaSnapshot = new VendaBalcao({
-      itens: itens.map((i) => ({ ...i })),
-      desconto: new Dinheiro(desconto),
-      formaPagamento: formaSelecionada,
-      operadorId: operadorNome,
-    });
-    const trocoAtual = formaSelecionada === FormaPagamento.DINHEIRO ? trocoCalculado : 0;
-    await finalizarVenda(formaSelecionada);
-    // Se não houve erro de caixa/validação, modalPagamentoAberto foi fechado
-    if (caixaAberto && itens.length > 0) {
-      setComprovante({
-        venda: vendaSnapshot,
-        forma: formaSelecionada,
-        troco: trocoAtual,
-        emitidoEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      });
-      setValorRecebidoInput("");
+    setErroPagamento(null);
+    if (formaSelecionada === FormaPagamento.DINHEIRO && valorRecebidoInput.trim()) {
+      if (Number.isNaN(valorRecebidoLido)) {
+        setErroPagamento("Valor recebido inválido. Digite, por exemplo, 200,00.");
+        return;
+      }
+      if (valorRecebido < total.valor) {
+        setErroPagamento(
+          `O valor recebido (${new Dinheiro(valorRecebido).formatar()}) é menor que o total (${total.formatar()}).`
+        );
+        return;
+      }
     }
+    // Cópia dos itens para o recibo: o carrinho é esvaziado quando a venda é gravada.
+    const itensDoRecibo = itens.map((i) => ({ ...i }));
+    const descontoDoRecibo = new Dinheiro(desconto);
+    const trocoAtual = formaSelecionada === FormaPagamento.DINHEIRO ? trocoCalculado : 0;
+    const vendaGravada = await finalizarVenda(formaSelecionada);
+    if (!vendaGravada) return; // o aviso de erro já está na tela; recibo só sai de venda gravada
+    setComprovante({
+      venda: new VendaBalcao({
+        itens: itensDoRecibo,
+        desconto: descontoDoRecibo,
+        formaPagamento: formaSelecionada,
+        operadorId: operadorNome,
+        numeroVenda: vendaGravada.numeroVenda,
+      }),
+      forma: formaSelecionada,
+      troco: trocoAtual,
+      emitidoEm: new Date().toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+    setValorRecebidoInput("");
   };
 
   const catalogoFiltrado = catalogo.filter(
@@ -186,14 +242,14 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
 
       <DidacticBanner
         visivel={modoDidatico}
-        titulo="Como funciona o Balcão & PDV Rápido"
-        resumo="Tela otimizada para agilidade no atendimento de peças: use um leitor USB/Bluetooth ou busque no catálogo pelo nome do veículo ou código SKU."
+        titulo="Como vender no balcão"
+        resumo="Passe o leitor no código de barras da peça ou procure no catálogo pelo nome da peça ou do carro."
         passos={[
-          "Bipe o código de barras (ou clique nos botões de teste rápido) para inserir itens no carrinho.",
-          "Ajuste quantidades e conceda descontos — valores acima de 5% destacam alerta de alçada gerencial.",
-          "Pressione F9 ou clique em Finalizar Venda para escolher a forma de pagamento e gerar o recibo.",
+          "Passe o leitor na peça (ou toque em 'Catálogo') para colocá-la na venda.",
+          "Confira as quantidades. Se for dar desconto, digite o valor em reais.",
+          "Toque em 'Finalizar Venda' (ou tecla F9), escolha como o cliente pagou e confirme.",
         ]}
-        regraNegocio="Ao finalizar, o sistema dá baixa automática no estoque da peça e registra a entrada no turno de caixa aberto."
+        regraNegocio="Ao finalizar, a peça sai do estoque e o valor entra no caixa do dia automaticamente."
       />
 
       <StepFlow
@@ -222,13 +278,13 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
         ]}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
         {/* Coluna esquerda */}
         <div className="flex min-w-0 flex-col gap-5">
           {/* Entrada do leitor */}
           <div className="card brand-stripe p-4 sm:p-5">
-            <form onSubmit={handleSubmeterCodigo} className="flex flex-col gap-3 sm:flex-row">
-              <div className="relative flex-1">
+            <form onSubmit={handleSubmeterCodigo} className="flex flex-wrap gap-3">
+              <div className="relative min-w-0 basis-full">
                 <ScanBarcode
                   size={22}
                   className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-brand-text"
@@ -236,24 +292,24 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Escaneie o código de barras ou digite o SKU/Código (ex: 7891049281023)..."
+                  placeholder="Escaneie o código de barras ou digite o código da peça"
                   value={codigoInput}
                   onChange={(e) => setCodigoInput(e.target.value)}
-                  className="field h-14 pl-13 font-mono text-base"
+                  className="field h-14 pl-13 text-lg"
                 />
               </div>
-              <button type="submit" className="btn btn-primary h-14 px-6">
+              <button type="submit" className="btn btn-primary h-14 flex-1 px-4">
                 <Plus size={18} /> Adicionar
               </button>
               <BotaoCamera
-                className="h-14"
+                className="h-14 flex-1 px-4"
                 rotulo="Câmera"
                 continuo
                 onCodigo={(codigo) => biparOuBuscarCodigo(codigo)}
               />
               <button
                 type="button"
-                className="btn btn-secondary h-14"
+                className="btn btn-secondary h-14 flex-1 px-4"
                 onClick={() => setModalBuscaAberto(true)}
                 title="Buscar peça no catálogo (F4)"
               >
@@ -265,30 +321,22 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
               <span>
                 O leitor USB/Bluetooth envia o código direto para cá, mesmo sem foco no campo. Sem leitor, use a Câmera.
               </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-fg-muted">Teste rápido:</span>
-                <button
-                  type="button"
-                  onClick={() => biparOuBuscarCodigo("7891049281023")}
-                  className="chip hover:border-brand-line hover:text-fg"
-                >
-                  Regulador Bosch
-                </button>
-                <button
-                  type="button"
-                  onClick={() => biparOuBuscarCodigo("7898237461928")}
-                  className="chip hover:border-brand-line hover:text-fg"
-                >
-                  Bateria Moura 60A
-                </button>
-                <button
-                  type="button"
-                  onClick={() => biparOuBuscarCodigo("7895847362910")}
-                  className="chip hover:border-brand-line hover:text-fg"
-                >
-                  Relé Auxiliar 40A
-                </button>
-              </div>
+              {modoDidatico && pecasTeste.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-fg-muted">Teste rápido:</span>
+                  {pecasTeste.map((peca) => (
+                    <button
+                      key={peca.id}
+                      type="button"
+                      onClick={() => biparOuBuscarCodigo(peca.codigoBarras.valor)}
+                      className="chip hover:border-brand-line hover:text-fg"
+                      title={peca.descricao}
+                    >
+                      {peca.descricao.split(" ").slice(0, 3).join(" ")}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -316,10 +364,10 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                 <table className="table">
                   <thead>
                     <tr>
-                      <th className="w-10">#</th>
+                      <th className="hidden w-10 2xl:table-cell">#</th>
                       <th>Peça</th>
                       <th className="text-center!">Qtd.</th>
-                      <th className="text-right!">Preço un.</th>
+                      <th className="hidden text-right! 2xl:table-cell">Preço un.</th>
                       <th className="text-right!">Subtotal</th>
                       <th className="w-12" />
                     </tr>
@@ -329,7 +377,7 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                       const itemSubtotal = item.precoUnitario.multiplicar(item.quantidade);
                       return (
                         <tr key={item.id}>
-                          <td className="text-fg-subtle">{idx + 1}</td>
+                          <td className="hidden text-fg-subtle 2xl:table-cell">{idx + 1}</td>
                           <td>
                             <div className="font-medium text-fg">{item.descricao}</div>
                             <div className="mt-0.5 font-mono text-xs text-fg-subtle">{item.sku}</div>
@@ -339,10 +387,10 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => alterarQuantidade(item.id, item.quantidade - 1)}
-                                className="grid h-8 w-8 place-items-center text-fg-muted hover:text-fg"
+                                className="grid h-11 w-11 place-items-center text-fg-muted hover:text-fg"
                                 aria-label="Diminuir quantidade"
                               >
-                                <Minus size={14} />
+                                <Minus size={20} />
                               </button>
                               <span className="money min-w-7 text-center font-semibold">
                                 {item.quantidade}
@@ -350,18 +398,23 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => alterarQuantidade(item.id, item.quantidade + 1)}
-                                className="grid h-8 w-8 place-items-center text-fg-muted hover:text-fg"
+                                className="grid h-11 w-11 place-items-center text-fg-muted hover:text-fg"
                                 aria-label="Aumentar quantidade"
                               >
-                                <Plus size={14} />
+                                <Plus size={20} />
                               </button>
                             </div>
                           </td>
-                          <td className="money text-right text-fg-muted">
+                          <td className="money hidden text-right text-fg-muted 2xl:table-cell">
                             {item.precoUnitario.formatar()}
                           </td>
                           <td className="money text-right font-semibold text-fg">
                             {itemSubtotal.formatar()}
+                            {item.quantidade > 1 && (
+                              <div className="text-sm font-normal text-fg-subtle 2xl:hidden">
+                                {item.quantidade} × {item.precoUnitario.formatar()}
+                              </div>
+                            )}
                           </td>
                           <td className="text-right">
                             <button
@@ -399,7 +452,7 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                 <span className="money text-fg">{subtotal.formatar()}</span>
               </div>
 
-              <form onSubmit={handleAplicarDesconto} className="flex items-center justify-between gap-3">
+              <form onSubmit={handleAplicarDesconto} className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-fg-muted">Desconto (R$)</span>
                 <div className="flex gap-2">
                   <input
@@ -408,9 +461,9 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                     placeholder="0,00"
                     value={descontoInput}
                     onChange={(e) => setDescontoInput(e.target.value)}
-                    className="field money h-9 w-24 text-right"
+                    className="field money w-32 text-right"
                   />
-                  <button type="submit" className="btn btn-secondary btn-sm h-9">
+                  <button type="submit" className="btn btn-secondary">
                     Aplicar
                   </button>
                 </div>
@@ -440,7 +493,7 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
               <button
                 type="button"
                 className="btn btn-primary btn-lg w-full"
-                onClick={() => setModalPagamentoAberto(true)}
+                onClick={abrirPagamento}
                 disabled={itens.length === 0}
               >
                 <CheckCircle2 size={20} /> Finalizar Venda (F9)
@@ -448,7 +501,7 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
               <button
                 type="button"
                 className="btn btn-ghost w-full"
-                onClick={cancelarVenda}
+                onClick={() => setConfirmarCancelamento(true)}
                 disabled={itens.length === 0}
               >
                 <X size={16} /> Cancelar venda
@@ -500,7 +553,11 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setFormaSelecionada(item.id)}
+                onClick={() => {
+                  setFormaSelecionada(item.id);
+                  setErroPagamento(null);
+                }}
+                aria-pressed={selecionado}
                 className={cn(
                   "flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-xs font-semibold transition-colors",
                   selecionado
@@ -514,6 +571,13 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
             );
           })}
         </div>
+
+        {erroPagamento && (
+          <div className="alert alert-neg mb-5" role="alert">
+            <AlertTriangle size={20} className="shrink-0" />
+            <span>{erroPagamento}</span>
+          </div>
+        )}
 
         {formaSelecionada === FormaPagamento.DINHEIRO && (
           <div className="mb-5 rounded-xl border border-line bg-canvas p-4">
@@ -626,6 +690,20 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
         </div>
       </Modal>
 
+      <ConfirmDialog
+        aberto={confirmarCancelamento}
+        titulo="Cancelar esta venda?"
+        mensagem={`Os ${qtdTotal} item(ns) do carrinho serão removidos. Nada foi cobrado ainda.`}
+        textoConfirmar="Sim, cancelar a venda"
+        textoVoltar="Não, continuar vendendo"
+        perigoso
+        onConfirmar={() => {
+          cancelarVenda();
+          setConfirmarCancelamento(false);
+        }}
+        onVoltar={() => setConfirmarCancelamento(false)}
+      />
+
       {/* Modal Comprovante Térmico 80mm */}
       <Modal
         aberto={Boolean(comprovante)}
@@ -640,8 +718,8 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
             <div className="rounded-xl border border-line-strong bg-[#f5f3ee] p-5 font-mono text-xs text-[#1a1d22]">
               <div className="border-b border-dashed border-neutral-400 pb-3 text-center">
                 <div className="text-sm font-bold uppercase">AUTO ELÉTRICA ELETROCAR</div>
-                <div className="text-[0.68rem] text-neutral-600">
-                  Comprovante Balcão PDV · {comprovante.emitidoEm}
+                <div className="text-xs text-neutral-600">
+                  Comprovante de venda · {comprovante.emitidoEm}
                 </div>
                 <div className="mt-1 font-bold">VENDA #{comprovante.venda.numeroVenda}</div>
               </div>
@@ -676,7 +754,7 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                 </div>
                 <div className="flex justify-between text-neutral-700">
                   <span>PAGAMENTO</span>
-                  <span>{comprovante.forma.replace(/_/g, " ")}</span>
+                  <span>{ROTULO_FORMA_PAGAMENTO[comprovante.forma] ?? comprovante.forma}</span>
                 </div>
                 {comprovante.troco > 0 && (
                   <div className="flex justify-between text-neutral-700">
@@ -684,7 +762,7 @@ export const BalcaoPDVView: React.FC<BalcaoPDVViewProps> = ({
                     <span>{new Dinheiro(comprovante.troco, false).formatar()}</span>
                   </div>
                 )}
-                <div className="pt-2 text-center text-[0.65rem] text-neutral-600">
+                <div className="pt-2 text-center text-xs text-neutral-600">
                   Operador: {operadorNome}
                 </div>
               </div>

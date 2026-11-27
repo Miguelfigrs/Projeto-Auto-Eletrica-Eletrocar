@@ -350,6 +350,32 @@ export class MockOrHttpAuthRepository implements IAuthRepository, IUsuarioAdminR
   }
 
   public async listarOperadoresRapidos(): Promise<OperadorRapidoInfo[]> {
+    // Com sessão na API: operadores reais (ativos e com PIN), sem PIN. Nunca a lista de demonstração.
+    if (this.isModoApi()) {
+      try {
+        const res = await this.fetchComTimeout(`${this.apiBase}/auth/operadores`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${this.accessToken}` },
+          credentials: "include",
+        });
+        if (!res.ok) return [];
+        const lista = (await res.json()) as Array<{
+          id: string;
+          nome: string;
+          username: string | null;
+          papeis: string[];
+        }>;
+        return lista.map((op) => ({
+          id: op.id,
+          nome: op.nome,
+          username: op.username ?? op.nome,
+          papeis: op.papeis as OperadorRapidoInfo["papeis"],
+        }));
+      } catch {
+        return [];
+      }
+    }
+
     return this.usuariosRegistrados
       .filter((item) => item.usuario.ativo)
       .map((item) => ({

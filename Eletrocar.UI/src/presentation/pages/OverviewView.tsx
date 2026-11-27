@@ -165,14 +165,15 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       <DidacticBanner
         visivel={modoDidatico}
+        defaultAberto
         titulo="Como o sistema Eletrocar está organizado?"
-        resumo="O sistema divide a rotina da oficina em 4 frentes integradas. Tudo o que acontece no balcão ou no pátio reflete automaticamente no estoque e no caixa."
+        resumo="O dia a dia da oficina está dividido em telas simples. O que você vende no balcão ou faz na oficina já atualiza o estoque e o caixa sozinho."
         passos={[
-          "Autenticação RBAC: seu usuário determina quais módulos e ações financeiras estão liberados.",
-          "Operação Diária: abra o turno do caixa (F6), venda no PDV (F2) e avance as OS (F3).",
-          "Fechamento & Gestão: confira o caixa no final do turno e acompanhe a margem na DRE (F7).",
+          "Cada pessoa entra com o próprio usuário e vê só as telas da sua função.",
+          "No começo do dia: abra o caixa (F6). Depois venda no balcão (F2) e acompanhe os carros (F3).",
+          "No fim do dia: feche o caixa conferindo os valores. O dono vê o lucro em Financeiro (F7).",
         ]}
-        regraNegocio="Você pode ativar ou recolher este Guia Didático a qualquer momento pelo botão 'Modo Didático' no topo."
+        regraNegocio="Esta caixa de ajuda pode ser escondida a qualquer momento no botão 'Ocultar ajuda', no alto da tela."
       />
 
       {/* Indicadores do dia */}
@@ -233,7 +234,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <span className="text-xs text-fg-subtle">Clique em qualquer cartão para abrir a tela</span>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {ETAPAS_OFICINA.map((etapa) => {
             const Icon = etapa.icon;
             const bloqueado = etapa.aba === "dre" && !usuario.ehAdmin;
@@ -253,7 +254,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   </span>
                   <div className="flex items-center gap-1.5">
                     {bloqueado && (
-                      <span className="chip h-5 px-2 text-[0.65rem]">
+                      <span className="chip h-5 px-2 text-xs">
                         <Lock size={10} /> Admin
                       </span>
                     )}
@@ -272,7 +273,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   {etapa.descricao}
                 </p>
 
-                <div className="mt-4 flex w-full items-center justify-between border-t border-line pt-3 text-[0.72rem]">
+                <div className="mt-4 flex w-full items-center justify-between border-t border-line pt-3 text-xs">
                   <span className="text-fg-subtle">{etapa.quemUsa}</span>
                   <span className="flex items-center gap-1 font-semibold text-brand-text group-hover:translate-x-0.5 transition-transform">
                     Abrir <ArrowRight size={13} />
@@ -285,7 +286,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       </div>
 
       {/* Painel RBAC & Recursos de Destaque */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="card p-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -294,7 +295,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </span>
               <div>
                 <h3 className="text-base font-semibold text-fg">
-                  Seu Perfil de Acesso (RBAC)
+                  O que você pode acessar
                 </h3>
                 <p className="text-xs text-fg-muted">
                   Papéis atribuídos: {usuario.papeis.join(" · ")}

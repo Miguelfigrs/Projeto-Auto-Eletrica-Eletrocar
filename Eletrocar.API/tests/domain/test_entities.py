@@ -137,6 +137,14 @@ def test_cliente_com_carros():
     cliente.adicionar_carro(carro)
     assert len(cliente.carros) == 1
     assert cliente.carros[0].modelo == "Gol 1.6"
+    assert carro.formatar_descricao() == "Volkswagen Gol 1.6 (2019) [ABC1D23]"
+
+
+@pytest.mark.parametrize("marca", ["Não informada", "nao informada", "NÃO INFORMADA"])
+def test_carro_sem_marca_nao_exibe_marcador(marca):
+    carro = Carro(id=uuid.uuid4(), cliente_id=uuid.uuid4(), modelo="Corsa 1.0", marca=marca, placa="ABC1D23")
+    assert carro.marca_e_modelo == "Corsa 1.0"
+    assert carro.formatar_descricao() == "Corsa 1.0 [ABC1D23]"
 
 
 def test_ordem_servico_ciclo_de_vida_state_machine():

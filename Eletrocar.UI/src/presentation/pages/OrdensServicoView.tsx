@@ -22,8 +22,9 @@ import { FormaPagamento, StatusOS, OrigemOS, PrioridadeOS } from "../../domain/v
 import { OrdemServico, OrdemServicoStateMachine } from "../../domain/entities/OrdemServico";
 import { Dinheiro } from "../../domain/value-objects/Dinheiro";
 import { container } from "../../infra/di/container";
-import { Alerts, DidacticBanner, EmptyState, Modal, Page, PageHeader } from "../components/ui";
+import { Alerts, ConfirmDialog, DidacticBanner, EmptyState, Modal, Page, PageHeader } from "../components/ui";
 import { cn } from "../../lib/utils";
+import { lerValorBR } from "../../lib/numeroBR";
 import { ROTULO_FORMA_PAGAMENTO } from "../components/DetalhamentoDREPanel";
 
 interface OrdensServicoViewProps {
@@ -113,6 +114,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
   const [novaPlaca, setNovaPlaca] = useState("");
   const [novaMarca, setNovaMarca] = useState("");
   const [osParaEntrega, setOsParaEntrega] = useState<OrdemServico | null>(null);
+  const [osParaCancelar, setOsParaCancelar] = useState<OrdemServico | null>(null);
   const [formaEntrega, setFormaEntrega] = useState<FormaPagamento>(FormaPagamento.PIX);
   const [entregando, setEntregando] = useState(false);
   const [novoSintomas, setNovoSintomas] = useState("");
@@ -197,7 +199,11 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
   const adicionarMaoDeObra = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!osSelecionada || !novoServicoDesc.trim()) return;
-    const valorNum = parseFloat(novoServicoValor.replace(",", ".")) || 0;
+    const valorNum = lerValorBR(novoServicoValor);
+    if (Number.isNaN(valorNum) || valorNum < 0) {
+      setMensagemErro("Valor da mão de obra inválido. Use, por exemplo, 150,00 ou 1.200,00.");
+      return;
+    }
     try {
       setMensagemErro(null);
       const atualizada = await container.osRepository.adicionarServico(osSelecionada.id, {
@@ -218,7 +224,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
       <Alerts sucesso={mensagemSucesso} erro={mensagemErro} onFecharErro={() => setMensagemErro(null)} />
 
       <PageHeader
-        eyebrow="Oficina & Máquina de Estados"
+        eyebrow="Oficina · tecla F3"
         title="Ordens de serviço"
         description="Acompanhe a fila da oficina e avance cada veículo pelas etapas controladas de manutenção."
         actions={
@@ -235,14 +241,14 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
 
       <DidacticBanner
         visivel={modoDidatico}
-        titulo="Como funciona a Máquina de Estados da OS"
-        resumo="Para evitar esquecimentos na oficina, nenhuma OS pode pular etapas (ex: ir direto da Triagem para Finalizado sem orçamento e testes elétricos)."
+        titulo="Como acompanhar os carros na oficina"
+        resumo="Cada carro passa por etapas, sempre na mesma ordem: Triagem, Orçamento, Aprovado, Em execução, Testes, Finalizado e Entregue. Assim nada é esquecido."
         passos={[
-          "Clique nos filtros da linha do tempo abaixo para enxergar quantos veículos estão em cada etapa.",
-          "Use 'Detalhes & Checklist' em qualquer OS para marcar bateria, alternador, arranque e lançar mão de obra.",
-          "Experimente 'Simular voz Telegram' para ver como o eletricista abre uma OS falando pelo celular com as mãos sujas.",
+          "Toque numa etapa da linha abaixo para ver só os carros que estão nela.",
+          "Em 'Detalhes' você marca o checklist (bateria, alternador, partida...) e lança a mão de obra.",
+          "Quando o serviço termina, use 'Faturar e entregar' para receber e liberar o carro.",
         ]}
-        regraNegocio="Transições inválidas são bloqueadas pela entidade de domínio OrdemServicoStateMachine."
+        regraNegocio="O sistema não deixa pular etapas: por exemplo, não dá para entregar um carro sem passar pelos testes."
       />
 
       {/* Pipeline visual da Máquina de Estados */}
@@ -279,7 +285,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[0.65rem] text-fg-subtle">
+                  <span className="font-mono text-xs text-fg-subtle">
                     0{idx + 1}
                   </span>
                   <span
@@ -319,7 +325,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
           />
         </div>
       ) : (
-        <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-3">
           {ordens.map((os) => {
             const destinosPermitidos = OrdemServicoStateMachine.TRANSICOES_PERMITIDAS[os.status] || [];
             const cor = STATUS_INFO[os.status].cor;
@@ -372,6 +378,9 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                     <div className="text-xs text-fg-subtle">
                       <div>Peças {os.subtotalPecas.formatar()}</div>
                       <div>Serviços {os.subtotalServicos.formatar()}</div>
+                      {os.desconto.valor > 0 && (
+                        <div className="text-neg-text">Desconto − {os.desconto.formatar()}</div>
+                      )}
                     </div>
                     <div className="money text-xl font-semibold text-fg">{os.total.formatar()}</div>
                   </div>
@@ -391,7 +400,8 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                       dest === StatusOS.CANCELADO ? (
                         <button
                           key={dest}
-                          onClick={() => avancarStatus(os.id, dest)}
+                          type="button"
+                          onClick={() => setOsParaCancelar(os)}
                           className="btn btn-ghost btn-sm ml-auto hover:text-neg-text!"
                         >
                           <Ban size={13} /> Cancelar
@@ -436,7 +446,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
           <div className="flex flex-col gap-5">
             <div className="rounded-xl border border-line bg-canvas p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="eyebrow">Etapa atual na Máquina de Estados</span>
+                <span className="eyebrow">Etapa atual</span>
                 <StatusBadge status={osSelecionada.status} />
               </div>
               <p className="mt-2 text-xs text-fg-muted">
@@ -453,7 +463,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                     <div
                       key={st}
                       className={cn(
-                        "flex-1 rounded-lg border px-2 py-1.5 text-center text-[0.68rem] font-semibold",
+                        "flex-1 rounded-lg border px-2 py-1.5 text-center text-xs font-semibold",
                         atual
                           ? "border-brand-line bg-brand-soft text-fg"
                           : passado
@@ -505,13 +515,13 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
               className="rounded-xl border border-line bg-canvas p-4"
             >
               <div className="eyebrow mb-2">Adicionar serviço / mão de obra na OS</div>
-              <div className="grid gap-2 sm:grid-cols-[1fr_110px_auto]">
+              <div className="grid gap-2 sm:grid-cols-[1fr_150px_auto]">
                 <input
                   type="text"
                   placeholder="Ex: Teste de fuga de corrente"
                   value={novoServicoDesc}
                   onChange={(e) => setNovoServicoDesc(e.target.value)}
-                  className="field h-9 text-xs"
+                  className="field"
                 />
                 <input
                   type="text"
@@ -519,13 +529,37 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                   placeholder="Valor R$"
                   value={novoServicoValor}
                   onChange={(e) => setNovoServicoValor(e.target.value)}
-                  className="field money h-9 text-right text-xs"
+                  className="field money text-right"
                 />
-                <button type="submit" className="btn btn-secondary btn-sm h-9">
+                <button type="submit" className="btn btn-secondary">
                   <Plus size={14} /> Incluir
                 </button>
               </div>
             </form>
+
+            {(osSelecionada.itens.length > 0 || osSelecionada.servicos.length > 0) && (
+              <div className="mb-4 rounded-xl border border-line bg-canvas/70">
+                <div className="eyebrow border-b border-line px-4 py-2.5">O que está nesta OS</div>
+                <ul className="divide-y divide-line text-sm">
+                  {osSelecionada.itens.map((item) => (
+                    <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                      <span className="text-fg">
+                        {item.quantidade}× {item.descricao}
+                      </span>
+                      <span className="money shrink-0 text-fg-muted">
+                        {item.precoUnitario.multiplicar(item.quantidade).formatar()}
+                      </span>
+                    </li>
+                  ))}
+                  {osSelecionada.servicos.map((servico) => (
+                    <li key={servico.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                      <span className="text-fg">Serviço: {servico.descricao}</span>
+                      <span className="money shrink-0 text-fg-muted">{servico.valor.formatar()}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="flex items-center justify-between border-t border-line pt-4">
               <div className="text-xs text-fg-muted">
@@ -550,7 +584,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
         icon={Mic}
         largura={590}
       >
-        <div className="mb-4 grid grid-cols-3 gap-2 rounded-xl border border-line bg-canvas p-3 text-center text-[0.72rem]">
+        <div className="mb-4 grid grid-cols-3 gap-2 rounded-xl border border-line bg-canvas p-3 text-center text-xs">
           <div>
             <div className="font-semibold text-brand-text">1. Áudio no Pátio</div>
             <div className="mt-0.5 text-fg-muted">Eletricista envia voz no bot</div>
@@ -613,7 +647,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                     onClick={() => setFormaEntrega(forma)}
                     aria-pressed={formaEntrega === forma}
                     className={cn(
-                      "h-10 rounded-xl border text-sm font-medium transition-colors",
+                      "min-h-12 rounded-xl border text-base font-medium transition-colors",
                       formaEntrega === forma
                         ? "border-brand-hover bg-brand-soft text-fg"
                         : "border-line bg-surface-2 text-fg-muted hover:text-fg"
@@ -633,6 +667,24 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
           </form>
         )}
       </Modal>
+
+      <ConfirmDialog
+        aberto={Boolean(osParaCancelar)}
+        titulo={osParaCancelar ? `Cancelar a ${osParaCancelar.numeroOS}?` : ""}
+        mensagem={
+          osParaCancelar
+            ? `A OS de ${osParaCancelar.clienteNome} (${osParaCancelar.carroModelo}) será cancelada. Depois de cancelada ela não pode ser reaberta.`
+            : ""
+        }
+        textoConfirmar="Sim, cancelar a OS"
+        textoVoltar="Não, manter a OS"
+        perigoso
+        onConfirmar={() => {
+          if (osParaCancelar) void avancarStatus(osParaCancelar.id, StatusOS.CANCELADO);
+          setOsParaCancelar(null);
+        }}
+        onVoltar={() => setOsParaCancelar(null)}
+      />
 
       {/* Modal Nova OS */}
       <Modal
@@ -715,7 +767,7 @@ export const OrdensServicoView: React.FC<OrdensServicoViewProps> = ({ modoDidati
                   type="button"
                   onClick={() => setNovaPrioridade(v)}
                   className={cn(
-                    "h-10 rounded-xl border text-sm font-medium transition-colors",
+                    "min-h-12 rounded-xl border text-base font-medium transition-colors",
                     novaPrioridade === v
                       ? "border-brand-hover bg-brand-soft text-fg"
                       : "border-line bg-surface-2 text-fg-muted hover:text-fg"

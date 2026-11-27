@@ -13,6 +13,7 @@ from src.domain.value_objects.enums import (
     TipoMovimentacaoCaixa,
     StatusCaixa
 )
+from src.domain.value_objects.dinheiro import Dinheiro
 from src.domain.value_objects.tempo import agora_utc
 from src.domain.services.conciliador_caixa_service import ConciliadorCaixaService, ResultadoConciliacao
 from src.domain.exceptions.domain_exceptions import (
@@ -88,8 +89,11 @@ class CaixaDiario:
         if tipo.eh_saida:
             disponivel = self.calcular_total_por_forma_pagamento()[forma_pagamento]
             if valor > disponivel:
+                operacao = "a sangria" if tipo == TipoMovimentacaoCaixa.SANGRIA else "esta retirada"
+                meio = "em dinheiro na gaveta" if forma_pagamento == FormaPagamento.DINHEIRO else f"em {forma_pagamento.value}"
                 raise RegraNegocioException(
-                    f"Saldo insuficiente em {forma_pagamento.value} para {tipo.value}. Solicitado: R$ {valor}."
+                    f"Não há saldo suficiente {meio} para {operacao}. "
+                    f"Pedido: {Dinheiro(valor).formatar()} · disponível: {Dinheiro(disponivel).formatar()}."
                 )
 
         movimentacao = MovimentacaoCaixa(

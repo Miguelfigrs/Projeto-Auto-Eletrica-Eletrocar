@@ -11,11 +11,13 @@ import type { NovaPecaDados } from "../../application/ports/repositories/IPecaRe
 import { Modal } from "./ui";
 import { BotaoCamera } from "./BotaoCamera";
 import { container } from "../../infra/di/container";
+import { lerValorBR } from "../../lib/numeroBR";
 
 const bipar = () => container.soundGateway.tocarBipSucesso();
 
+/** Aceita "1.250,90", "1250,90" e "1250.90"; campo vazio ou inválido vira NaN (o domínio recusa). */
 function lerNumero(valor: string): number {
-  return Number(valor.replace(",", "."));
+  return lerValorBR(valor);
 }
 
 const Campo: React.FC<{ id: string; label: string; children: React.ReactNode; className?: string }> = ({
